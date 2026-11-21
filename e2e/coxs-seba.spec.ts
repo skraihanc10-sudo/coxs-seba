@@ -1,7 +1,7 @@
 import { test, expect, type Page, type Browser } from "@playwright/test"
 
 /**
- * End-to-end flows for Cox's Seba. Run against `npm run dev` with RATE_LIMIT=off
+ * End-to-end flows for Digital Cox's Seba. Run against `npm run dev` with RATE_LIMIT=off
  * and a seeded database (`npm run db:setup`). Demo logins come from the seed.
  */
 
@@ -206,9 +206,9 @@ test("5. customer care chat and a support ticket, both answered by support", asy
   await ready(support)
   await support.getByRole("button", { name: "স্বাগতম" }).click()
   await support.getByRole("button", { name: "Send" }).click()
-  await expect(support.getByText("কক্স সেবা-তে যোগাযোগের জন্য ধন্যবাদ").first()).toBeVisible()
+  await expect(support.getByText("যোগাযোগের জন্য ধন্যবাদ").first()).toBeVisible()
   await customer.goto("/care")
-  await expect(customer.getByText("কক্স সেবা-তে যোগাযোগের জন্য ধন্যবাদ").first()).toBeVisible()
+  await expect(customer.getByText("যোগাযোগের জন্য ধন্যবাদ").first()).toBeVisible()
 
   await customer.goto("/help/tickets/new")
   await ready(customer)

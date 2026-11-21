@@ -1,10 +1,10 @@
 /** Product name and contact strings. Change the brand here. */
 export const brand = {
-  name: "Cox's Seba",
-  nameBn: "কক্স সেবা",
+  name: "Digital Cox's Seba",
+  nameBn: "ডিজিটাল কক্স সেবা",
   tagline: "Every home service in Cox's Bazar Sadar, done by our own team",
   taglineBn: "কক্সবাজার সদরে ঘরের সব সেবা, আমাদের নিজের টিম দিয়ে",
-  supportEmail: "hello@coxsseba.test",
+  supportEmail: "hello@digitalcoxsseba.online",
   supportPhone: "09610-000000",
   whatsapp: "01700-000000",
   emergencyPhone: "01800-000000",

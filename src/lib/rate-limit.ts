@@ -1,7 +1,7 @@
 import { AppError } from "./errors"
 
 /**
- * A small fixed-window rate limiter kept in memory. Cox's Seba runs as one
+ * A small fixed-window rate limiter kept in memory. Digital Cox's Seba runs as one
  * container, so a process-local map is enough; swap for Redis if it scales out.
  */
 const buckets = new Map<string, { count: number; resetAt: number }>()

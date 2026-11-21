@@ -1,7 +1,7 @@
 /** Demo sign-ins. The seed script and the login screen both read this list. */
 export const demoAccounts = [
   { role: "CUSTOMER", label: "কাস্টমার", email: "customer@needcoxs.test", password: "customer123", name: "রাশেদ আহমেদ", phone: "01711000001" },
-  { role: "ADMIN", label: "অ্যাডমিন", email: "admin@needcoxs.test", password: "admin123", name: "কক্স সেবা অ্যাডমিন", phone: "01711000002" },
+  { role: "ADMIN", label: "অ্যাডমিন", email: "admin@needcoxs.test", password: "admin123", name: "ডিজিটাল কক্স সেবা অ্যাডমিন", phone: "01711000002" },
   { role: "SUPPORT", label: "সাপোর্ট", email: "support@needcoxs.test", password: "support123", name: "নুসরাত (কাস্টমার কেয়ার)", phone: "01711000003" },
 ] as const
 

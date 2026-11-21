@@ -1,5 +1,5 @@
 /**
- * Seeds Cox's Seba. Safe to run again: everything is created only when it is
+ * Seeds Digital Cox's Seba. Safe to run again: everything is created only when it is
  * missing, and nothing the admin edited is overwritten.
  *   tsx prisma/seed.ts            catalog + demo accounts + demo bookings
  *   tsx prisma/seed.ts --catalog  areas, services, FAQs, templates, settings only
