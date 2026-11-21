@@ -1,0 +1,418 @@
+// Cox's Seba — one company, our own field team, Cox's Bazar Sadar only.
+// Roles: CUSTOMER, WORKER, SUPPORT, ADMIN. Money is whole BDT (৳).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String?  @unique
+  phone        String?  @unique
+  passwordHash String?
+  role         String   @default("CUSTOMER")
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  worker         WorkerProfile?
+  addresses      Address[]
+  bookings       ServiceBooking[]     @relation("BookingCustomer")
+  bookingEvents  BookingEvent[]
+  bookingPhotos  BookingPhoto[]
+  reviews        BookingReview[]
+  bookingChats   BookingChatMessage[]
+  careThread     CareThread?          @relation("CareCustomer")
+  careAssigned   CareThread[]         @relation("CareAssignee")
+  careMessages   CareMessage[]
+  tickets        Ticket[]             @relation("TicketOwner")
+  ticketsAssigned Ticket[]            @relation("TicketAssignee")
+  ticketMessages TicketMessage[]
+  notices        Notice[]
+}
+
+/// A field worker on our own team. One user can hold several skills.
+model WorkerProfile {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  photo       String   @default("")
+  nid         String   @default("")
+  nidPhoto    String   @default("")
+  isRider     Boolean  @default(false)
+  available   Boolean  @default(true)
+  rating      Float    @default(0)
+  ratingCount Int      @default(0)
+  joinedAt    DateTime @default(now())
+
+  skills   WorkerSkill[]
+  areas    WorkerArea[]
+  bookings ServiceBooking[]
+  reviews  BookingReview[]
+}
+
+model WorkerSkill {
+  workerId   String
+  worker     WorkerProfile   @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  categoryId String
+  category   ServiceCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([workerId, categoryId])
+}
+
+model WorkerArea {
+  workerId String
+  worker   WorkerProfile @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  areaId   String
+  area     ServiceArea   @relation(fields: [areaId], references: [id], onDelete: Cascade)
+
+  @@id([workerId, areaId])
+}
+
+/// Only Cox's Bazar Sadar areas live here. A booking must point at an active row.
+model ServiceArea {
+  id     String  @id @default(cuid())
+  slug   String  @unique
+  name   String
+  nameBn String
+  charge Int     @default(0)
+  sort   Int     @default(0)
+  active Boolean @default(true)
+
+  workers   WorkerArea[]
+  bookings  ServiceBooking[]
+  addresses Address[]
+}
+
+model ServiceCategory {
+  id      String  @id @default(cuid())
+  slug    String  @unique
+  name    String
+  nameBn  String
+  blurb   String  @default("")
+  blurbBn String  @default("")
+  icon    String  @default("spark")
+  image   String  @default("")
+  /// STANDARD visit, LAUNDRY pickup/delivery, TEAM (resort crews), CUSTOM ("write your job").
+  flow    String  @default("STANDARD")
+  sort    Int     @default(0)
+  active  Boolean @default(true)
+
+  offerings ServiceOffering[]
+  workers   WorkerSkill[]
+  bookings  ServiceBooking[]
+}
+
+model ServiceOffering {
+  id          String          @id @default(cuid())
+  categoryId  String
+  category    ServiceCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  slug        String
+  name        String
+  nameBn      String
+  detail      String          @default("")
+  detailBn    String          @default("")
+  /// FIXED, PER_KG, PER_ITEM, PER_HOUR, PER_ROOM, QUOTE (inspection then quote)
+  pricing     String          @default("FIXED")
+  /// For QUOTE this is the inspection fee.
+  price       Int             @default(0)
+  minQty      Int             @default(1)
+  durationMin Int             @default(60)
+  image       String          @default("")
+  sort        Int             @default(0)
+  active      Boolean         @default(true)
+  bookings    ServiceBooking[]
+
+  @@unique([categoryId, slug])
+}
+
+model Address {
+  id        String      @id @default(cuid())
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label     String      @default("বাসা")
+  areaId    String
+  area      ServiceArea @relation(fields: [areaId], references: [id])
+  line      String
+  landmark  String      @default("")
+  phone     String
+  isDefault Boolean     @default(false)
+  createdAt DateTime    @default(now())
+}
+
+model ServiceBooking {
+  id            String          @id @default(cuid())
+  code          String          @unique
+  customerId    String
+  customer      User            @relation("BookingCustomer", fields: [customerId], references: [id])
+  categoryId    String
+  category      ServiceCategory @relation(fields: [categoryId], references: [id])
+  offeringId    String
+  offering      ServiceOffering @relation(fields: [offeringId], references: [id])
+  areaId        String
+  area          ServiceArea     @relation(fields: [areaId], references: [id])
+  addressLine   String
+  landmark      String          @default("")
+  phone         String
+  contactName   String          @default("")
+  visitDate     String
+  visitSlot     String
+  notes         String          @default("")
+  pricing       String
+  unitPrice     Int             @default(0)
+  quantity      Float           @default(1)
+  teamSize      Int             @default(1)
+  days          Int             @default(1)
+  visitCharge   Int             @default(0)
+  estimatedPrice Int            @default(0)
+  quoteAmount   Int?
+  /// NONE, SENT, ACCEPTED, DECLINED
+  quoteStatus   String          @default("NONE")
+  quoteNote     String          @default("")
+  finalPrice    Int?
+  /// CASH, BKASH, NAGAD
+  paymentMethod String          @default("CASH")
+  /// UNPAID, PAID
+  paymentStatus String          @default("UNPAID")
+  status        String          @default("REQUESTED")
+  workerId      String?
+  worker        WorkerProfile?  @relation(fields: [workerId], references: [id], onDelete: SetNull)
+  cancelReason  String          @default("")
+  refundNote    String          @default("")
+  adminNote     String          @default("")
+  rescheduled   Int             @default(0)
+  completedAt   DateTime?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  events   BookingEvent[]
+  photos   BookingPhoto[]
+  review   BookingReview?
+  chat     BookingThread?
+  payments PaymentRecord[]
+  tickets  Ticket[]
+
+  @@index([customerId])
+  @@index([workerId, status])
+  @@index([status, visitDate])
+  @@index([categoryId])
+  @@index([areaId])
+}
+
+/// Every status change: who, when, from what, to what.
+model BookingEvent {
+  id         String         @id @default(cuid())
+  bookingId  String
+  booking    ServiceBooking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  fromStatus String         @default("")
+  toStatus   String
+  note       String         @default("")
+  actorId    String?
+  actor      User?          @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  actorRole  String         @default("")
+  createdAt  DateTime       @default(now())
+
+  @@index([bookingId, createdAt])
+}
+
+model BookingPhoto {
+  id           String         @id @default(cuid())
+  bookingId    String
+  booking      ServiceBooking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  /// CUSTOMER, BEFORE, AFTER
+  kind         String
+  path         String
+  uploadedById String?
+  uploadedBy   User?          @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+  createdAt    DateTime       @default(now())
+}
+
+model BookingReview {
+  id         String         @id @default(cuid())
+  bookingId  String         @unique
+  booking    ServiceBooking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  customerId String
+  customer   User           @relation(fields: [customerId], references: [id])
+  workerId   String?
+  worker     WorkerProfile? @relation(fields: [workerId], references: [id], onDelete: SetNull)
+  rating     Int
+  comment    String
+  published  Boolean        @default(true)
+  createdAt  DateTime       @default(now())
+}
+
+model PaymentRecord {
+  id        String         @id @default(cuid())
+  bookingId String
+  booking   ServiceBooking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  provider  String
+  amount    Int
+  /// RECORDED now; a real gateway can add PENDING / FAILED later.
+  status    String         @default("RECORDED")
+  reference String         @default("")
+  createdAt DateTime       @default(now())
+}
+
+model BookingThread {
+  id        String               @id @default(cuid())
+  bookingId String               @unique
+  booking   ServiceBooking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  updatedAt DateTime             @updatedAt
+  createdAt DateTime             @default(now())
+  messages  BookingChatMessage[]
+  reads     BookingThreadRead[]
+}
+
+model BookingChatMessage {
+  id        String        @id @default(cuid())
+  threadId  String
+  thread    BookingThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  senderId  String
+  sender    User          @relation(fields: [senderId], references: [id])
+  body      String
+  createdAt DateTime      @default(now())
+
+  @@index([threadId, createdAt])
+}
+
+model BookingThreadRead {
+  threadId String
+  thread   BookingThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  userId   String
+  readAt   DateTime      @default(now())
+
+  @@id([threadId, userId])
+}
+
+/// Customer care chat, one per customer, not tied to a booking.
+model CareThread {
+  id         String        @id @default(cuid())
+  customerId String        @unique
+  customer   User          @relation("CareCustomer", fields: [customerId], references: [id], onDelete: Cascade)
+  assigneeId String?
+  assignee   User?         @relation("CareAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  status     String        @default("OPEN")
+  updatedAt  DateTime      @updatedAt
+  createdAt  DateTime      @default(now())
+  messages   CareMessage[]
+  reads      CareRead[]
+}
+
+model CareMessage {
+  id        String     @id @default(cuid())
+  threadId  String
+  thread    CareThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  senderId  String
+  sender    User       @relation(fields: [senderId], references: [id])
+  body      String
+  createdAt DateTime   @default(now())
+
+  @@index([threadId, createdAt])
+}
+
+model CareRead {
+  threadId String
+  thread   CareThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  userId   String
+  readAt   DateTime   @default(now())
+
+  @@id([threadId, userId])
+}
+
+model Ticket {
+  id         String          @id @default(cuid())
+  code       String          @unique
+  userId     String
+  user       User            @relation("TicketOwner", fields: [userId], references: [id])
+  bookingId  String?
+  booking    ServiceBooking? @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  subject    String
+  /// COMPLAINT, REFUND, WORKER, OTHER
+  category   String          @default("OTHER")
+  /// LOW, NORMAL, HIGH, URGENT
+  priority   String          @default("NORMAL")
+  /// OPEN, PENDING, RESOLVED, CLOSED
+  status     String          @default("OPEN")
+  assigneeId String?
+  assignee   User?           @relation("TicketAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+  messages   TicketMessage[]
+  reads      TicketRead[]
+
+  @@index([status, priority])
+}
+
+model TicketMessage {
+  id        String   @id @default(cuid())
+  ticketId  String
+  ticket    Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  senderId  String
+  sender    User     @relation(fields: [senderId], references: [id])
+  body      String
+  createdAt DateTime @default(now())
+}
+
+model TicketRead {
+  ticketId String
+  ticket   Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  userId   String
+  readAt   DateTime @default(now())
+
+  @@id([ticketId, userId])
+}
+
+/// Ready-made replies for the support inbox.
+model ReplyTemplate {
+  id     String @id @default(cuid())
+  title  String
+  body   String
+  sort   Int    @default(0)
+}
+
+model Notice {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind      String   @default("INFO")
+  title     String
+  body      String
+  link      String   @default("")
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId, read])
+}
+
+/// One-time codes for phone sign-in. Only a hash of the code is stored.
+model OtpCode {
+  id         String    @id @default(cuid())
+  phone      String
+  codeHash   String
+  attempts   Int       @default(0)
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([phone, createdAt])
+}
+
+model Faq {
+  id         String  @id @default(cuid())
+  question   String
+  questionBn String
+  answer     String
+  answerBn   String
+  sort       Int     @default(0)
+  active     Boolean @default(true)
+}
+
+model Setting {
+  key   String @id
+  value String
+}
