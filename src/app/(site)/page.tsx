@@ -21,7 +21,7 @@ export default async function HomePage() {
         <div className="pointer-events-none absolute -top-20 -right-20 size-72 rounded-full bg-white/10 blur-2xl" />
         <p className="pill bg-white/15 text-white">{t.sadarOnly}</p>
         <h1 className="display mt-4 max-w-2xl text-3xl font-extrabold leading-tight md:text-5xl">
-          {pick(locale, "ঘরের যেকোনো কাজ, এক জায়গায়।", "Every home job, in one place.")}
+          {bn ? settings.heroBn : settings.heroEn}
         </h1>
         <p className="mt-3 max-w-xl text-[15px] text-white/80 md:text-lg">{bn ? settings.bannerBn : settings.bannerEn}</p>
         <form action="/services" className="mt-6 flex max-w-xl items-center gap-2 rounded-2xl bg-white p-1.5 shadow-xl">

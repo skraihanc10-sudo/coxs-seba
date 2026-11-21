@@ -30,6 +30,8 @@ export default async function SettingsPage() {
         </Section>
         <Section title={pick(locale, "হোমপেজ ও টাকা", "Homepage & money")}>
           <div className="grid gap-3">
+            <Field k="heroBn" label={pick(locale, "হোমপেজ শিরোনাম (বাংলা)", "Homepage headline (Bangla)")} value={s.heroBn} />
+            <Field k="heroEn" label={pick(locale, "হোমপেজ শিরোনাম (ইংরেজি)", "Homepage headline (English)")} value={s.heroEn} />
             <div><label className="label" htmlFor="bannerBn">{pick(locale, "হোমপেজ ব্যানার (বাংলা)", "Homepage banner (Bangla)")}</label><textarea id="bannerBn" name="bannerBn" defaultValue={s.bannerBn} className="field min-h-20" /></div>
             <div><label className="label" htmlFor="bannerEn">{pick(locale, "হোমপেজ ব্যানার (ইংরেজি)", "Homepage banner (English)")}</label><textarea id="bannerEn" name="bannerEn" defaultValue={s.bannerEn} className="field min-h-20" /></div>
             <Field k="workerShare" label={pick(locale, "কর্মীর ভাগ (% of job)", "Worker share (% of job)")} type="number" value={s.workerShare} />
