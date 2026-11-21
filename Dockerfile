@@ -4,7 +4,8 @@ RUN apt-get update \
   && apt-get install -y --no-install-recommends openssl ca-certificates \
   && rm -rf /var/lib/apt/lists/*
 COPY package.json package-lock.json ./
-RUN npm ci
+# Coolify passes NODE_ENV=production into the build; the build itself still needs devDependencies.
+RUN npm ci --include=dev
 
 FROM node:22-bookworm-slim AS builder
 WORKDIR /app
