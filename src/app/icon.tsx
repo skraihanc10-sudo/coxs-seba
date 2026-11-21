@@ -20,7 +20,7 @@ export default function Icon() {
           justifyContent: "center",
         }}
       >
-        C
+        H
       </div>
     ),
     size,

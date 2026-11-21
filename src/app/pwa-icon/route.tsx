@@ -2,7 +2,7 @@ import { ImageResponse } from "next/og"
 
 export const dynamic = "force-dynamic"
 
-/** PWA icon at any size: a rounded blue tile with the Digital Cox's Seba mark. */
+/** PWA icon at any size: a rounded blue tile with the HANDYO mark. */
 export async function GET(request: Request) {
   const size = Math.min(1024, Math.max(64, Number(new URL(request.url).searchParams.get("size")) || 512))
   return new ImageResponse(

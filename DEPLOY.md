@@ -1,10 +1,10 @@
-# Deploying Digital Cox's Seba on Coolify
+# Deploying HANDYO on Coolify
 
 The app runs as one container built from `Dockerfile`. SQLite and uploaded photos live on a persistent volume at `/data`, so redeploys keep the data.
 
 ## Coolify application settings
 - **Source:** this repo, branch `main`, build pack **Dockerfile** (`/Dockerfile`, base directory `/`).
-- **Domains:** `https://digitalcoxsseba.online,https://www.digitalcoxsseba.online` (DNS A records for `@` and `www` → `145.223.18.224`; Let's Encrypt is automatic).
+- **Domains:** `https://handyo.bd,https://www.handyo.bd` (DNS A records for `@` and `www` → `145.223.18.224`; Let's Encrypt is automatic).
 - **Ports Exposes:** `3000` (leave Ports Mappings empty; Traefik routes by domain).
 - **Health check:** path `/api/health` → `{"ok":true,"service":"coxs-seba"}`.
 - **Persistent Storage:** volume `needcoxs-data` → `/data`.
@@ -12,7 +12,7 @@ The app runs as one container built from `Dockerfile`. SQLite and uploaded photo
   ```
   DATABASE_URL=file:/data/needcoxs.db
   AUTH_SECRET=<openssl rand -base64 48>
-  AUTH_URL=https://digitalcoxsseba.online
+  AUTH_URL=https://handyo.bd
   AUTH_TRUST_HOST=true
   NODE_ENV=production
   PORT=3000

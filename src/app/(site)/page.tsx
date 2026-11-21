@@ -86,7 +86,7 @@ export default async function HomePage() {
 
       {/* Why us */}
       <section>
-        <h2 className="display text-2xl font-extrabold text-ink md:text-3xl">{pick(locale, "কেন ডিজিটাল কক্স সেবা", "Why Digital Cox's Seba")}</h2>
+        <h2 className="display text-2xl font-extrabold text-ink md:text-3xl">{pick(locale, "কেন HANDYO", "Why HANDYO")}</h2>
         <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {[
             [ShieldCheck, pick(locale, "যাচাই করা কর্মী", "Verified workers"), pick(locale, "প্রতিটা কর্মীর NID যাচাই করা, আমাদের নিজের টিম।", "Every worker is NID-checked and on our own team.")],
@@ -134,7 +134,7 @@ export default async function HomePage() {
         </div>
         <div className="flex gap-2">
           <a href={telHref(settings.helpline)} className="btn-primary flex-1 md:flex-none"><Phone className="size-4" /> {t.call}</a>
-          <a href={whatsappHref(settings.whatsapp, pick(locale, "আসসালামু আলাইকুম, ডিজিটাল কক্স সেবা থেকে একটা সেবা নিতে চাই।", "Hi, I'd like to book a service with Digital Cox's Seba."))} className="btn-ghost flex-1 bg-paper md:flex-none"><MessageCircle className="size-4" /> {t.whatsapp}</a>
+          <a href={whatsappHref(settings.whatsapp, pick(locale, "আসসালামু আলাইকুম, HANDYO থেকে একটা সেবা নিতে চাই।", "Hi, I'd like to book a service with HANDYO."))} className="btn-ghost flex-1 bg-paper md:flex-none"><MessageCircle className="size-4" /> {t.whatsapp}</a>
         </div>
       </section>
 

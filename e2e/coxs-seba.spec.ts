@@ -1,7 +1,7 @@
 import { test, expect, type Page, type Browser } from "@playwright/test"
 
 /**
- * End-to-end flows for Digital Cox's Seba. Run against `npm run dev` with RATE_LIMIT=off
+ * End-to-end flows for HANDYO. Run against `npm run dev` with RATE_LIMIT=off
  * and a seeded database (`npm run db:setup`). Demo logins come from the seed.
  */
 

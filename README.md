@@ -1,6 +1,6 @@
-# Digital Cox's Seba · ডিজিটাল কক্স সেবা
+# HANDYO · HANDYO
 
-Live: **https://digitalcoxsseba.online**
+Live: **https://handyo.bd**
 
 One company, our own field team, every home service in **Cox's Bazar Sadar**: laundry pickup, WiFi, electricians, plumbers, cleaning crews, AC repair, moving, helpers, and "describe your job". Customers book in Bangla (English toggle), pay cash / bKash / Nagad when the job is done.
 

@@ -3,7 +3,7 @@ import { brand } from "@/theme/brand"
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: `${brand.nameBn} · ${brand.name}`,
+    name: `${brand.name} · ${brand.taglineBn}`,
     short_name: brand.nameBn,
     description: brand.taglineBn,
     start_url: "/",

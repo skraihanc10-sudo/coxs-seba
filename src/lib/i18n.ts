@@ -12,7 +12,7 @@ export function named(locale: Locale, row: { name: string; nameBn: string }) {
 
 /** Words used across many screens. Page-specific copy sits next to the page. */
 const bn = {
-  appName: "ডিজিটাল কক্স সেবা",
+  appName: "HANDYO",
   home: "হোম",
   services: "সেবা",
   bookings: "আমার বুকিং",
@@ -53,7 +53,7 @@ const bn = {
 }
 
 const en: typeof bn = {
-  appName: "Digital Cox's Seba",
+  appName: "HANDYO",
   home: "Home",
   services: "Services",
   bookings: "My bookings",

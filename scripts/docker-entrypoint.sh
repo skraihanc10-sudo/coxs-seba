@@ -25,5 +25,5 @@ node scripts/seed-if-empty.mjs
 echo "Adding any missing Sadar areas, services, FAQs and settings"
 node prisma/seed.mjs --catalog
 
-echo "Starting Digital Cox's Seba on ${HOSTNAME:-0.0.0.0}:${PORT:-3000}"
+echo "Starting HANDYO on ${HOSTNAME:-0.0.0.0}:${PORT:-3000}"
 exec node server.js
