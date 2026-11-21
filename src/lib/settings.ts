@@ -11,8 +11,8 @@ export const SETTING_DEFAULTS: Record<string, string> = {
   officeHoursEn: "Every day, 8 am – 10 pm",
   address: brand.addressBn,
   addressEn: brand.address,
-  heroBn: "কক্সবাজার সদরে যেকোনো সেবা, এক ডাকে।",
-  heroEn: "Any home service in Cox's Bazar Sadar, one call away.",
+  heroBn: "আপনি নিশ্চিন্তে থাকুন, কাজটা আমরা করে দিই।",
+  heroEn: "You relax. We get it done.",
   bannerBn: "কক্সবাজার সদরে ঘরে বসেই সব সেবা: লন্ড্রি, ইলেকট্রিশিয়ান, প্লাম্বার, ক্লিনিং আর আরও অনেক কিছু।",
   bannerEn: "Every home service in Cox's Bazar Sadar: laundry, electricians, plumbers, cleaning and more.",
   /** Share of the final bill paid to the worker who did the job, in percent. */
