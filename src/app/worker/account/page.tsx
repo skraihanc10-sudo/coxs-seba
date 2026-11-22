@@ -17,6 +17,7 @@ export default async function WorkerAccountPage() {
         <Avatar name={user.name} src={profile?.photo || undefined} size={60} />
         <div className="min-w-0">
           <p className="truncate text-lg font-extrabold text-ink">{user.name}</p>
+          {user.shop ? <p className="text-sm font-bold text-brand">{named(locale, user.shop)}</p> : null}
           <p className="text-sm text-muted-foreground">{user.phone} · ★ {profile?.rating ? profile.rating.toFixed(1) : "—"} ({profile?.ratingCount ?? 0})</p>
           <p className="mt-1 text-xs text-muted-foreground">
             {profile?.skills.map((s) => named(locale, s.category)).join(" · ")}{profile?.isRider ? ` · ${pick(locale, "লন্ড্রি রাইডার", "Laundry rider")}` : ""}

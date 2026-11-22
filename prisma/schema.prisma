@@ -1,5 +1,9 @@
-// Cox's Seba — one company, our own field team, Cox's Bazar Sadar only.
-// Roles: CUSTOMER, WORKER, SUPPORT, ADMIN. Money is whole BDT (৳).
+// HANDYO — home services, one database, many shops.
+// A Shop is a branch (our own, e.g. Cox's Bazar Sadar, Dhaka) or a partner
+// business on the platform. Areas, services, workers, staff, bookings, chats,
+// tickets, templates and settings all belong to one shop; customers are shared.
+// Roles: CUSTOMER, WORKER, SUPPORT, ADMIN (one shop), OWNER (every shop).
+// Money is whole BDT (৳).
 
 generator client {
   provider = "prisma-client-js"
@@ -10,6 +14,38 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+/// A branch or partner shop. Everything operational hangs off one of these.
+model Shop {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  name      String
+  nameBn    String
+  city      String
+  cityBn    String
+  /// BRANCH = our own branch, PARTNER = an independent business on the platform.
+  kind      String   @default("BRANCH")
+  phone     String   @default("")
+  whatsapp  String   @default("")
+  email     String   @default("")
+  address   String   @default("")
+  addressBn String   @default("")
+  blurb     String   @default("")
+  blurbBn   String   @default("")
+  active    Boolean  @default(true)
+  sort      Int      @default(0)
+  createdAt DateTime @default(now())
+
+  users       User[]
+  workers     WorkerProfile[]
+  areas       ServiceArea[]
+  categories  ServiceCategory[]
+  bookings    ServiceBooking[]
+  careThreads CareThread[]
+  tickets     Ticket[]
+  templates   ReplyTemplate[]
+  settings    Setting[]
+}
+
 model User {
   id           String   @id @default(cuid())
   name         String
@@ -17,6 +53,9 @@ model User {
   phone        String?  @unique
   passwordHash String?
   role         String   @default("CUSTOMER")
+  /// Staff and workers belong to one shop. Customers and owners have none.
+  shopId       String?
+  shop         Shop?    @relation(fields: [shopId], references: [id], onDelete: SetNull)
   active       Boolean  @default(true)
   createdAt    DateTime @default(now())
 
@@ -27,7 +66,7 @@ model User {
   bookingPhotos  BookingPhoto[]
   reviews        BookingReview[]
   bookingChats   BookingChatMessage[]
-  careThread     CareThread?          @relation("CareCustomer")
+  careThreads    CareThread[]         @relation("CareCustomer")
   careAssigned   CareThread[]         @relation("CareAssignee")
   careMessages   CareMessage[]
   tickets        Ticket[]             @relation("TicketOwner")
@@ -41,6 +80,8 @@ model WorkerProfile {
   id          String   @id @default(cuid())
   userId      String   @unique
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shopId      String
+  shop        Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
   photo       String   @default("")
   nid         String   @default("")
   nidPhoto    String   @default("")
@@ -54,6 +95,8 @@ model WorkerProfile {
   areas    WorkerArea[]
   bookings ServiceBooking[]
   reviews  BookingReview[]
+
+  @@index([shopId])
 }
 
 model WorkerSkill {
@@ -74,10 +117,12 @@ model WorkerArea {
   @@id([workerId, areaId])
 }
 
-/// Only Cox's Bazar Sadar areas live here. A booking must point at an active row.
+/// The neighbourhoods one shop serves. A booking must point at an active row of its shop.
 model ServiceArea {
   id     String  @id @default(cuid())
-  slug   String  @unique
+  shopId String
+  shop   Shop    @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  slug   String
   name   String
   nameBn String
   charge Int     @default(0)
@@ -87,25 +132,33 @@ model ServiceArea {
   workers   WorkerArea[]
   bookings  ServiceBooking[]
   addresses Address[]
+
+  @@unique([shopId, slug])
 }
 
 model ServiceCategory {
   id      String  @id @default(cuid())
-  slug    String  @unique
+  shopId  String
+  shop    Shop    @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  slug    String
   name    String
   nameBn  String
   blurb   String  @default("")
   blurbBn String  @default("")
   icon    String  @default("spark")
   image   String  @default("")
-  /// STANDARD visit, LAUNDRY pickup/delivery, TEAM (resort crews), CUSTOM ("write your job").
+  /// STANDARD visit, LAUNDRY pickup/delivery, TEAM (resort crews), CUSTOM ("write your job"), RENTAL (cars & bikes).
   flow    String  @default("STANDARD")
+  /// Two or three letters in front of this category's booking numbers, e.g. CL-10001, CR-10002.
+  codePrefix String @default("")
   sort    Int     @default(0)
   active  Boolean @default(true)
 
   offerings ServiceOffering[]
   workers   WorkerSkill[]
   bookings  ServiceBooking[]
+
+  @@unique([shopId, slug])
 }
 
 model ServiceOffering {
@@ -148,6 +201,8 @@ model Address {
 model ServiceBooking {
   id            String          @id @default(cuid())
   code          String          @unique
+  shopId        String
+  shop          Shop            @relation(fields: [shopId], references: [id])
   customerId    String
   customer      User            @relation("BookingCustomer", fields: [customerId], references: [id])
   categoryId    String
@@ -197,6 +252,8 @@ model ServiceBooking {
   payments PaymentRecord[]
   tickets  Ticket[]
 
+  @@index([shopId, status])
+  @@index([shopId, createdAt])
   @@index([customerId])
   @@index([workerId, status])
   @@index([status, visitDate])
@@ -289,10 +346,12 @@ model BookingThreadRead {
   @@id([threadId, userId])
 }
 
-/// Customer care chat, one per customer, not tied to a booking.
+/// Customer care chat, one per customer per shop, not tied to a booking.
 model CareThread {
   id         String        @id @default(cuid())
-  customerId String        @unique
+  shopId     String
+  shop       Shop          @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  customerId String
   customer   User          @relation("CareCustomer", fields: [customerId], references: [id], onDelete: Cascade)
   assigneeId String?
   assignee   User?         @relation("CareAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
@@ -301,6 +360,9 @@ model CareThread {
   createdAt  DateTime      @default(now())
   messages   CareMessage[]
   reads      CareRead[]
+
+  @@unique([customerId, shopId])
+  @@index([shopId, status])
 }
 
 model CareMessage {
@@ -327,6 +389,8 @@ model CareRead {
 model Ticket {
   id         String          @id @default(cuid())
   code       String          @unique
+  shopId     String
+  shop       Shop            @relation(fields: [shopId], references: [id], onDelete: Cascade)
   userId     String
   user       User            @relation("TicketOwner", fields: [userId], references: [id])
   bookingId  String?
@@ -345,7 +409,7 @@ model Ticket {
   messages   TicketMessage[]
   reads      TicketRead[]
 
-  @@index([status, priority])
+  @@index([shopId, status, priority])
 }
 
 model TicketMessage {
@@ -370,9 +434,13 @@ model TicketRead {
 /// Ready-made replies for the support inbox.
 model ReplyTemplate {
   id     String @id @default(cuid())
+  shopId String
+  shop   Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
   title  String
   body   String
   sort   Int    @default(0)
+
+  @@index([shopId])
 }
 
 model Notice {
@@ -412,7 +480,18 @@ model Faq {
   active     Boolean @default(true)
 }
 
+/// Per-shop key/value settings (helpline, hero text, worker share, payment switches).
 model Setting {
-  key   String @id
-  value String
+  shopId String
+  shop   Shop   @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  key    String
+  value  String
+
+  @@id([shopId, key])
+}
+
+/// Named counters. "booking" hands out the one running serial shared by every category and shop.
+model Sequence {
+  name  String @id
+  value Int    @default(0)
 }

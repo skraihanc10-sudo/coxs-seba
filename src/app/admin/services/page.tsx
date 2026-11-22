@@ -1,4 +1,6 @@
 import { requireUser, getLocale } from "@/lib/auth"
+import { ADMINS } from "@/lib/roles"
+import { officeShop } from "@/lib/shops"
 import { db } from "@/lib/db"
 import { named, pick } from "@/lib/i18n"
 import type { Locale } from "@/lib/format"
@@ -9,16 +11,17 @@ import { ActionForm, SubmitButton } from "@/components/forms"
 import { PageHeader, Section } from "@/components/bits"
 import { CategoryIcon, ICON_NAMES } from "@/components/category-icon"
 
-const FLOWS = { STANDARD: ["সাধারণ ভিজিট", "Standard visit"], LAUNDRY: ["লন্ড্রি (পিকআপ-ডেলিভারি)", "Laundry (pickup & delivery)"], TEAM: ["টিম (রুম × দিন)", "Team (rooms × days)"], CUSTOM: ["কাস্টম (কাজ লিখুন)", "Custom (describe the job)"] }
+const FLOWS = { STANDARD: ["সাধারণ ভিজিট", "Standard visit"], LAUNDRY: ["লন্ড্রি (পিকআপ-ডেলিভারি)", "Laundry (pickup & delivery)"], TEAM: ["টিম (রুম × দিন)", "Team (rooms × days)"], CUSTOM: ["কাস্টম (কাজ লিখুন)", "Custom (describe the job)"], RENTAL: ["রেন্টাল (গাড়ি/বাইক, দিন হিসাবে)", "Rental (car/bike, per day)"] }
 
 export default async function ServicesAdminPage() {
-  const [, locale] = await Promise.all([requireUser(["ADMIN"], "/admin/services"), getLocale()])
-  const categories = await db.serviceCategory.findMany({ orderBy: { sort: "asc" }, include: { offerings: { orderBy: { sort: "asc" } }, _count: { select: { bookings: true } } } })
+  const [user, locale] = await Promise.all([requireUser(ADMINS, "/admin/services"), getLocale()])
+  const shop = await officeShop(user)
+  const categories = await db.serviceCategory.findMany({ where: { shopId: shop.id }, orderBy: { sort: "asc" }, include: { offerings: { orderBy: { sort: "asc" } }, _count: { select: { bookings: true } } } })
   const bn = locale === "bn"
 
   return (
     <div className="space-y-4">
-      <PageHeader title={pick(locale, "সেবা ও দাম", "Services & prices")} sub={pick(locale, "ক্যাটাগরি আর সাব-সার্ভিস এখান থেকে যোগ, এডিট বা বন্ধ করুন। বন্ধ করলে কাস্টমার দেখবে না, পুরনো বুকিং থাকবে।", "Add, edit or switch off categories and sub-services. Switched-off items hide from customers; old bookings stay.")} />
+      <PageHeader title={pick(locale, "সেবা ও দাম", "Services & prices")} sub={pick(locale, `শুধু ${shop.nameBn} শপের সেবা ও দাম। ক্যাটাগরি আর সাব-সার্ভিস এখান থেকে যোগ, এডিট বা বন্ধ করুন। বন্ধ করলে কাস্টমার দেখবে না, পুরনো বুকিং থাকবে।`, `Services and prices of ${shop.name} only. Add, edit or switch off categories and sub-services. Switched-off items hide from customers; old bookings stay.`)} />
       {categories.map((c) => (
         <details key={c.id} className={`card group p-4 ${c.active ? "" : "opacity-60"}`}>
           <summary className="flex cursor-pointer list-none items-center gap-3">
@@ -90,7 +93,7 @@ export default async function ServicesAdminPage() {
   )
 }
 
-function CategoryFields({ c, locale, count }: { c?: { id: string; nameBn: string; name: string; slug: string; flow: string; blurbBn: string; blurb: string; icon: string; sort: number }; locale: Locale; count: number }) {
+function CategoryFields({ c, locale, count }: { c?: { id: string; nameBn: string; name: string; slug: string; flow: string; blurbBn: string; blurb: string; icon: string; sort: number; codePrefix: string }; locale: Locale; count: number }) {
   const bn = locale === "bn"
   return (
     <div className="grid gap-2 sm:grid-cols-2">
@@ -99,6 +102,7 @@ function CategoryFields({ c, locale, count }: { c?: { id: string; nameBn: string
       <input name="name" defaultValue={c?.name} className="field h-10" placeholder={pick(locale, "ইংরেজি নাম", "English name")} required />
       <input name="slug" defaultValue={c?.slug} className="field h-10" placeholder="slug (a-z, -)" required pattern="[a-z0-9-]{2,40}" />
       <select name="flow" defaultValue={c?.flow ?? "STANDARD"} className="field h-10">{Object.entries(FLOWS).map(([k, v]) => <option key={k} value={k}>{bn ? v[0] : v[1]}</option>)}</select>
+      <input name="codePrefix" defaultValue={c?.codePrefix ?? ""} className="field h-10 uppercase" placeholder={pick(locale, "বুকিং নম্বরের প্রিফিক্স, যেমন CL", "Booking prefix, e.g. CL")} pattern="[A-Za-z]{2,3}" maxLength={3} title={pick(locale, "২–৩ অক্ষর। নম্বর হবে CL-10001, CR-10002 … (সব ক্যাটাগরি মিলে এক সিরিয়াল)", "2–3 letters. Numbers become CL-10001, CR-10002 … (one serial across categories)")} />
       <input name="blurbBn" defaultValue={c?.blurbBn} className="field h-10" placeholder={pick(locale, "বাংলা এক লাইন", "Bangla one-liner")} />
       <input name="blurb" defaultValue={c?.blurb} className="field h-10" placeholder={pick(locale, "ইংরেজি এক লাইন", "English one-liner")} />
       <select name="icon" defaultValue={c?.icon ?? "spark"} className="field h-10">{ICON_NAMES.map((i) => <option key={i} value={i}>{i}</option>)}</select>

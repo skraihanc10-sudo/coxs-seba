@@ -4,10 +4,19 @@ import { workerShare } from "@/lib/bookings"
 import { getSettings } from "@/lib/settings"
 import { dayStart, formatDay, localDate, localToday, shiftDays, taka } from "@/lib/format"
 import { named, pick } from "@/lib/i18n"
-import { PageHeader, Section } from "@/components/bits"
+import { EmptyState, PageHeader, Section } from "@/components/bits"
 
 export default async function EarningsPage() {
-  const [user, locale, settings] = await Promise.all([requireUser(["WORKER"], "/worker/earnings"), getLocale(), getSettings()])
+  const [user, locale] = await Promise.all([requireUser(["WORKER"], "/worker/earnings"), getLocale()])
+  if (!user.shopId) {
+    return (
+      <div className="mx-auto max-w-2xl">
+        <PageHeader title={pick(locale, "আমার আয়", "My earnings")} />
+        <EmptyState title={pick(locale, "আপনার অ্যাকাউন্ট কোনো শপে যুক্ত নেই", "Your account is not attached to a shop")} body={pick(locale, "অফিসকে বলুন আপনাকে একটা শপে যুক্ত করতে।", "Ask the office to attach you to a shop.")} />
+      </div>
+    )
+  }
+  const settings = await getSettings(user.shopId)
   const share = Number(settings.workerShare) || 40
   const jobs = user.worker
     ? await db.serviceBooking.findMany({

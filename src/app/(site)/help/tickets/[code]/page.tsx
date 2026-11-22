@@ -1,12 +1,19 @@
+import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { requireUser, getLocale } from "@/lib/auth"
 import { AppError } from "@/lib/errors"
 import { pick } from "@/lib/i18n"
+import { privateMeta } from "@/lib/seo"
 import { ticketFor, TICKET_CATEGORIES, TICKET_STATUSES } from "@/lib/support"
 import { replyTicketAction, updateTicketAction } from "@/actions/support"
 import { ActionForm, SubmitButton } from "@/components/forms"
 import { Composer, MessageList } from "@/components/chat-pane"
 import { PageHeader } from "@/components/bits"
+
+export async function generateMetadata({ params }: { params: Promise<{ code: string }> }): Promise<Metadata> {
+  const [{ code }, locale] = await Promise.all([params, getLocale()])
+  return privateMeta(pick(locale, `টিকেট ${code}`, `Ticket ${code}`))
+}
 
 export default async function TicketPage({ params }: { params: Promise<{ code: string }> }) {
   const [{ code }, locale] = await Promise.all([params, getLocale()])
@@ -19,9 +26,10 @@ export default async function TicketPage({ params }: { params: Promise<{ code: s
     throw error
   }
   const closed = ticket.status === "CLOSED"
+  const shopName = ticket.shop ? (locale === "bn" ? ticket.shop.nameBn : ticket.shop.name) : ""
   return (
     <div className="mx-auto max-w-2xl">
-      <PageHeader back="/help" title={ticket.subject} sub={`${ticket.code} · ${TICKET_CATEGORIES[ticket.category as keyof typeof TICKET_CATEGORIES]?.[locale]}${ticket.booking ? ` · ${ticket.booking.code}` : ""}`} action={<span className="pill mt-1 bg-canvas text-ink">{TICKET_STATUSES[ticket.status as keyof typeof TICKET_STATUSES]?.[locale]}</span>} />
+      <PageHeader back="/help" title={ticket.subject} sub={`${ticket.code} · ${TICKET_CATEGORIES[ticket.category as keyof typeof TICKET_CATEGORIES]?.[locale]}${ticket.booking ? ` · ${ticket.booking.code}` : ""}${shopName ? ` · ${shopName}` : ""}`} action={<span className="pill mt-1 bg-canvas text-ink">{TICKET_STATUSES[ticket.status as keyof typeof TICKET_STATUSES]?.[locale]}</span>} />
       <div className="card p-4">
         <MessageList messages={ticket.messages} me={user.id} locale={locale} empty="" />
         {closed ? (

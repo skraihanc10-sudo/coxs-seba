@@ -1,5 +1,7 @@
 import Link from "next/link"
 import { requireUser, getLocale } from "@/lib/auth"
+import { OFFICE } from "@/lib/roles"
+import { officeShop } from "@/lib/shops"
 import { db } from "@/lib/db"
 import { TICKET_CATEGORIES, TICKET_PRIORITIES, TICKET_STATUSES } from "@/lib/support"
 import { formatWhen } from "@/lib/format"
@@ -7,9 +9,10 @@ import { pick } from "@/lib/i18n"
 import { PageHeader } from "@/components/bits"
 
 export default async function TicketsPage({ searchParams }: { searchParams: Promise<{ status?: string; booking?: string }> }) {
-  const [{ status = "", booking = "" }, , locale] = await Promise.all([searchParams, requireUser(["SUPPORT", "ADMIN"], "/support/tickets"), getLocale()])
+  const [{ status = "", booking = "" }, user, locale] = await Promise.all([searchParams, requireUser(OFFICE, "/support/tickets"), getLocale()])
+  const shop = await officeShop(user)
   const tickets = await db.ticket.findMany({
-    where: { ...(status ? { status } : { status: { in: ["OPEN", "PENDING"] } }), ...(booking ? { booking: { code: booking } } : {}) },
+    where: { shopId: shop.id, ...(status ? { status } : { status: { in: ["OPEN", "PENDING"] } }), ...(booking ? { booking: { code: booking } } : {}) },
     orderBy: [{ updatedAt: "desc" }],
     include: { user: { select: { name: true } }, assignee: { select: { name: true } }, booking: { select: { code: true } } },
     take: 200,

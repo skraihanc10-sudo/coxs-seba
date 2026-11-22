@@ -1,20 +1,22 @@
 import Link from "next/link"
 import { AlertCircle, Banknote, ClipboardList, HardHat, Inbox, Loader, Users } from "lucide-react"
 import { requireUser, getLocale } from "@/lib/auth"
+import { ADMINS } from "@/lib/roles"
+import { officeShop } from "@/lib/shops"
 import { dashboard, parsePeriod, type Period } from "@/lib/reports"
-import { formatDay, taka } from "@/lib/format"
+import { taka } from "@/lib/format"
 import { named, pick } from "@/lib/i18n"
 import { statusText } from "@/lib/booking-flow"
 import { StatusPill } from "@/components/bits"
 import { CategoryIcon } from "@/components/category-icon"
 import { RevenueBars, StatusDonut } from "@/components/admin/charts"
-import { billFor } from "@/lib/pricing"
+import { CategoryBoard, categoryCounts } from "@/components/booking/category-board"
 
 export default async function AdminDashboard({ searchParams }: { searchParams: Promise<{ p?: string; from?: string; to?: string }> }) {
-  const [{ p, from, to }, , locale] = await Promise.all([searchParams, requireUser(["ADMIN"], "/admin"), getLocale()])
+  const [{ p, from, to }, user, locale] = await Promise.all([searchParams, requireUser(ADMINS, "/admin"), getLocale()])
+  const shop = await officeShop(user)
   const period = parsePeriod(p)
-  const d = await dashboard(period, from, to)
-  const bn = locale === "bn"
+  const [d, counts] = await Promise.all([dashboard(shop.id, period, from, to), categoryCounts(shop.id)])
   const periodLabel: Record<Period, string> = {
     today: pick(locale, "আজ", "Today"),
     week: pick(locale, "৭ দিন", "7 days"),
@@ -27,7 +29,7 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-2">
-        <h1 className="display mr-auto text-2xl font-extrabold text-ink md:text-3xl">{pick(locale, "ড্যাশবোর্ড", "Dashboard")}</h1>
+        <h1 className="display mr-auto text-2xl font-extrabold text-ink md:text-3xl">{pick(locale, "ড্যাশবোর্ড", "Dashboard")} <span className="text-base font-bold text-muted-foreground">· {pick(locale, shop.nameBn, shop.name)}</span></h1>
         {(["today", "week", "month", "year"] as Period[]).map((k) => (
           <Link key={k} href={`/admin?p=${k}`} className="chip" data-on={period === k}>{periodLabel[k]}</Link>
         ))}
@@ -127,30 +129,14 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
         </section>
       </div>
 
-      {/* Recent bookings */}
+      {/* Orders by category */}
       <section className="card p-5">
         <div className="flex items-center justify-between">
-          <h2 className="display text-lg font-extrabold text-ink">{pick(locale, "সাম্প্রতিক বুকিং", "Recent bookings")}</h2>
-          <Link href="/admin/bookings" className="text-sm font-bold text-brand">{pick(locale, "সব দেখুন", "See all")} →</Link>
+          <h2 className="display text-lg font-extrabold text-ink">{pick(locale, "অর্ডার: ক্যাটাগরি অনুযায়ী", "Orders by category")}</h2>
+          <Link href="/admin/bookings" className="text-sm font-bold text-brand">{pick(locale, "সব ক্যাটাগরি", "All categories")} →</Link>
         </div>
-        <div className="mt-3 overflow-x-auto">
-          <table className="table">
-            <thead><tr><th>{pick(locale, "বুকিং", "Booking")}</th><th>{pick(locale, "কাস্টমার", "Customer")}</th><th>{pick(locale, "সেবা", "Service")}</th><th>{pick(locale, "এলাকা", "Area")}</th><th>{pick(locale, "সময়", "When")}</th><th className="text-right">{pick(locale, "টাকা", "Amount")}</th><th>{pick(locale, "অবস্থা", "Status")}</th></tr></thead>
-            <tbody>
-              {d.recent.map((b) => (
-                <tr key={b.id} className="hover:bg-canvas">
-                  <td><Link href={`/admin/bookings/${b.code}`} className="font-extrabold text-brand">{b.code}</Link></td>
-                  <td className="font-semibold">{b.customer.name}</td>
-                  <td>{bn ? b.offering.nameBn : b.offering.name}</td>
-                  <td>{bn ? b.area.nameBn : b.area.name}</td>
-                  <td className="whitespace-nowrap">{formatDay(b.visitDate, locale)} <span className="text-muted-foreground">{b.visitSlot}</span></td>
-                  <td className="text-right font-extrabold">{taka(b.finalPrice ?? billFor(b), locale)}</td>
-                  <td><StatusPill status={b.status} locale={locale} /></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <p className="mt-1 text-xs text-muted-foreground">{pick(locale, "একটা ক্যাটাগরিতে ক্লিক করলে শুধু তার অর্ডার দেখাবে।", "Click a category to open only its orders.")}</p>
+        <div className="mt-4"><CategoryBoard items={counts} base="/admin/bookings" locale={locale} /></div>
       </section>
     </div>
   )

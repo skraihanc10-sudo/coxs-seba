@@ -12,6 +12,8 @@ const TANIA = { email: "tania@needcoxs.test", password: "demo-01911000001" }
 const RIDER = { email: "rider@needcoxs.test", password: "rider123" }
 const JAMAL = { email: "jamal.electric@needcoxs.test", password: "rider123" }
 const RINA = { email: "rina.clean@needcoxs.test", password: "rider123" }
+const OWNER = { email: "owner@needcoxs.test", password: "owner123" }
+const DHAKA_ADMIN = { email: "dhaka.admin@needcoxs.test", password: "admin123" }
 
 /** Wait until React has hydrated the first form on the page, so clicks and fills stick. */
 async function ready(page: Page) {
@@ -61,8 +63,8 @@ async function book(page: Page, path: string, opts: { quantity?: number; team?: 
   await page.getByRole("button", { name: "08:00–11:00" }).click()
   await page.getByRole("button", { name: "পরের ধাপ" }).click()
   await page.getByRole("button", { name: "বুকিং নিশ্চিত করুন" }).click()
-  await page.waitForURL(/\/bookings\/CS-\d{5}/)
-  const code = page.url().match(/CS-\d{5}/)![0]
+  await page.waitForURL(/\/bookings\/[A-Z]{2,3}-\d{5}/)
+  const code = page.url().match(/[A-Z]{2,3}-\d{5}/)![0]
   await expect(page.getByText("বুকিং হয়ে গেছে!")).toBeVisible()
   return code
 }
@@ -165,7 +167,7 @@ test("3. resort cleaning team booking with rooms, team size and days", async ({ 
   await expect(worker.getByText(code)).toBeVisible()
 })
 
-test("4. a booking outside Cox's Bazar Sadar is rejected by the server", async ({ browser }) => {
+test("4. a booking outside the shop's areas is rejected by the server", async ({ browser }) => {
   const customer = await freshPage(browser)
   await loginWithPassword(customer, CUSTOMER)
   await customer.goto("/book/plumber/tap-basin")
@@ -173,7 +175,7 @@ test("4. a booking outside Cox's Bazar Sadar is rejected by the server", async (
   await customer.getByRole("button", { name: "পরের ধাপ" }).click()
   // Nothing chosen: the wizard explains the Sadar rule before even submitting.
   await customer.getByRole("button", { name: "পরের ধাপ" }).click()
-  await expect(customer.getByText("শুধু কক্সবাজার সদরে")).toBeVisible()
+  await expect(customer.getByText(/শুধু কক্সবাজার সদর/).first()).toBeVisible()
   // Now force an area that is not ours and let the server decide.
   await customer.selectOption("#area", { index: 1 })
   await customer.fill("#addressLine", "চকরিয়া বাজার")
@@ -184,7 +186,7 @@ test("4. a booking outside Cox's Bazar Sadar is rejected by the server", async (
     if (input) input.value = "teknaf-not-sadar"
   })
   await customer.getByRole("button", { name: "বুকিং নিশ্চিত করুন" }).click()
-  await expect(customer.getByText("এই মুহূর্তে আমরা শুধু কক্সবাজার সদরে সেবা দিচ্ছি").first()).toBeVisible()
+  await expect(customer.getByText("এই মুহূর্তে আমরা শুধু কক্সবাজার সদর এলাকায় সেবা দিচ্ছি").first()).toBeVisible()
   expect(customer.url()).toContain("/book/")
 })
 
@@ -234,7 +236,7 @@ test("5. customer care chat and a support ticket, both answered by support", asy
 test("6. a customer cannot open someone else's booking, and panels need the right role", async ({ browser }) => {
   const tania = await freshPage(browser)
   await loginWithPassword(tania, TANIA)
-  const res = await tania.goto("/bookings/CS-10001")
+  const res = await tania.goto("/bookings/LN-10001")
   expect(res?.status()).toBe(404)
   await expect(tania.getByText("পেজটা পাওয়া যায়নি")).toBeVisible()
   await tania.goto("/admin")
@@ -245,4 +247,41 @@ test("6. a customer cannot open someone else's booking, and panels need the righ
   const anon = await freshPage(browser)
   await anon.goto("/support")
   await expect(anon).toHaveURL(/\/login\?next=%2Fsupport/)
+})
+
+test("7. shops keep separate books: Dhaka admin cannot see Cox's Bazar data, owner sees every shop", async ({ browser }) => {
+  const dhaka = await freshPage(browser)
+  await loginWithPassword(dhaka, DHAKA_ADMIN)
+  await dhaka.goto("/admin/bookings")
+  // Orders are grouped by category first; open the electrician tile to see its list.
+  await dhaka.getByRole("link", { name: /EL-xxxxx/ }).click()
+  await expect(dhaka.getByText("EL-30001").first()).toBeVisible()
+  await expect(dhaka.getByText("LN-10001")).toHaveCount(0)
+  await dhaka.goto("/admin/bookings?q=LN-10001")
+  await expect(dhaka.getByText("LN-10001")).toHaveCount(0)
+  const res = await dhaka.goto("/admin/bookings/LN-10001")
+  expect(res?.status()).toBe(404)
+  await dhaka.goto("/admin/shops")
+  await expect(dhaka).not.toHaveURL(/\/admin\/shops/)
+
+  const owner = await freshPage(browser)
+  await loginWithPassword(owner, OWNER)
+  await owner.goto("/admin/shops")
+  await expect(owner.getByRole("link", { name: "HANDYO ঢাকা" })).toBeVisible()
+  await expect(owner.getByRole("link", { name: "HANDYO কক্সবাজার" })).toBeVisible()
+  await owner.goto("/admin/bookings/LN-10001")
+  await expect(owner.getByText("LN-10001").first()).toBeVisible()
+})
+
+test("8. customer can switch branch and sees that branch's areas; rent-a-car is bookable", async ({ browser }) => {
+  const customer = await freshPage(browser)
+  await loginWithPassword(customer, CUSTOMER)
+  await customer.goto("/branches")
+  await expect(customer.getByRole("heading", { name: "HANDYO ঢাকা" })).toBeVisible()
+  await customer.goto("/book/rent-a-car/open-roof-jeep")
+  await ready(customer)
+  await customer.getByRole("button", { name: "পরের ধাপ" }).click()
+  const options = await customer.locator("#area option").allTextContents()
+  expect(options.join(" ")).toContain("কলাতলী")
+  expect(options.join(" ")).not.toContain("ধানমন্ডি")
 })

@@ -1,6 +1,8 @@
 import Link from "next/link"
 import { Download } from "lucide-react"
 import { requireUser, getLocale } from "@/lib/auth"
+import { ADMINS } from "@/lib/roles"
+import { officeShop } from "@/lib/shops"
 import { parsePeriod, periodRange, report, type Period, type ReportGroup } from "@/lib/reports"
 import { taka } from "@/lib/format"
 import { pick } from "@/lib/i18n"
@@ -16,15 +18,16 @@ const GROUPS: Array<[ReportGroup, string, string]> = [
 ]
 
 export default async function ReportsPage({ searchParams }: { searchParams: Promise<{ p?: string; from?: string; to?: string; g?: string }> }) {
-  const [{ p, from, to, g }, , locale] = await Promise.all([searchParams, requireUser(["ADMIN"], "/admin/reports"), getLocale()])
+  const [{ p, from, to, g }, user, locale] = await Promise.all([searchParams, requireUser(ADMINS, "/admin/reports"), getLocale()])
+  const shop = await officeShop(user)
   const period: Period = parsePeriod(p ?? "month")
   const group = (GROUPS.some(([k]) => k === g) ? g : "day") as ReportGroup
   const range = periodRange(period, from, to)
-  const r = await report(range, group)
+  const r = await report(shop.id, range, group)
   const qs = `p=${period}&from=${range.start}&to=${range.end}&g=${group}`
   return (
     <div className="space-y-4">
-      <PageHeader title={pick(locale, "রিপোর্ট", "Reports")} sub={`${range.start} → ${range.end} · ${pick(locale, "শুধু শেষ হওয়া কাজ", "completed jobs only")}`} action={<a href={`/admin/reports/csv?${qs}`} className="btn-soft h-10 px-4 text-sm"><Download className="size-4" /> CSV</a>} />
+      <PageHeader title={pick(locale, "রিপোর্ট", "Reports")} sub={`${pick(locale, shop.nameBn, shop.name)} · ${range.start} → ${range.end} · ${pick(locale, "শুধু শেষ হওয়া কাজ", "completed jobs only")}`} action={<a href={`/admin/reports/csv?${qs}`} className="btn-soft h-10 px-4 text-sm"><Download className="size-4" /> CSV</a>} />
       <div className="flex flex-wrap items-center gap-2">
         {(["today", "week", "month", "year"] as Period[]).map((k) => (
           <Link key={k} href={`/admin/reports?p=${k}&g=${group}`} className="chip" data-on={period === k}>{{ today: pick(locale, "আজ", "Today"), week: pick(locale, "৭ দিন", "7 days"), month: pick(locale, "এই মাস", "This month"), year: pick(locale, "এই বছর", "This year"), custom: "" }[k]}</Link>

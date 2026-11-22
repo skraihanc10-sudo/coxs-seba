@@ -4,13 +4,14 @@ import { redirect } from "next/navigation"
 import { revalidatePath } from "next/cache"
 import { run, type ActionState } from "@/lib/action"
 import { actor, clientIp } from "@/lib/auth"
+import { currentShop } from "@/lib/shops"
 import { limited } from "@/lib/rate-limit"
 import { createTicket, replyTicket, sendBookingMessage, sendCareMessage, setCareThread, updateTicket } from "@/lib/support"
 import { formObject, messageSchema, parse, ticketSchema } from "@/lib/validation"
 
 export async function sendBookingMessageAction(_prev: ActionState, form: FormData): Promise<ActionState> {
   return run(async () => {
-    const user = await actor(["CUSTOMER", "WORKER", "SUPPORT", "ADMIN"])
+    const user = await actor(["CUSTOMER", "WORKER", "SUPPORT", "ADMIN", "OWNER"])
     limited("message", user.id)
     const { body } = parse(messageSchema, formObject(form))
     await sendBookingMessage(user, String(form.get("code") ?? ""), body)
@@ -20,18 +21,19 @@ export async function sendBookingMessageAction(_prev: ActionState, form: FormDat
 
 export async function sendCareMessageAction(_prev: ActionState, form: FormData): Promise<ActionState> {
   return run(async () => {
-    const user = await actor(["CUSTOMER", "SUPPORT", "ADMIN"])
+    const user = await actor(["CUSTOMER", "SUPPORT", "ADMIN", "OWNER"])
     limited("message", user.id)
     const { body } = parse(messageSchema, formObject(form))
     const threadId = String(form.get("threadId") ?? "") || null
-    await sendCareMessage(user, threadId, body)
+    const shopId = user.role === "CUSTOMER" ? (await currentShop()).id : undefined
+    await sendCareMessage(user, threadId, body, shopId)
     revalidatePath("/", "layout")
   })
 }
 
 export async function careThreadAction(_prev: ActionState, form: FormData): Promise<ActionState> {
   return run(async () => {
-    const user = await actor(["SUPPORT", "ADMIN"])
+    const user = await actor(["SUPPORT", "ADMIN", "OWNER"])
     await setCareThread(user, String(form.get("threadId") ?? ""), {
       assignToMe: form.get("assignToMe") === "1",
       close: form.get("close") === "1",
@@ -47,7 +49,7 @@ export async function createTicketAction(_prev: ActionState, form: FormData): Pr
     const user = await actor(["CUSTOMER"])
     limited("message", `${await clientIp()}:ticket`)
     const input = parse(ticketSchema, formObject(form))
-    out.created = await createTicket(user, input)
+    out.created = await createTicket(user, input, (await currentShop()).id)
   })
   if (!state.ok || !out.created) return state
   redirect(`/help/tickets/${out.created.code}`)
@@ -55,7 +57,7 @@ export async function createTicketAction(_prev: ActionState, form: FormData): Pr
 
 export async function replyTicketAction(_prev: ActionState, form: FormData): Promise<ActionState> {
   return run(async () => {
-    const user = await actor(["CUSTOMER", "SUPPORT", "ADMIN"])
+    const user = await actor(["CUSTOMER", "SUPPORT", "ADMIN", "OWNER"])
     limited("message", user.id)
     const { body } = parse(messageSchema, formObject(form))
     await replyTicket(user, String(form.get("code") ?? ""), body)
@@ -65,7 +67,7 @@ export async function replyTicketAction(_prev: ActionState, form: FormData): Pro
 
 export async function updateTicketAction(_prev: ActionState, form: FormData): Promise<ActionState> {
   return run(async () => {
-    const user = await actor(["CUSTOMER", "SUPPORT", "ADMIN"])
+    const user = await actor(["CUSTOMER", "SUPPORT", "ADMIN", "OWNER"])
     await updateTicket(user, String(form.get("code") ?? ""), {
       status: String(form.get("status") ?? "") || undefined,
       priority: String(form.get("priority") ?? "") || undefined,

@@ -1,13 +1,20 @@
+import type { Metadata } from "next"
 import Link from "next/link"
 import { redirect } from "next/navigation"
 import { getLocale, getUser } from "@/lib/auth"
 import { homeFor, safeNext } from "@/lib/roles"
 import { pick, words } from "@/lib/i18n"
+import { privateMeta } from "@/lib/seo"
 import { loginAction } from "@/actions/auth"
 import { ActionForm, SubmitButton } from "@/components/forms"
 import { PageHeader } from "@/components/bits"
-import { demoAccounts, demoWorkers, WORKER_PASSWORD } from "@/theme/demo-accounts"
+import { demoAccounts, demoShopStaff, demoWorkers, WORKER_PASSWORD } from "@/theme/demo-accounts"
 import { OtpLogin } from "./otp-login"
+
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale()
+  return privateMeta(words(locale).login)
+}
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string; tab?: string }> }) {
   const [{ next = "", tab = "" }, locale, user] = await Promise.all([searchParams, getLocale(), getUser()])
@@ -19,10 +26,10 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   return (
     <div className="mx-auto max-w-md">
       <PageHeader title={t.login} sub={pick(locale, "কাস্টমাররা মোবাইল নম্বর দিয়ে ঢুকুন। কর্মী আর অফিস ইমেইল-পাসওয়ার্ড দিয়ে।", "Customers sign in with a mobile number. Workers and office staff use email and password.")} />
-      <div className="mb-4 grid grid-cols-2 gap-1 rounded-full bg-paper p-1 ring-1 ring-line text-sm font-bold">
-        <Link href={`/login${next ? `?next=${encodeURIComponent(next)}` : ""}`} className={`rounded-full py-2 text-center ${!staff ? "bg-ink text-white" : "text-muted-foreground"}`}>{pick(locale, "মোবাইল নম্বর", "Mobile number")}</Link>
-        <Link href={`/login?tab=staff${next ? `&next=${encodeURIComponent(next)}` : ""}`} className={`rounded-full py-2 text-center ${staff ? "bg-ink text-white" : "text-muted-foreground"}`}>{pick(locale, "কর্মী / অফিস", "Worker / office")}</Link>
-      </div>
+      <nav aria-label={pick(locale, "লগইনের ধরন", "Sign-in type")} className="mb-4 grid grid-cols-2 gap-1 rounded-full bg-paper p-1 ring-1 ring-line text-sm font-bold">
+        <Link href={`/login${next ? `?next=${encodeURIComponent(next)}` : ""}`} aria-current={!staff ? "page" : undefined} className={`rounded-full py-2 text-center ${!staff ? "bg-ink text-white" : "text-muted-foreground"}`}>{pick(locale, "মোবাইল নম্বর", "Mobile number")}</Link>
+        <Link href={`/login?tab=staff${next ? `&next=${encodeURIComponent(next)}` : ""}`} aria-current={staff ? "page" : undefined} className={`rounded-full py-2 text-center ${staff ? "bg-ink text-white" : "text-muted-foreground"}`}>{pick(locale, "কর্মী / অফিস", "Worker / office")}</Link>
+      </nav>
 
       {staff ? (
         <ActionForm action={loginAction} resetOnSuccess={false} className="card space-y-4 p-5">
@@ -48,6 +55,10 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
             {demoAccounts.map((a) => (
               <p key={a.email}><span className="font-bold text-ink">{a.label}:</span> {a.email} / {a.password}</p>
             ))}
+            {demoShopStaff.map((a) => (
+              <p key={a.email}><span className="font-bold text-ink">{a.name}:</span> {a.email} / {a.password}</p>
+            ))}
+            <p className="pt-1 font-bold text-ink">{pick(locale, "কর্মী", "Workers")}</p>
             {demoWorkers.map((w) => (
               <p key={w.email}><span className="font-bold text-ink">{w.name}:</span> {w.email} / {WORKER_PASSWORD}</p>
             ))}

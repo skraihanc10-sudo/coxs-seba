@@ -1,6 +1,8 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { requireUser, getLocale } from "@/lib/auth"
+import { ADMINS } from "@/lib/roles"
+import { officeShop } from "@/lib/shops"
 import { db } from "@/lib/db"
 import { workerShare } from "@/lib/bookings"
 import { getSettings } from "@/lib/settings"
@@ -10,9 +12,11 @@ import { PageHeader, Section, StatusPill } from "@/components/bits"
 import { WorkerForm } from "@/components/admin/worker-form"
 
 export default async function WorkerPage({ params }: { params: Promise<{ id: string }> }) {
-  const [{ id }, , locale, settings] = await Promise.all([params, requireUser(["ADMIN"], "/admin/workers"), getLocale(), getSettings()])
+  const [{ id }, user, locale] = await Promise.all([params, requireUser(ADMINS, "/admin/workers"), getLocale()])
+  const shop = await officeShop(user)
+  const settings = await getSettings(shop.id)
   const worker = await db.workerProfile.findUnique({
-    where: { id },
+    where: { id, shopId: shop.id },
     include: {
       user: true,
       skills: true,
@@ -21,14 +25,17 @@ export default async function WorkerPage({ params }: { params: Promise<{ id: str
     },
   })
   if (!worker) notFound()
-  const [categories, areas] = await Promise.all([db.serviceCategory.findMany({ orderBy: { sort: "asc" } }), db.serviceArea.findMany({ orderBy: { sort: "asc" } })])
+  const [categories, areas] = await Promise.all([
+    db.serviceCategory.findMany({ where: { shopId: shop.id }, orderBy: { sort: "asc" } }),
+    db.serviceArea.findMany({ where: { shopId: shop.id }, orderBy: { sort: "asc" } }),
+  ])
   const done = worker.bookings.filter((b) => b.status === "COMPLETED")
   const share = Number(settings.workerShare) || 40
   const earned = done.reduce((s, b) => s + workerShare(b.finalPrice ?? b.estimatedPrice, b.visitCharge, share), 0)
   return (
     <div className="space-y-6">
       <PageHeader back="/admin/workers" title={worker.user.name} sub={`★ ${worker.rating ? worker.rating.toFixed(1) : "—"} (${worker.ratingCount}) · ${done.length} ${pick(locale, "কাজ শেষ", "jobs done")} · ${pick(locale, "আয়", "earned")} ${taka(earned, locale)}`} />
-      <WorkerForm locale={locale} worker={worker} categories={categories} areas={areas} />
+      <WorkerForm locale={locale} worker={worker} categories={categories} areas={areas} shop={shop} />
       <Section title={pick(locale, "কাজের ইতিহাস ও পারফরম্যান্স", "Job history & performance")}>
         <ul className="divide-y divide-line">
           {worker.bookings.map((b) => (

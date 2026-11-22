@@ -106,7 +106,8 @@ export const categorySchema = z.object({
   blurbBn: optionalText(200),
   icon: optionalText(30),
   image: optionalText(200),
-  flow: z.enum(["STANDARD", "LAUNDRY", "TEAM", "CUSTOM"]).catch("STANDARD"),
+  flow: z.enum(["STANDARD", "LAUNDRY", "TEAM", "CUSTOM", "RENTAL"]).catch("STANDARD"),
+  codePrefix: z.preprocess((v) => String(v ?? "").trim().toUpperCase(), z.string().regex(/^([A-Z]{2,3})?$/, msg("বুকিং নম্বরের প্রিফিক্স ২–৩টা ইংরেজি বড় হাতের অক্ষর (যেমন CL)।", "Booking prefix: 2–3 capital letters (e.g. CL)."))),
   sort: int(0, 999, "ক্রম ০–৯৯৯ দিন।", "Order must be 0–999.").default(0),
 })
 
@@ -118,7 +119,7 @@ export const offeringSchema = z.object({
   nameBn: z.string().trim().min(2, msg("বাংলা নাম দিন।", "Add the Bangla name.")).max(80),
   detail: optionalText(300),
   detailBn: optionalText(300),
-  pricing: z.enum(["FIXED", "PER_KG", "PER_ITEM", "PER_HOUR", "PER_ROOM", "QUOTE"], msg("দামের ধরন বেছে নিন।", "Choose a pricing type.")),
+  pricing: z.enum(["FIXED", "PER_KG", "PER_ITEM", "PER_HOUR", "PER_DAY", "PER_ROOM", "QUOTE"], msg("দামের ধরন বেছে নিন।", "Choose a pricing type.")),
   price: int(0, 500000, "সঠিক দাম দিন।", "Enter a valid price."),
   minQty: int(1, 100, "সর্বনিম্ন পরিমাণ ১–১০০ দিন।", "Minimum must be 1–100.").default(1),
   durationMin: int(10, 10080, "সময় ১০ মিনিট থেকে ৭ দিনের মধ্যে দিন।", "Duration must be 10 min to 7 days.").default(60),
@@ -152,6 +153,33 @@ export const staffSchema = z.object({
   phone: z.preprocess((v) => (v == null ? "" : v), z.string().trim().max(20)),
   password: z.string().min(6, msg("পাসওয়ার্ড অন্তত ৬ অক্ষরের দিন।", "Password must be at least 6 characters.")).max(100),
   role: z.enum(["SUPPORT", "ADMIN"]).catch("SUPPORT"),
+  /** Owners may create staff for any shop; shop admins always get their own shop. */
+  shopId: optionalText(40),
+})
+
+export const shopSchema = z.object({
+  id: optionalText(40),
+  slug: z.string().trim().regex(/^[a-z0-9-]{2,40}$/, msg("স্লাগ ছোট হাতের ইংরেজি, সংখ্যা বা - দিয়ে লিখুন।", "Slug: lowercase letters, numbers and dashes.")),
+  name: z.string().trim().min(2, msg("ইংরেজি নাম দিন।", "Add the English name.")).max(80),
+  nameBn: z.string().trim().min(2, msg("বাংলা নাম দিন।", "Add the Bangla name.")).max(80),
+  city: z.string().trim().min(2, msg("শহর/এলাকার ইংরেজি নাম দিন।", "Add the city in English.")).max(80),
+  cityBn: z.string().trim().min(2, msg("শহর/এলাকার বাংলা নাম দিন।", "Add the city in Bangla.")).max(80),
+  kind: z.enum(["BRANCH", "PARTNER"]).catch("BRANCH"),
+  phone: optionalText(30),
+  whatsapp: optionalText(30),
+  email: z.union([z.literal(""), z.string().trim().email(msg("সঠিক ইমেইল দিন।", "Enter a valid email."))]).default(""),
+  address: optionalText(200),
+  addressBn: optionalText(200),
+  blurb: optionalText(300),
+  blurbBn: optionalText(300),
+  sort: int(0, 999, "ক্রম ০–৯৯৯ দিন।", "Order must be 0–999.").default(0),
+  /** On create: copy services, prices and reply templates from this shop. */
+  copyFrom: optionalText(40),
+  /** On create: one line per area, "slug | English | বাংলা | charge". */
+  areasText: optionalText(5000),
+  adminName: optionalText(80),
+  adminEmail: z.union([z.literal(""), z.string().trim().email(msg("অ্যাডমিনের সঠিক ইমেইল দিন।", "Enter a valid admin email."))]).default(""),
+  adminPassword: optionalText(100),
 })
 
 export const profileSchema = z.object({

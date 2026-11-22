@@ -1,5 +1,11 @@
+import type { Metadata } from "next"
 import Link from "next/link"
 import { brand } from "@/theme/brand"
+
+export const metadata: Metadata = {
+  title: "পেজটা পাওয়া যায়নি · Not found",
+  robots: { index: false, follow: false, googleBot: { index: false, follow: false } },
+}
 
 export default function NotFound() {
   return (
@@ -7,7 +13,10 @@ export default function NotFound() {
       <p className="font-extrabold text-brand">{brand.nameBn}</p>
       <h1 className="display mt-2 text-3xl font-extrabold text-ink">পেজটা পাওয়া যায়নি</h1>
       <p className="mt-2 text-sm text-muted-foreground">That page is not here. The link may be old, or it belongs to someone else.</p>
-      <Link href="/" className="btn-primary mt-6 inline-flex">হোমে ফিরে যান</Link>
+      <div className="mt-6 flex flex-wrap justify-center gap-2">
+        <Link href="/" className="btn-primary inline-flex">হোমে ফিরে যান</Link>
+        <Link href="/services" className="btn-ghost inline-flex">সব সেবা</Link>
+      </div>
     </div>
   )
 }

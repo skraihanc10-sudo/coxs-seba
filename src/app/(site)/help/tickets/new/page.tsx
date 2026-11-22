@@ -1,14 +1,21 @@
+import type { Metadata } from "next"
 import { requireUser, getLocale } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { named, pick } from "@/lib/i18n"
+import { privateMeta } from "@/lib/seo"
 import { TICKET_CATEGORIES, TICKET_PRIORITIES } from "@/lib/support"
 import { createTicketAction } from "@/actions/support"
 import { ActionForm, SubmitButton } from "@/components/forms"
 import { PageHeader } from "@/components/bits"
 
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale()
+  return privateMeta(pick(locale, "নতুন টিকেট", "New ticket"))
+}
+
 export default async function NewTicketPage({ searchParams }: { searchParams: Promise<{ booking?: string }> }) {
   const [{ booking = "" }, user, locale] = await Promise.all([searchParams, requireUser(["CUSTOMER"], "/help/tickets/new"), getLocale()])
-  const bookings = await db.serviceBooking.findMany({ where: { customerId: user.id }, orderBy: { createdAt: "desc" }, take: 20, include: { offering: true } })
+  const bookings = await db.serviceBooking.findMany({ where: { customerId: user.id }, orderBy: { createdAt: "desc" }, take: 20, include: { offering: true, shop: { select: { nameBn: true, name: true } } } })
   return (
     <div className="mx-auto max-w-xl">
       <PageHeader back="/help" title={pick(locale, "নতুন টিকেট", "New ticket")} sub={pick(locale, "অভিযোগ, রিফান্ড বা অন্য কিছু। আমরা লিখিত উত্তর দেব।", "A complaint, refund or anything else. We reply in writing.")} />
@@ -23,7 +30,7 @@ export default async function NewTicketPage({ searchParams }: { searchParams: Pr
           <label className="label" htmlFor="bookingCode">{pick(locale, "কোন বুকিং নিয়ে? (ঐচ্ছিক)", "About which booking? (optional)")}</label>
           <select id="bookingCode" name="bookingCode" className="field" defaultValue={booking}>
             <option value="">—</option>
-            {bookings.map((b) => <option key={b.id} value={b.code}>{b.code} · {named(locale, b.offering)}</option>)}
+            {bookings.map((b) => <option key={b.id} value={b.code}>{b.code} · {named(locale, b.offering)} · {named(locale, b.shop)}</option>)}
           </select>
         </div>
         <div>

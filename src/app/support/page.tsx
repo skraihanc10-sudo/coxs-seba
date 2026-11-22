@@ -1,6 +1,8 @@
 import Link from "next/link"
 import { MessageSquareText, TicketCheck, ClipboardList } from "lucide-react"
 import { requireUser, getLocale } from "@/lib/auth"
+import { OFFICE } from "@/lib/roles"
+import { officeShop } from "@/lib/shops"
 import { inbox, TICKET_PRIORITIES } from "@/lib/support"
 import { formatWhen } from "@/lib/format"
 import { pick } from "@/lib/i18n"
@@ -9,9 +11,10 @@ import { PageHeader } from "@/components/bits"
 const ICON = { CARE: MessageSquareText, TICKET: TicketCheck, BOOKING: ClipboardList }
 
 export default async function SupportInbox({ searchParams }: { searchParams: Promise<{ f?: string }> }) {
-  const [{ f = "all" }, user, locale] = await Promise.all([searchParams, requireUser(["SUPPORT", "ADMIN"], "/support"), getLocale()])
+  const [{ f = "all" }, user, locale] = await Promise.all([searchParams, requireUser(OFFICE, "/support"), getLocale()])
+  const shop = await officeShop(user)
   const filter = f === "mine" || f === "unread" ? f : "all"
-  const items = await inbox(user, filter)
+  const items = await inbox(user, shop.id, filter)
   return (
     <div>
       <PageHeader title={pick(locale, "সাপোর্ট ইনবক্স", "Support inbox")} sub={pick(locale, "কাস্টমার কেয়ার চ্যাট, টিকেট আর বুকিং চ্যাট এক জায়গায়। না-পড়া আগে।", "Care chats, tickets and booking chats together. Unread first.")} />

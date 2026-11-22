@@ -1,4 +1,6 @@
 import { requireUser, getLocale } from "@/lib/auth"
+import { ADMINS } from "@/lib/roles"
+import { coverageText, officeShop } from "@/lib/shops"
 import { db } from "@/lib/db"
 import { pick } from "@/lib/i18n"
 import { saveAreaAction, toggleAreaAction } from "@/actions/admin"
@@ -6,11 +8,12 @@ import { ActionForm, SubmitButton } from "@/components/forms"
 import { PageHeader, Section } from "@/components/bits"
 
 export default async function AreasPage() {
-  const [, locale] = await Promise.all([requireUser(["ADMIN"], "/admin/areas"), getLocale()])
-  const areas = await db.serviceArea.findMany({ orderBy: { sort: "asc" }, include: { _count: { select: { bookings: true } } } })
+  const [user, locale] = await Promise.all([requireUser(ADMINS, "/admin/areas"), getLocale()])
+  const shop = await officeShop(user)
+  const areas = await db.serviceArea.findMany({ where: { shopId: shop.id }, orderBy: { sort: "asc" }, include: { _count: { select: { bookings: true } } } })
   return (
     <div className="space-y-4">
-      <PageHeader title={pick(locale, "এলাকা ও ভিজিট চার্জ", "Areas & visit charges")} sub={pick(locale, "শুধু কক্সবাজার সদর। বন্ধ করা এলাকায় বুকিং নেওয়া হবে না।", "Cox's Bazar Sadar only. Switched-off areas can't be booked.")} />
+      <PageHeader title={pick(locale, "এলাকা ও ভিজিট চার্জ", "Areas & visit charges")} sub={pick(locale, `${shop.nameBn} · ${coverageText(shop, locale)}। বন্ধ করা এলাকায় বুকিং নেওয়া হবে না।`, `${shop.name} · ${coverageText(shop, locale)}. Switched-off areas can't be booked.`)} />
       <div className="card overflow-x-auto">
         <table className="table">
           <thead><tr><th>{pick(locale, "বাংলা", "Bangla")}</th><th>{pick(locale, "ইংরেজি", "English")}</th><th>slug</th><th>{pick(locale, "চার্জ (৳)", "Charge (৳)")}</th><th>{pick(locale, "ক্রম", "Order")}</th><th>{pick(locale, "বুকিং", "Bookings")}</th><th></th><th></th></tr></thead>

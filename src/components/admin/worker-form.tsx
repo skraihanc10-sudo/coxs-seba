@@ -12,7 +12,19 @@ type Worker = {
   areas: Array<{ areaId: string }>
 } | null
 
-export function WorkerForm({ locale, worker, categories, areas }: { locale: Locale; worker: Worker; categories: Array<{ id: string; name: string; nameBn: string }>; areas: Array<{ id: string; name: string; nameBn: string }> }) {
+export function WorkerForm({
+  locale,
+  worker,
+  categories,
+  areas,
+  shop,
+}: {
+  locale: Locale
+  worker: Worker
+  categories: Array<{ id: string; name: string; nameBn: string }>
+  areas: Array<{ id: string; name: string; nameBn: string }>
+  shop?: { name: string; nameBn: string; city: string; cityBn: string }
+}) {
   const skills = new Set(worker?.skills.map((s) => s.categoryId))
   const covered = new Set(worker?.areas.map((a) => a.areaId))
   return (
@@ -32,7 +44,7 @@ export function WorkerForm({ locale, worker, categories, areas }: { locale: Loca
       </div>
       <div className="space-y-4">
         <div className="card p-4">
-          <p className="label">{pick(locale, "দক্ষতা (এই সেবাগুলোর কাজ পাবেন)", "Skills (gets jobs from these services)")}</p>
+          <p className="label">{shop ? pick(locale, `দক্ষতা (${shop.nameBn} শপের এই সেবাগুলোর কাজ পাবেন)`, `Skills (gets jobs from these ${shop.name} services)`) : pick(locale, "দক্ষতা (এই সেবাগুলোর কাজ পাবেন)", "Skills (gets jobs from these services)")}</p>
           <div className="grid grid-cols-2 gap-2">
             {categories.map((c) => (
               <label key={c.id} className="flex items-center gap-2 rounded-xl bg-canvas px-3 py-2 text-sm font-semibold"><input type="checkbox" name="skills" value={c.id} defaultChecked={skills.has(c.id)} className="size-4 accent-[var(--brand)]" /> {named(locale, c)}</label>
@@ -40,7 +52,7 @@ export function WorkerForm({ locale, worker, categories, areas }: { locale: Loca
           </div>
         </div>
         <div className="card p-4">
-          <p className="label">{pick(locale, "কাজের এলাকা (ফাঁকা = সদরের সব জায়গা)", "Working areas (blank = all of Sadar)")}</p>
+          <p className="label">{shop ? pick(locale, `কাজের এলাকা (ফাঁকা = ${shop.cityBn}-র সব জায়গা)`, `Working areas (blank = all of ${shop.city})`) : pick(locale, "কাজের এলাকা (ফাঁকা = সব জায়গা)", "Working areas (blank = everywhere)")}</p>
           <div className="grid grid-cols-2 gap-1 text-sm">
             {areas.map((a) => (
               <label key={a.id} className="flex items-center gap-2 px-1 py-1"><input type="checkbox" name="areas" value={a.id} defaultChecked={covered.has(a.id)} className="size-4 accent-[var(--brand)]" /> {named(locale, a)}</label>

@@ -1,6 +1,8 @@
+import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { CalendarClock, MessageCircle, XCircle } from "lucide-react"
 import { requireUser, getLocale } from "@/lib/auth"
+import { privateMeta } from "@/lib/seo"
 import { BOOKING_DAYS, flowOf, SLOTS } from "@/lib/bookings"
 import { customerCanChange } from "@/lib/booking-flow"
 import { AppError } from "@/lib/errors"
@@ -14,6 +16,11 @@ import { ActionForm, Stars, SubmitButton } from "@/components/forms"
 import { Composer, MessageList } from "@/components/chat-pane"
 import { Timeline } from "@/components/booking/timeline"
 import { BookingFacts, WorkerCard } from "@/components/booking/details"
+
+export async function generateMetadata({ params }: { params: Promise<{ code: string }> }): Promise<Metadata> {
+  const [{ code }, locale] = await Promise.all([params, getLocale()])
+  return privateMeta(pick(locale, `বুকিং ${code}`, `Booking ${code}`))
+}
 
 export default async function BookingPage({ params, searchParams }: { params: Promise<{ code: string }>; searchParams: Promise<{ new?: string }> }) {
   const [{ code }, { new: fresh }, locale] = await Promise.all([params, searchParams, getLocale()])
@@ -31,7 +38,7 @@ export default async function BookingPage({ params, searchParams }: { params: Pr
 
   return (
     <div className="mx-auto max-w-2xl">
-      <PageHeader back="/bookings" title={named(locale, b.offering)} sub={`${b.code} · ${named(locale, b.category)}`} action={<StatusPill status={b.status} locale={locale} className="mt-1" />} />
+      <PageHeader back="/bookings" title={named(locale, b.offering)} sub={`${b.code} · ${named(locale, b.category)} · ${named(locale, b.shop)}`} action={<StatusPill status={b.status} locale={locale} className="mt-1" />} />
 
       {fresh ? (
         <div className="mb-4 rounded-2xl bg-ok/10 px-4 py-3 text-sm font-bold text-emerald-900">

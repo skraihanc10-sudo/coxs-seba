@@ -1,8 +1,16 @@
-export const ROLES = ["CUSTOMER", "WORKER", "SUPPORT", "ADMIN"] as const
+export const ROLES = ["CUSTOMER", "WORKER", "SUPPORT", "ADMIN", "OWNER"] as const
 export type Role = (typeof ROLES)[number]
 
+/** Roles that run a shop's office. OWNER runs every shop. */
+export const ADMINS: Role[] = ["ADMIN", "OWNER"]
+export const OFFICE: Role[] = ["SUPPORT", "ADMIN", "OWNER"]
+export const STAFF: Role[] = ["WORKER", "SUPPORT", "ADMIN", "OWNER"]
+
+export const isOffice = (role: string) => role === "ADMIN" || role === "SUPPORT" || role === "OWNER"
+export const isAdmin = (role: string) => role === "ADMIN" || role === "OWNER"
+
 export function homeFor(role: string) {
-  if (role === "ADMIN") return "/admin"
+  if (role === "ADMIN" || role === "OWNER") return "/admin"
   if (role === "SUPPORT") return "/support"
   if (role === "WORKER") return "/worker"
   return "/"
@@ -13,8 +21,9 @@ const CUSTOMER_PATHS = ["/bookings", "/care", "/notifications", "/profile", "/he
 /** Which roles may open a path. `null` means the page is public. */
 export function routeRoles(pathname: string): Role[] | null {
   const under = (p: string) => pathname === p || pathname.startsWith(`${p}/`)
-  if (under("/admin")) return ["ADMIN"]
-  if (under("/support")) return ["SUPPORT", "ADMIN"]
+  if (under("/admin/shops")) return ["OWNER"]
+  if (under("/admin")) return ADMINS
+  if (under("/support")) return OFFICE
   if (under("/worker")) return ["WORKER"]
   if (CUSTOMER_PATHS.some(under)) return ["CUSTOMER"]
   return null
@@ -31,5 +40,6 @@ export const ROLE_LABEL: Record<string, { bn: string; en: string }> = {
   CUSTOMER: { bn: "কাস্টমার", en: "Customer" },
   WORKER: { bn: "কর্মী", en: "Worker" },
   SUPPORT: { bn: "কাস্টমার কেয়ার", en: "Customer care" },
-  ADMIN: { bn: "অ্যাডমিন", en: "Admin" },
+  ADMIN: { bn: "শপ অ্যাডমিন", en: "Shop admin" },
+  OWNER: { bn: "মালিক (সব শপ)", en: "Owner (all shops)" },
 }

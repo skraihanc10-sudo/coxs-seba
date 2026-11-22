@@ -52,3 +52,6 @@ next-env.d.ts
 uploads/
 data/
 screenshots/raw/
+
+# prisma migrate diff scratch db
+shadow.db

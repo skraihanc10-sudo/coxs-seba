@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react"
 import { Camera, Check, ChevronLeft, MapPin } from "lucide-react"
-import { createBookingAction, } from "@/actions/booking"
+import { createBookingAction } from "@/actions/booking"
 import { sendOtpAction } from "@/actions/auth"
 import { ActionForm, SubmitButton } from "./forms"
 import { estimate, unitLabel, usesQuantity } from "@/lib/pricing"
@@ -13,6 +13,8 @@ type Address = { id: string; label: string; areaId: string; line: string; landma
 
 export type WizardProps = {
   locale: Locale
+  /** The branch the customer is booking with; its city drives every "we only serve …" line. */
+  shop: { slug: string; name: string; nameBn: string; city: string; cityBn: string }
   category: { slug: string; name: string; nameBn: string; flow: string }
   offering: { id: string; name: string; nameBn: string; pricing: string; price: number; minQty: number; detail: string; detailBn: string }
   areas: Area[]
@@ -22,13 +24,15 @@ export type WizardProps = {
   user: { name: string; phone: string; addresses: Address[] } | null
 }
 
-export function BookingWizard({ locale, category, offering, areas, slots, days, payments, user }: WizardProps) {
+export function BookingWizard({ locale, shop, category, offering, areas, slots, days, payments, user }: WizardProps) {
   const bn = locale === "bn"
   const T = (b: string, e: string) => (bn ? b : e)
   const name = (r: { name: string; nameBn: string }) => (bn ? r.nameBn : r.name)
   const quantityJob = usesQuantity(offering.pricing)
   const team = category.flow === "TEAM"
   const custom = category.flow === "CUSTOM"
+  const rental = category.flow === "RENTAL"
+  const city = bn ? shop.cityBn : shop.city
   const quote = offering.pricing === "QUOTE"
 
   const [step, setStep] = useState(1)
@@ -59,8 +63,8 @@ export function BookingWizard({ locale, category, offering, areas, slots, days, 
     setProblem("")
     if (step === 1 && custom && notes.trim().length < 10) return setProblem(T("কী কাজ লাগবে, একটু বিস্তারিত লিখুন।", "Tell us a little more about the job."))
     if (step === 2) {
-      if (!areaId) return setProblem(T("এলাকা বেছে নিন। এই মুহূর্তে আমরা শুধু কক্সবাজার সদরে সেবা দিচ্ছি।", "Choose your area. Right now we only serve Cox's Bazar Sadar."))
-      if (addressLine.trim().length < 4) return setProblem(T("পুরো ঠিকানা লিখুন।", "Add your full address."))
+      if (!areaId) return setProblem(T(`এলাকা বেছে নিন। এই মুহূর্তে আমরা শুধু ${shop.cityBn} এলাকায় সেবা দিচ্ছি।`, `Choose your area. Right now we only serve ${shop.city}.`))
+      if (addressLine.trim().length < 4) return setProblem(rental ? T("পিকআপ পয়েন্টটা লিখুন (হোটেল বা বাসার নাম)।", "Add your pickup point (hotel or home).") : T("পুরো ঠিকানা লিখুন।", "Add your full address."))
       if (!/^(\+?88)?01[3-9]\d{8}$/.test(phone.replace(/[\s-]/g, ""))) return setProblem(T("সঠিক মোবাইল নম্বর দিন (০১ দিয়ে শুরু, ১১ সংখ্যা)।", "Enter a valid mobile number (11 digits, starting with 01)."))
       if (!visitSlot) return setProblem(T("একটা সময় বেছে নিন।", "Choose a time slot."))
     }
@@ -125,7 +129,7 @@ export function BookingWizard({ locale, category, offering, areas, slots, days, 
         </div>
 
         {quantityJob ? (
-          <Counter label={offering.pricing === "PER_ROOM" ? T("কত রুম?", "How many rooms?") : offering.pricing === "PER_KG" ? T("আনুমানিক কত কেজি?", "Roughly how many kg?") : offering.pricing === "PER_HOUR" ? T("কত ঘণ্টা?", "How many hours?") : T("কত পিস?", "How many items?")} value={quantity} min={offering.minQty} max={200} onChange={setQuantity} hint={offering.minQty > 1 ? T(`সর্বনিম্ন ${offering.minQty}`, `Minimum ${offering.minQty}`) : undefined} />
+          <Counter label={offering.pricing === "PER_ROOM" ? T("কত রুম?", "How many rooms?") : offering.pricing === "PER_KG" ? T("আনুমানিক কত কেজি?", "Roughly how many kg?") : offering.pricing === "PER_HOUR" ? T("কত ঘণ্টা?", "How many hours?") : offering.pricing === "PER_DAY" ? T("কত দিন?", "How many days?") : T("কত পিস?", "How many items?")} value={quantity} min={offering.minQty} max={200} onChange={setQuantity} hint={offering.minQty > 1 ? T(`সর্বনিম্ন ${offering.minQty}`, `Minimum ${offering.minQty}`) : undefined} />
         ) : null}
         {team ? (
           <>
@@ -135,8 +139,8 @@ export function BookingWizard({ locale, category, offering, areas, slots, days, 
         ) : null}
 
         <div className="card p-4">
-          <label className="label" htmlFor="notes">{custom ? T("আপনার কাজটা লিখুন", "Describe your job") : T("নোট (ঐচ্ছিক)", "Notes (optional)")}</label>
-          <textarea id="notes" name="notes" value={notes} onChange={(e) => setNotes(e.target.value)} maxLength={1000} className="field" placeholder={custom ? T("যেমন: ছাদের টিন ফুটো, বৃষ্টিতে পানি পড়ে, ২ জন লোক লাগবে", "e.g. the roof tin leaks when it rains, need 2 people") : T("সমস্যাটা বা বিশেষ কিছু থাকলে লিখুন", "Describe the problem or anything special")} />
+          <label className="label" htmlFor="notes">{custom ? T("আপনার কাজটা লিখুন", "Describe your job") : rental ? T("ট্রিপের কথা (ঐচ্ছিক)", "About the trip (optional)") : T("নোট (ঐচ্ছিক)", "Notes (optional)")}</label>
+          <textarea id="notes" name="notes" value={notes} onChange={(e) => setNotes(e.target.value)} maxLength={1000} className="field" placeholder={custom ? T("যেমন: ছাদের টিন ফুটো, বৃষ্টিতে পানি পড়ে, ২ জন লোক লাগবে", "e.g. the roof tin leaks when it rains, need 2 people") : rental ? T("কোথায় যাবেন, কয়জন, কখন", "Where to, how many people, when") : T("সমস্যাটা বা বিশেষ কিছু থাকলে লিখুন", "Describe the problem or anything special")} />
           <label className="mt-3 flex cursor-pointer items-center gap-2 text-sm font-bold text-brand">
             <Camera className="size-4" /> {T("ছবি যোগ করুন (ঐচ্ছিক, ৪টা পর্যন্ত)", "Add photos (optional, up to 4)")}
             <input type="file" name="photos" accept="image/*" multiple className="sr-only" />
@@ -157,7 +161,7 @@ export function BookingWizard({ locale, category, offering, areas, slots, days, 
         ) : null}
         <div className="card space-y-4 p-4">
           <div>
-            <label className="label" htmlFor="area">{T("এলাকা", "Area")} <span className="font-normal text-muted-foreground">· {T("শুধু কক্সবাজার সদর", "Cox's Bazar Sadar only")}</span></label>
+            <label className="label" htmlFor="area">{rental ? T("পিকআপ এলাকা", "Pickup area") : T("এলাকা", "Area")} <span className="font-normal text-muted-foreground">· {T(`শুধু ${shop.cityBn}`, `${shop.city} only`)}</span></label>
             <select id="area" value={areaId} onChange={(e) => setAreaId(e.target.value)} className="field">
               <option value="">{T("এলাকা বেছে নিন", "Choose an area")}</option>
               {areas.map((a) => (
@@ -166,12 +170,12 @@ export function BookingWizard({ locale, category, offering, areas, slots, days, 
             </select>
           </div>
           <div>
-            <label className="label" htmlFor="addressLine">{T("ঠিকানা", "Address")}</label>
-            <input id="addressLine" name="addressLine" value={addressLine} onChange={(e) => setAddressLine(e.target.value)} className="field" placeholder={T("বাড়ি নম্বর, রোড, ফ্লোর", "House, road, floor")} maxLength={200} />
+            <label className="label" htmlFor="addressLine">{rental ? T("পিকআপ পয়েন্ট (হোটেল/বাসা)", "Pickup point (hotel/home)") : T("ঠিকানা", "Address")}</label>
+            <input id="addressLine" name="addressLine" value={addressLine} onChange={(e) => setAddressLine(e.target.value)} className="field" placeholder={rental ? T("হোটেলের নাম বা বাসার ঠিকানা", "Hotel name or home address") : T("বাড়ি নম্বর, রোড, ফ্লোর", "House, road, floor")} maxLength={200} />
           </div>
           <div>
-            <label className="label" htmlFor="landmark">{T("বাড়ি বা ল্যান্ডমার্ক", "House or landmark")}</label>
-            <input id="landmark" name="landmark" value={landmark} onChange={(e) => setLandmark(e.target.value)} className="field" placeholder={T("যেমন: মসজিদের পাশে, নীল গেট", "e.g. next to the mosque, blue gate")} maxLength={120} />
+            <label className="label" htmlFor="landmark">{rental ? T("গেট বা ল্যান্ডমার্ক", "Gate or landmark") : T("বাড়ি বা ল্যান্ডমার্ক", "House or landmark")}</label>
+            <input id="landmark" name="landmark" value={landmark} onChange={(e) => setLandmark(e.target.value)} className="field" placeholder={rental ? T("যেমন: হোটেলের মেইন গেট, রিসেপশনে বলবেন", "e.g. hotel main gate, ask at reception") : T("যেমন: মসজিদের পাশে, নীল গেট", "e.g. next to the mosque, blue gate")} maxLength={120} />
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
@@ -185,13 +189,13 @@ export function BookingWizard({ locale, category, offering, areas, slots, days, 
           </div>
         </div>
         <div className="card p-4">
-          <p className="label">{T("তারিখ", "Date")}</p>
+          <p className="label">{rental ? T("কোন দিন লাগবে?", "Which day?") : T("তারিখ", "Date")}</p>
           <div className="flex gap-2 overflow-x-auto pb-1">
             {days.map((d) => (
               <button key={d} type="button" onClick={() => setVisitDate(d)} className="chip shrink-0" data-on={d === visitDate}>{formatDay(d, locale)}</button>
             ))}
           </div>
-          <p className="label mt-4">{T("সময়", "Time slot")}</p>
+          <p className="label mt-4">{rental ? T("পিকআপ সময়", "Pickup time") : T("সময়", "Time slot")}</p>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {slots.map((s) => (
               <button key={s} type="button" onClick={() => setVisitSlot(s)} className="chip justify-center" data-on={s === visitSlot}>{s}</button>
@@ -204,10 +208,11 @@ export function BookingWizard({ locale, category, offering, areas, slots, days, 
       <section className={step === 3 ? "space-y-4" : "hidden"}>
         <div className="card divide-y divide-line p-4 text-[15px]">
           <Line k={T("সেবা", "Service")} v={`${name(category)} · ${name(offering)}`} />
+          <Line k={T("শাখা", "Branch")} v={city} />
           {quantityJob ? <Line k={T("পরিমাণ", "Quantity")} v={`${quantity} ${unitLabel(offering.pricing, locale)}${team ? ` × ${dayCount} ${T("দিন", "days")} · ${teamSize} ${T("জন", "people")}` : ""}`} /> : null}
-          <Line k={T("এলাকা", "Area")} v={area ? name(area) : "—"} />
-          <Line k={T("ঠিকানা", "Address")} v={`${addressLine}${landmark ? `, ${landmark}` : ""}`} />
-          <Line k={T("সময়", "When")} v={`${formatDay(visitDate, locale)} · ${visitSlot}`} />
+          <Line k={rental ? T("পিকআপ এলাকা", "Pickup area") : T("এলাকা", "Area")} v={area ? name(area) : "—"} />
+          <Line k={rental ? T("পিকআপ", "Pickup") : T("ঠিকানা", "Address")} v={`${addressLine}${landmark ? `, ${landmark}` : ""}`} />
+          <Line k={rental ? T("পিকআপ সময়", "Pickup time") : T("সময়", "When")} v={`${formatDay(visitDate, locale)} · ${visitSlot}`} />
           <Line k={T("যোগাযোগ", "Contact")} v={`${contactName || "—"} · ${phone}`} />
           {notes ? <Line k={T("নোট", "Notes")} v={notes} /> : null}
         </div>
@@ -250,7 +255,7 @@ export function BookingWizard({ locale, category, offering, areas, slots, days, 
             <p className="text-[11px] font-bold text-muted-foreground uppercase">{quote ? T("আনুমানিক", "Estimate") : T("আনুমানিক দাম", "Estimated price")}</p>
             <p className="text-lg font-extrabold text-ink">
               {quote && !offering.price ? T("দেখে জানাব", "Quoted on site") : taka(price.total, locale)}
-              {area?.charge ? <span className="ml-1 text-xs font-semibold text-muted-foreground">({T("ভিজিট চার্জসহ", "incl. visit charge")})</span> : null}
+              {area?.charge ? <span className="ml-1 text-xs font-semibold text-muted-foreground">({rental ? T("পিকআপ চার্জসহ", "incl. pickup charge") : T("ভিজিট চার্জসহ", "incl. visit charge")})</span> : null}
             </p>
           </div>
           {step > 1 ? (

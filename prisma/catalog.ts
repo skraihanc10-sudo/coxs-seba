@@ -1,8 +1,57 @@
 /**
- * Cox's Bazar Sadar areas and our service list. The seed creates anything
+ * Shops, their areas and our service list. The seed creates anything
  * missing and never overwrites what the admin has edited.
  * Prices are whole BDT. `charge` is the area's visit/delivery charge.
  */
+/** Our branches. The first one is the default shop every pre-shop row was moved into. */
+export const SHOPS = [
+  {
+    slug: "coxs-bazar",
+    name: "HANDYO Cox's Bazar",
+    nameBn: "HANDYO কক্সবাজার",
+    city: "Cox's Bazar Sadar",
+    cityBn: "কক্সবাজার সদর",
+    kind: "BRANCH",
+    phone: "09610-000000",
+    whatsapp: "01700-000000",
+    email: "hello@handyo.bd",
+    address: "Kolatoli Main Road, Cox's Bazar Sadar",
+    addressBn: "কলাতলী মেইন রোড, কক্সবাজার সদর",
+    blurb: "Our first branch: every home service in Cox's Bazar Sadar, plus cars, bikes and open-roof jeeps for Marine Drive.",
+    blurbBn: "আমাদের প্রথম শাখা: কক্সবাজার সদরে ঘরের সব সেবা, সাথে মেরিন ড্রাইভ ঘোরার জন্য গাড়ি, বাইক আর ছাদখোলা জিপ।",
+    sort: 0,
+  },
+  {
+    slug: "dhaka",
+    name: "HANDYO Dhaka",
+    nameBn: "HANDYO ঢাকা",
+    city: "Dhaka",
+    cityBn: "ঢাকা",
+    kind: "BRANCH",
+    phone: "09610-000001",
+    whatsapp: "01700-000001",
+    email: "dhaka@handyo.bd",
+    address: "Road 11, Dhanmondi, Dhaka",
+    addressBn: "রোড ১১, ধানমন্ডি, ঢাকা",
+    blurb: "Our Dhaka branch: the same trusted home services, now inside the capital.",
+    blurbBn: "আমাদের ঢাকা শাখা: একই বিশ্বস্ত ঘরের সেবা, এবার রাজধানীতে।",
+    sort: 1,
+  },
+]
+
+export const DHAKA_AREAS = [
+  { slug: "dhanmondi", nameBn: "ধানমন্ডি", name: "Dhanmondi", charge: 0 },
+  { slug: "mohammadpur", nameBn: "মোহাম্মদপুর", name: "Mohammadpur", charge: 30 },
+  { slug: "gulshan", nameBn: "গুলশান", name: "Gulshan", charge: 50 },
+  { slug: "banani", nameBn: "বনানী", name: "Banani", charge: 50 },
+  { slug: "mirpur", nameBn: "মিরপুর", name: "Mirpur", charge: 60 },
+  { slug: "uttara", nameBn: "উত্তরা", name: "Uttara", charge: 100 },
+  { slug: "bashundhara", nameBn: "বসুন্ধরা আ/এ", name: "Bashundhara R/A", charge: 80 },
+  { slug: "badda", nameBn: "বাড্ডা", name: "Badda", charge: 60 },
+  { slug: "motijheel", nameBn: "মতিঝিল", name: "Motijheel", charge: 60 },
+  { slug: "wari", nameBn: "ওয়ারী", name: "Wari", charge: 80 },
+]
+
 export const AREAS = [
   { slug: "kolatoli", nameBn: "কলাতলী", name: "Kolatoli", charge: 0 },
   { slug: "sugandha-point", nameBn: "সুগন্ধা পয়েন্ট", name: "Sugandha Point", charge: 0 },
@@ -37,7 +86,7 @@ type Offer = {
   name: string
   detailBn: string
   detail: string
-  pricing: "FIXED" | "PER_KG" | "PER_ITEM" | "PER_HOUR" | "PER_ROOM" | "QUOTE"
+  pricing: "FIXED" | "PER_KG" | "PER_ITEM" | "PER_HOUR" | "PER_DAY" | "PER_ROOM" | "QUOTE"
   price: number
   minQty?: number
   durationMin: number
@@ -51,11 +100,14 @@ export const CATEGORIES: Array<{
   blurb: string
   icon: string
   image: string
-  flow: "STANDARD" | "LAUNDRY" | "TEAM" | "CUSTOM"
+  flow: "STANDARD" | "LAUNDRY" | "TEAM" | "CUSTOM" | "RENTAL"
+  /** Letters in front of this category's booking numbers: CL-10001, CR-10002 … one serial for all. */
+  codePrefix: string
   offerings: Offer[]
 }> = [
   {
     slug: "laundry",
+    codePrefix: "LN",
     nameBn: "লন্ড্রি",
     name: "Laundry",
     blurbBn: "আমাদের নিজের লন্ড্রি। রাইডার বাসা থেকে কাপড় নেবে, পরিষ্কার করে ফেরত দেবে।",
@@ -73,6 +125,7 @@ export const CATEGORIES: Array<{
   },
   {
     slug: "wifi",
+    codePrefix: "WF",
     nameBn: "ওয়াইফাই ও ইন্টারনেট",
     name: "WiFi & internet",
     blurbBn: "নতুন কানেকশন, রাউটার সেটআপ আর লাইনের সমস্যা।",
@@ -89,6 +142,7 @@ export const CATEGORIES: Array<{
   },
   {
     slug: "electrician",
+    codePrefix: "EL",
     nameBn: "ইলেকট্রিশিয়ান",
     name: "Electrician",
     blurbBn: "ফ্যান, লাইট, ওয়্যারিং, IPS আর মিটারের কাজ।",
@@ -105,6 +159,7 @@ export const CATEGORIES: Array<{
   },
   {
     slug: "plumber",
+    codePrefix: "PL",
     nameBn: "প্লাম্বার",
     name: "Plumber",
     blurbBn: "লিকেজ, ট্যাপ, বেসিন আর পানির পাম্প।",
@@ -121,6 +176,7 @@ export const CATEGORIES: Array<{
   },
   {
     slug: "home-cleaning",
+    codePrefix: "CL",
     nameBn: "বাসা পরিষ্কার",
     name: "Home cleaning",
     blurbBn: "ডিপ ক্লিন, কিচেন আর বাথরুম পরিষ্কার।",
@@ -137,6 +193,7 @@ export const CATEGORIES: Array<{
   },
   {
     slug: "resort-cleaning",
+    codePrefix: "RC",
     nameBn: "রিসোর্ট ও হোটেল ক্লিনিং টিম",
     name: "Resort & hotel cleaning team",
     blurbBn: "রুম সংখ্যা, টিম আর কত দিন বলুন। পুরো টিম পাঠাব।",
@@ -152,6 +209,7 @@ export const CATEGORIES: Array<{
   },
   {
     slug: "ac-fridge",
+    codePrefix: "AC",
     nameBn: "এসি ও ফ্রিজ মেরামত",
     name: "AC & fridge repair",
     blurbBn: "এসি গ্যাস, ইনস্টল আর ফ্রিজ মেরামত।",
@@ -168,6 +226,7 @@ export const CATEGORIES: Array<{
   },
   {
     slug: "shifting",
+    codePrefix: "MV",
     nameBn: "শিফটিং ও মালামাল টানা",
     name: "Moving & hauling",
     blurbBn: "বাসা বা অফিস বদল, ফার্নিচার টানা, পিকআপ ভ্যান।",
@@ -183,6 +242,7 @@ export const CATEGORIES: Array<{
   },
   {
     slug: "labour",
+    codePrefix: "LB",
     nameBn: "কাজের লোক / দৈনিক শ্রমিক",
     name: "Helpers & day labour",
     blurbBn: "যেকোনো ছোট কাজের জন্য বিশ্বস্ত লোক।",
@@ -197,7 +257,27 @@ export const CATEGORIES: Array<{
     ],
   },
   {
+    slug: "rent-a-car",
+    codePrefix: "CR",
+    nameBn: "গাড়ি ও বাইক ভাড়া",
+    name: "Car & bike rental",
+    blurbBn: "বাইক, কার, মাইক্রো আর ছাদখোলা জিপ – ড্রাইভারসহ। মেরিন ড্রাইভ ঘুরতে বা শহরের কাজে।",
+    blurb: "Bikes, cars, microbuses and open-roof jeeps with a driver. Cruise Marine Drive or get around town.",
+    icon: "car",
+    image: "",
+    flow: "RENTAL",
+    offerings: [
+      { slug: "scooter-bike", nameBn: "স্কুটার / বাইক (সারা দিন)", name: "Scooter or bike (full day)", detailBn: "হেলমেটসহ, নিজে চালাবেন। সকাল ৮টা থেকে রাত ৮টা। তেল আলাদা।", detail: "Self-drive with helmet, 8 am to 8 pm. Fuel extra.", pricing: "PER_DAY", price: 800, durationMin: 720 },
+      { slug: "car-hourly", nameBn: "কার ড্রাইভারসহ (প্রতি ঘণ্টা)", name: "Car with driver (hourly)", detailBn: "এসি সেডান বা প্রাইভেট কার, ড্রাইভার ও তেলসহ, শহরের মধ্যে। সর্বনিম্ন ২ ঘণ্টা।", detail: "AC sedan with driver and fuel, inside town. Minimum 2 hours.", pricing: "PER_HOUR", price: 500, minQty: 2, durationMin: 120 },
+      { slug: "car-daily", nameBn: "কার ড্রাইভারসহ (সারা দিন)", name: "Car with driver (full day)", detailBn: "৮ ঘণ্টা / ৮০ কিমি, ড্রাইভার ও তেলসহ। ইনানী-হিমছড়ি ট্রিপের জন্য পারফেক্ট।", detail: "8 hours / 80 km with driver and fuel. Perfect for Inani and Himchari trips.", pricing: "PER_DAY", price: 3500, durationMin: 480 },
+      { slug: "open-roof-jeep", nameBn: "ছাদখোলা জিপ – মেরিন ড্রাইভ ট্যুর", name: "Open-roof jeep – Marine Drive tour", detailBn: "ছাদখোলা জিপে কলাতলী থেকে মেরিন ড্রাইভ হয়ে ইনানী, ড্রাইভারসহ। ৪ ঘণ্টার ট্রিপ, ৬ জন পর্যন্ত।", detail: "Open-roof jeep from Kolatoli along Marine Drive to Inani with driver. 4-hour trip, up to 6 people.", pricing: "FIXED", price: 4500, durationMin: 240 },
+      { slug: "microbus", nameBn: "মাইক্রোবাস (সারা দিন)", name: "Microbus (full day)", detailBn: "১০–১২ সিটের এসি মাইক্রো, ড্রাইভার ও তেলসহ, ৮ ঘণ্টা। পরিবার বা গ্রুপের জন্য।", detail: "10–12 seat AC microbus with driver and fuel, 8 hours. For families and groups.", pricing: "PER_DAY", price: 6500, durationMin: 480 },
+      { slug: "airport-pickup", nameBn: "এয়ারপোর্ট পিকআপ / ড্রপ", name: "Airport pickup or drop", detailBn: "কক্সবাজার এয়ারপোর্ট থেকে হোটেল বা হোটেল থেকে এয়ারপোর্ট, এসি কারে।", detail: "Cox's Bazar airport to your hotel or back, in an AC car.", pricing: "FIXED", price: 700, durationMin: 60 },
+    ],
+  },
+  {
     slug: "other",
+    codePrefix: "OT",
     nameBn: "অন্যান্য",
     name: "Something else",
     blurbBn: "তালিকায় নেই? আপনার কাজটা লিখুন, আমরা কল দিয়ে দাম জানাব।",

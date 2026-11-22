@@ -22,7 +22,7 @@ node /app/node_modules/prisma/build/index.js migrate deploy
 echo "Seeding demo accounts only when the database has no users"
 node scripts/seed-if-empty.mjs
 
-echo "Adding any missing Sadar areas, services, FAQs and settings"
+echo "Adding the default shop and any missing areas, services, FAQs and settings"
 node prisma/seed.mjs --catalog
 
 echo "Starting HANDYO on ${HOSTNAME:-0.0.0.0}:${PORT:-3000}"

@@ -1,14 +1,18 @@
 import Link from "next/link"
 import { Plus } from "lucide-react"
 import { requireUser, getLocale } from "@/lib/auth"
+import { ADMINS } from "@/lib/roles"
+import { officeShop } from "@/lib/shops"
 import { db } from "@/lib/db"
 import { named, pick } from "@/lib/i18n"
 import { toggleUserAction } from "@/actions/admin"
 import { Avatar, PageHeader } from "@/components/bits"
 
 export default async function WorkersPage() {
-  const [, locale] = await Promise.all([requireUser(["ADMIN"], "/admin/workers"), getLocale()])
+  const [user, locale] = await Promise.all([requireUser(ADMINS, "/admin/workers"), getLocale()])
+  const shop = await officeShop(user)
   const workers = await db.workerProfile.findMany({
+    where: { shopId: shop.id },
     include: {
       user: true,
       skills: { include: { category: true } },
@@ -20,7 +24,7 @@ export default async function WorkersPage() {
   })
   return (
     <div>
-      <PageHeader title={pick(locale, "কর্মী", "Workers")} sub={pick(locale, `${workers.filter((w) => w.user.active).length} জন সক্রিয়`, `${workers.filter((w) => w.user.active).length} active`)} action={<Link href="/admin/workers/new" className="btn-primary h-10 px-4 text-sm"><Plus className="size-4" /> {pick(locale, "নতুন কর্মী", "Add worker")}</Link>} />
+      <PageHeader title={pick(locale, "কর্মী", "Workers")} sub={pick(locale, `${shop.nameBn} · ${workers.filter((w) => w.user.active).length} জন সক্রিয়`, `${shop.name} · ${workers.filter((w) => w.user.active).length} active`)} action={<Link href="/admin/workers/new" className="btn-primary h-10 px-4 text-sm"><Plus className="size-4" /> {pick(locale, "নতুন কর্মী", "Add worker")}</Link>} />
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         {workers.map((w) => (
           <div key={w.id} className={`card p-4 ${w.user.active ? "" : "opacity-60"}`}>

@@ -1,4 +1,3 @@
-import { randomInt } from "node:crypto"
 import type { Prisma } from "@prisma/client"
 import { db } from "./db"
 import { AppError } from "./errors"
@@ -8,6 +7,8 @@ import { getSettings } from "./settings"
 import { billFor, estimate, usesQuantity } from "./pricing"
 import { paymentProvider } from "./payments"
 import type { Role } from "./roles"
+import { outsideMessage } from "./shops"
+import { staffCanSee } from "./shops-shared"
 import {
   canMove,
   customerCanChange,
@@ -15,15 +16,14 @@ import {
   isOpen,
   roleMayMove,
   statusText,
+  stepsFor,
   type Flow,
 } from "./booking-flow"
 
 export const SLOTS = ["08:00–11:00", "11:00–14:00", "14:00–17:00", "17:00–20:00", "20:00–22:00"]
 export const BOOKING_DAYS = 14
-export const OUTSIDE_SADAR_BN = "এই মুহূর্তে আমরা শুধু কক্সবাজার সদরে সেবা দিচ্ছি।"
-export const OUTSIDE_SADAR_EN = "Right now we only serve Cox's Bazar Sadar."
-
 export const bookingInclude = {
+  shop: { select: { id: true, slug: true, name: true, nameBn: true, city: true, cityBn: true, phone: true, whatsapp: true } },
   customer: { select: { id: true, name: true, phone: true, email: true } },
   category: true,
   offering: true,
@@ -37,12 +37,13 @@ export const bookingInclude = {
 
 export type BookingFull = Prisma.ServiceBookingGetPayload<{ include: typeof bookingInclude }>
 
-type Viewer = { id: string; role: string; worker?: { id: string } | null }
+type Viewer = { id: string; role: string; shopId?: string | null; worker?: { id: string } | null }
 
 const NOT_FOUND = () => new AppError("বুকিংটা পাওয়া যায়নি।", "Booking not found.")
 
-export function canView(user: Viewer, booking: { customerId: string; workerId: string | null }) {
-  if (user.role === "ADMIN" || user.role === "SUPPORT") return true
+/** Office staff see their own shop's bookings, owners see every shop, customers and workers only their own. */
+export function canView(user: Viewer, booking: { customerId: string; workerId: string | null; shopId: string }) {
+  if (user.role === "OWNER" || user.role === "ADMIN" || user.role === "SUPPORT") return staffCanSee(user, booking.shopId)
   if (user.role === "CUSTOMER") return booking.customerId === user.id
   if (user.role === "WORKER") return Boolean(user.worker && booking.workerId === user.worker.id)
   return false
@@ -59,18 +60,42 @@ export function flowOf(booking: { category: { flow: string } }): Flow {
   return flowFor(booking.category.flow)
 }
 
-async function newCode() {
-  for (let i = 0; i < 8; i += 1) {
-    const code = `CS-${randomInt(10000, 100000)}`
+/** Fallback letters when a category has no prefix of its own: first two consonants of its slug. */
+export function prefixFor(category: { codePrefix: string; slug: string }) {
+  if (/^[A-Z]{2,3}$/.test(category.codePrefix)) return category.codePrefix
+  const letters = category.slug.replace(/[^a-z]/g, "").toUpperCase()
+  return (letters.slice(0, 2) || "HB").padEnd(2, "X")
+}
+
+/**
+ * Booking numbers: <category prefix>-<serial>. The serial is one running
+ * counter shared by every category and every shop, so CL-10001 is followed by
+ * CR-10002, LN-10003 … and the list stays in order no matter the category.
+ */
+export async function newCode(category: { codePrefix: string; slug: string }) {
+  const prefix = prefixFor(category)
+  for (let i = 0; i < 5; i += 1) {
+    const next = await db.$transaction(async (tx) => {
+      const row = await tx.sequence.findUnique({ where: { name: "booking" } })
+      if (row) return (await tx.sequence.update({ where: { name: "booking" }, data: { value: { increment: 1 } } })).value
+      // First booking on this database: continue after the highest number already in use.
+      const [{ top }] = await tx.$queryRaw<Array<{ top: number | null }>>`SELECT MAX(CAST(substr(code, instr(code, '-') + 1) AS INTEGER)) AS top FROM "ServiceBooking"`
+      const start = Math.max(10000, Number(top ?? 0)) + 1
+      return (await tx.sequence.create({ data: { name: "booking", value: start } })).value
+    })
+    const code = `${prefix}-${next}`
     if (!(await db.serviceBooking.findUnique({ where: { code }, select: { id: true } }))) return code
   }
   throw new AppError("বুকিং নম্বর তৈরি করা যায়নি, আবার চেষ্টা করুন।", "Could not create a booking number. Please try again.")
 }
 
-/** Throws the Sadar-only message unless the area is one of ours and switched on. */
-export async function sadarArea(areaId: string) {
-  const area = areaId ? await db.serviceArea.findFirst({ where: { id: areaId, active: true } }) : null
-  if (!area) throw new AppError(OUTSIDE_SADAR_BN, OUTSIDE_SADAR_EN)
+/** Throws the "we only serve <city>" message unless the area is an active area of this shop. */
+export async function areaOfShop(shopId: string, areaId: string) {
+  const area = areaId ? await db.serviceArea.findFirst({ where: { id: areaId, shopId, active: true }, include: { shop: { select: { city: true, cityBn: true } } } }) : null
+  if (!area) {
+    const shop = await db.shop.findUnique({ where: { id: shopId }, select: { city: true, cityBn: true } })
+    throw outsideMessage(shop ?? { city: "our service area", cityBn: "আমাদের এলাকায়" })
+  }
   return area
 }
 
@@ -95,12 +120,13 @@ export async function createBooking(customer: { id: string; name: string }, inpu
   if (!offering || !offering.active || !offering.category.active) {
     throw new AppError("এই সেবাটা এখন বন্ধ আছে।", "This service is not available right now.")
   }
-  const area = await sadarArea(input.areaId)
+  const shopId = offering.category.shopId
+  const area = await areaOfShop(shopId, input.areaId)
   if (!upcomingDays(BOOKING_DAYS).includes(input.visitDate)) {
     throw new AppError("আজ থেকে ১৪ দিনের মধ্যে একটা তারিখ বেছে নিন।", "Choose a date within the next 14 days.")
   }
   if (!SLOTS.includes(input.visitSlot)) throw new AppError("একটা সময় বেছে নিন।", "Choose a time slot.")
-  const settings = await getSettings()
+  const settings = await getSettings(shopId)
   const method = paymentProvider(input.paymentMethod)
   if (!method || settings[method.setting] === "0") {
     throw new AppError("ক্যাশ, বিকাশ বা নগদ থেকে একটা বেছে নিন।", "Choose cash, bKash or Nagad.")
@@ -116,10 +142,11 @@ export async function createBooking(customer: { id: string; name: string }, inpu
   const teamSize = team ? Math.min(20, Math.max(1, input.teamSize)) : 1
   const price = estimate({ pricing: offering.pricing, unitPrice: offering.price, quantity, days, areaCharge: area.charge })
 
-  const code = await newCode()
+  const code = await newCode(offering.category)
   const booking = await db.serviceBooking.create({
     data: {
       code,
+      shopId,
       customerId: customer.id,
       categoryId: offering.categoryId,
       offeringId: offering.id,
@@ -150,7 +177,7 @@ export async function createBooking(customer: { id: string; name: string }, inpu
     body: `${booking.code} · ${offering.nameBn}। আমরা শিগগিরই কর্মী ঠিক করে জানাব।`,
     link: `/bookings/${booking.code}`,
   })
-  await notify(await officeIds(), {
+  await notify(await officeIds(shopId), {
     kind: "BOOKING",
     title: "নতুন বুকিং",
     body: `${booking.code} · ${offering.nameBn} · ${area.nameBn}`,
@@ -171,14 +198,23 @@ const CUSTOMER_MESSAGES: Record<string, string> = {
   CANCELLED: "বুকিংটা বাতিল হয়েছে।",
 }
 
-/** Move a booking one step. All status changes in the app go through here. */
-export async function moveBooking(user: Viewer & { role: Role }, code: string, to: string, note = "") {
+/**
+ * Move a booking one step. All status changes in the app go through here.
+ * `force` lets an admin/owner put the booking on ANY step of its flow
+ * (worker phoned in, wrong tap, refund after completion…); it is logged as an override.
+ */
+export async function moveBooking(user: Viewer & { role: Role }, code: string, to: string, note = "", opts: { force?: boolean } = {}) {
   const booking = await bookingFor(user, code)
   const flow = flowOf(booking)
-  if (!roleMayMove(user.role, to)) {
+  const force = Boolean(opts.force) && (user.role === "ADMIN" || user.role === "OWNER")
+  if (force) {
+    if (!([...stepsFor(flow), "CANCELLED"] as string[]).includes(to)) throw new AppError("এই ধাপটা এই কাজে নেই।", "That step does not exist for this job.")
+    if (to === booking.status) throw new AppError("বুকিং আগে থেকেই এই ধাপে আছে।", "The booking is already on that step.")
+  }
+  if (!force && !roleMayMove(user.role, to)) {
     throw new AppError("এই ধাপটা আপনি বদলাতে পারবেন না।", "You cannot set that step.")
   }
-  if (!canMove(flow, booking.status, to)) {
+  if (!force && !canMove(flow, booking.status, to)) {
     throw new AppError(
       `এখন "${statusText(booking.status, "bn")}" থেকে "${statusText(to, "bn")}" করা যাবে না।`,
       `This booking cannot go from "${statusText(booking.status, "en")}" to "${statusText(to, "en")}".`,
@@ -190,7 +226,7 @@ export async function moveBooking(user: Viewer & { role: Role }, code: string, t
   if (to === "ASSIGNED" && !booking.workerId) {
     throw new AppError("আগে একজন কর্মী বেছে নিন।", "Choose a worker first.")
   }
-  if (to === "IN_PROGRESS" && booking.pricing === "QUOTE" && booking.quoteStatus !== "ACCEPTED") {
+  if (!force && to === "IN_PROGRESS" && booking.pricing === "QUOTE" && booking.quoteStatus !== "ACCEPTED") {
     throw new AppError("কাস্টমার দাম মেনে নিলে তবেই কাজ শুরু করা যাবে।", "Start work after the customer accepts the quote.")
   }
   if (to === "CANCELLED" && note.trim().length < 3) {
@@ -199,14 +235,16 @@ export async function moveBooking(user: Viewer & { role: Role }, code: string, t
 
   const done = to === "COMPLETED"
   const finalPrice = done ? (booking.finalPrice ?? billFor(booking)) : booking.finalPrice
+  const reopened = force && booking.status === "COMPLETED" && !done
   const updated = await db.serviceBooking.update({
     where: { id: booking.id },
     data: {
       status: to,
       ...(to === "CANCELLED" ? { cancelReason: note.trim() } : {}),
       ...(done ? { completedAt: new Date(), finalPrice } : {}),
+      ...(reopened ? { completedAt: null } : {}),
       events: {
-        create: { fromStatus: booking.status, toStatus: to, note: note.trim(), actorId: user.id, actorRole: user.role },
+        create: { fromStatus: booking.status, toStatus: to, note: force ? `Admin override${note.trim() ? ` — ${note.trim()}` : ""}` : note.trim(), actorId: user.id, actorRole: user.role },
       },
     },
   })
@@ -223,7 +261,7 @@ export async function moveBooking(user: Viewer & { role: Role }, code: string, t
     await notify([booking.worker.userId], { kind: "JOB", title: "জব বাতিল", body: `${booking.code} বাতিল হয়েছে।`, link: `/worker` }, user.id)
   }
   if (user.role === "WORKER" || user.role === "CUSTOMER") {
-    await notify(await officeIds(), {
+    await notify(await officeIds(booking.shopId), {
       kind: "BOOKING",
       title: `${booking.code} · ${statusText(to, "bn")}`,
       body: `${booking.offering.nameBn} · ${booking.area.nameBn}`,
@@ -235,7 +273,7 @@ export async function moveBooking(user: Viewer & { role: Role }, code: string, t
 
 /** Office assigns or reassigns a worker. Reassigning resets the job to ASSIGNED for the new worker. */
 export async function assignWorker(user: Viewer & { role: Role }, code: string, workerId: string) {
-  if (user.role !== "ADMIN" && user.role !== "SUPPORT") {
+  if (!["ADMIN", "SUPPORT", "OWNER"].includes(user.role)) {
     throw new AppError("কর্মী ঠিক করতে পারে শুধু অফিস।", "Only the office can assign workers.")
   }
   const booking = await bookingFor(user, code)
@@ -246,7 +284,7 @@ export async function assignWorker(user: Viewer & { role: Role }, code: string, 
     where: { id: workerId },
     include: { user: true, skills: true },
   })
-  if (!worker || !worker.user.active) throw new AppError("এই কর্মী এখন সক্রিয় নন।", "That worker is not active.")
+  if (!worker || !worker.user.active || worker.shopId !== booking.shopId) throw new AppError("এই কর্মী এখন সক্রিয় নন।", "That worker is not active.")
   if (!worker.skills.some((s) => s.categoryId === booking.categoryId)) {
     throw new AppError("এই কর্মীর এই কাজের দক্ষতা দেওয়া নেই।", "This worker does not have the skill for this job.")
   }
@@ -285,7 +323,7 @@ export async function assignWorker(user: Viewer & { role: Role }, code: string, 
 }
 
 export async function sendQuote(user: Viewer & { role: Role }, code: string, amount: number, note: string) {
-  if (!["WORKER", "ADMIN", "SUPPORT"].includes(user.role)) throw new AppError("দাম পাঠাতে পারে শুধু কর্মী বা অফিস।", "Only workers or the office can send a quote.")
+  if (!["WORKER", "ADMIN", "SUPPORT", "OWNER"].includes(user.role)) throw new AppError("দাম পাঠাতে পারে শুধু কর্মী বা অফিস।", "Only workers or the office can send a quote.")
   const booking = await bookingFor(user, code)
   if (booking.pricing !== "QUOTE") throw new AppError("এই কাজের দাম আগেই ঠিক করা আছে।", "This job already has a fixed price.")
   if (!isOpen(booking.status) || booking.status === "IN_PROGRESS") {
@@ -336,7 +374,7 @@ export async function answerQuote(user: Viewer & { role: Role }, code: string, a
       },
     })
   }
-  await notify([booking.worker?.userId, ...(await officeIds())], {
+  await notify([booking.worker?.userId, ...(await officeIds(booking.shopId))], {
     kind: "QUOTE",
     title: `${booking.code} · ${accept ? "দাম মেনে নিয়েছেন" : "দাম মানেননি"}`,
     body: accept ? "কাজ শুরু করা যাবে।" : "বুকিং বাতিল হয়েছে।",
@@ -346,7 +384,7 @@ export async function answerQuote(user: Viewer & { role: Role }, code: string, a
 
 export async function reschedule(user: Viewer & { role: Role }, code: string, visitDate: string, visitSlot: string) {
   const booking = await bookingFor(user, code)
-  const office = user.role === "ADMIN" || user.role === "SUPPORT"
+  const office = user.role === "ADMIN" || user.role === "SUPPORT" || user.role === "OWNER"
   if (!office && user.role !== "CUSTOMER") throw new AppError("সময় বদলাতে পারবেন না।", "You can't change the time.")
   if (!customerCanChange(booking.status)) throw new AppError("কর্মী রওনা দেওয়ার পর সময় বদলানো যায় না।", "The time can't change once the worker is on the way.")
   if (!office && booking.rescheduled >= 2) throw new AppError("দুবারের বেশি সময় বদলানো যায় না। হেল্পলাইনে কল দিন।", "You can reschedule twice. Please call the helpline.")
@@ -373,7 +411,7 @@ export async function reschedule(user: Viewer & { role: Role }, code: string, vi
 /** Laundry riders weigh the clothes at pickup; the bill follows the real weight. */
 export async function setQuantity(user: Viewer & { role: Role }, code: string, quantity: number) {
   const booking = await bookingFor(user, code)
-  if (!["WORKER", "ADMIN", "SUPPORT"].includes(user.role)) throw new AppError("পরিমাণ বদলাতে পারবেন না।", "You can't change the quantity.")
+  if (!["WORKER", "ADMIN", "SUPPORT", "OWNER"].includes(user.role)) throw new AppError("পরিমাণ বদলাতে পারবেন না।", "You can't change the quantity.")
   if (!usesQuantity(booking.pricing)) throw new AppError("এই কাজে পরিমাণ লাগে না।", "This job has no quantity.")
   if (!isOpen(booking.status)) throw new AppError("বুকিংটা বন্ধ হয়ে গেছে।", "This booking is closed.")
   if (!(quantity > 0 && quantity <= 500)) throw new AppError("সঠিক পরিমাণ দিন।", "Enter a valid quantity.")
@@ -389,7 +427,7 @@ export async function setQuantity(user: Viewer & { role: Role }, code: string, q
 }
 
 export async function setPrice(user: Viewer & { role: Role }, code: string, finalPrice: number, note: string) {
-  if (user.role !== "ADMIN") throw new AppError("দাম বদলাতে পারে শুধু অ্যাডমিন।", "Only an admin can change the price.")
+  if (user.role !== "ADMIN" && user.role !== "OWNER") throw new AppError("দাম বদলাতে পারে শুধু অ্যাডমিন।", "Only an admin can change the price.")
   const booking = await bookingFor(user, code)
   if (!Number.isInteger(finalPrice) || finalPrice < 0) throw new AppError("সঠিক দাম দিন।", "Enter a valid price.")
   await db.serviceBooking.update({
@@ -404,7 +442,7 @@ export async function setPrice(user: Viewer & { role: Role }, code: string, fina
 }
 
 export async function setRefundNote(user: Viewer & { role: Role }, code: string, note: string) {
-  if (user.role !== "ADMIN" && user.role !== "SUPPORT") throw new AppError("অনুমতি নেই।", "Not allowed.")
+  if (!["ADMIN", "SUPPORT", "OWNER"].includes(user.role)) throw new AppError("অনুমতি নেই।", "Not allowed.")
   const booking = await bookingFor(user, code)
   await db.serviceBooking.update({
     where: { id: booking.id },
@@ -416,7 +454,7 @@ export async function setRefundNote(user: Viewer & { role: Role }, code: string,
 }
 
 export async function recordPayment(user: Viewer & { role: Role }, code: string, method: string, reference: string) {
-  if (!["WORKER", "ADMIN", "SUPPORT"].includes(user.role)) throw new AppError("অনুমতি নেই।", "Not allowed.")
+  if (!["WORKER", "ADMIN", "SUPPORT", "OWNER"].includes(user.role)) throw new AppError("অনুমতি নেই।", "Not allowed.")
   const booking = await bookingFor(user, code)
   if (booking.status !== "COMPLETED") throw new AppError("কাজ শেষ হলে টাকা নেওয়া হিসাব করুন।", "Record payment after the job is completed.")
   if (booking.paymentStatus === "PAID") throw new AppError("টাকা আগেই নেওয়া হয়েছে।", "Payment is already recorded.")
@@ -449,7 +487,7 @@ export async function reviewBooking(user: Viewer & { role: Role }, code: string,
       data: { rating: Math.round((agg._avg.rating ?? rating) * 10) / 10, ratingCount: agg._count },
     })
   }
-  await notify([booking.worker?.userId, ...(await officeIds())], {
+  await notify([booking.worker?.userId, ...(await officeIds(booking.shopId))], {
     kind: "REVIEW",
     title: `${booking.code} · ${rating}★ রিভিউ`,
     body: comment.trim().slice(0, 120),
@@ -459,7 +497,7 @@ export async function reviewBooking(user: Viewer & { role: Role }, code: string,
 
 export async function addPhotos(user: Viewer & { role: Role }, code: string, kind: "CUSTOMER" | "BEFORE" | "AFTER", paths: string[]) {
   const booking = await bookingFor(user, code)
-  if (kind !== "CUSTOMER" && user.role !== "WORKER" && user.role !== "ADMIN") {
+  if (kind !== "CUSTOMER" && user.role !== "WORKER" && user.role !== "ADMIN" && user.role !== "OWNER") {
     throw new AppError("কাজের ছবি দেবেন কর্মী।", "Only the worker adds job photos.")
   }
   if (booking.photos.length + paths.length > 20) throw new AppError("একটা বুকিংয়ে ২০টার বেশি ছবি রাখা যায় না।", "A booking can hold up to 20 photos.")

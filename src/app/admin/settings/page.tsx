@@ -1,5 +1,7 @@
 import { Trash2 } from "lucide-react"
 import { requireUser, getLocale } from "@/lib/auth"
+import { ADMINS } from "@/lib/roles"
+import { officeShop } from "@/lib/shops"
 import { db } from "@/lib/db"
 import { getSettings } from "@/lib/settings"
 import { PAYMENT_PROVIDERS, gatewayReady } from "@/lib/payments"
@@ -10,11 +12,13 @@ import { ActionForm, SubmitButton } from "@/components/forms"
 import { PageHeader, Section } from "@/components/bits"
 
 export default async function SettingsPage() {
-  const [, locale, s, faqs] = await Promise.all([requireUser(["ADMIN"], "/admin/settings"), getLocale(), getSettings(), db.faq.findMany({ orderBy: { sort: "asc" } })])
+  const [user, locale] = await Promise.all([requireUser(ADMINS, "/admin/settings"), getLocale()])
+  const shop = await officeShop(user)
+  const [s, faqs] = await Promise.all([getSettings(shop.id), db.faq.findMany({ orderBy: { sort: "asc" } })])
   const sms = smsProvider()
   return (
     <div className="space-y-4">
-      <PageHeader title={pick(locale, "সেটিংস", "Settings")} />
+      <PageHeader title={pick(locale, "সেটিংস", "Settings")} sub={pick(locale, `এই সেটিংস শুধু ${shop.nameBn} শপের।`, `These settings apply to ${shop.name} only.`)} />
       <ActionForm action={saveSettingsAction} resetOnSuccess={false} className="grid gap-4 lg:grid-cols-2">
         <Section title={pick(locale, "যোগাযোগ", "Contact")}>
           <div className="grid gap-3 sm:grid-cols-2">
@@ -49,7 +53,8 @@ export default async function SettingsPage() {
         </Section>
       </ActionForm>
 
-      <Section title={pick(locale, "সাধারণ প্রশ্ন (FAQ)", "FAQ")}>
+      <Section title={pick(locale, "সাধারণ প্রশ্ন (FAQ) · সব শপের জন্য এক", "FAQ · shared by all shops")}>
+        <p className="mb-3 text-xs text-muted-foreground">{pick(locale, "FAQ সব শপে একই দেখায়; এখানে বদলালে সব শপে বদলে যাবে।", "FAQs are global: a change here shows on every shop.")}</p>
         <div className="space-y-2">
           {faqs.map((f) => (
             <details key={f.id} className="rounded-xl bg-canvas p-3">
@@ -60,11 +65,9 @@ export default async function SettingsPage() {
                 <input name="question" defaultValue={f.question} className="field h-9 text-sm" required />
                 <textarea name="answerBn" defaultValue={f.answerBn} className="field min-h-16 text-sm" required />
                 <textarea name="answer" defaultValue={f.answer} className="field min-h-16 text-sm" required />
-                <div className="flex gap-2 sm:col-span-2">
-                  <SubmitButton className="btn-soft h-9 px-3 text-xs">{pick(locale, "সেভ", "Save")}</SubmitButton>
-                  <form action={deleteFaqAction}><input type="hidden" name="id" value={f.id} /><button className="btn-danger h-9 px-3"><Trash2 className="size-4" /></button></form>
-                </div>
+                <SubmitButton className="btn-soft h-9 px-3 text-xs sm:col-span-2">{pick(locale, "সেভ", "Save")}</SubmitButton>
               </ActionForm>
+              <form action={deleteFaqAction} className="mt-2 text-right"><input type="hidden" name="id" value={f.id} /><button className="btn-danger h-9 px-3 text-xs"><Trash2 className="size-4" /> {pick(locale, "মুছুন", "Delete")}</button></form>
             </details>
           ))}
         </div>

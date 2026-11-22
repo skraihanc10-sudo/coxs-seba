@@ -1,24 +1,27 @@
 import Link from "next/link"
 import { requireUser, getLocale } from "@/lib/auth"
+import { ADMINS } from "@/lib/roles"
+import { officeShop } from "@/lib/shops"
 import { db } from "@/lib/db"
 import { formatWhen, taka } from "@/lib/format"
 import { pick } from "@/lib/i18n"
 import { PageHeader } from "@/components/bits"
 
 export default async function CustomersPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
-  const [{ q = "" }, , locale] = await Promise.all([searchParams, requireUser(["ADMIN"], "/admin/customers"), getLocale()])
+  const [{ q = "" }, user, locale] = await Promise.all([searchParams, requireUser(ADMINS, "/admin/customers"), getLocale()])
+  const shop = await officeShop(user)
   const needle = q.trim()
   const customers = await db.user.findMany({
-    where: { role: "CUSTOMER", ...(needle ? { OR: [{ name: { contains: needle } }, { phone: { contains: needle } }, { email: { contains: needle } }] } : {}) },
+    where: { role: "CUSTOMER", bookings: { some: { shopId: shop.id } }, ...(needle ? { OR: [{ name: { contains: needle } }, { phone: { contains: needle } }, { email: { contains: needle } }] } : {}) },
     orderBy: { createdAt: "desc" },
     take: 300,
     include: {
-      bookings: { select: { status: true, finalPrice: true, estimatedPrice: true, createdAt: true } },
+      bookings: { where: { shopId: shop.id }, select: { status: true, finalPrice: true, estimatedPrice: true, createdAt: true } },
     },
   })
   return (
     <div>
-      <PageHeader title={pick(locale, "কাস্টমার", "Customers")} sub={pick(locale, `${customers.length} জন`, `${customers.length} people`)} />
+      <PageHeader title={pick(locale, "কাস্টমার", "Customers")} sub={pick(locale, `${shop.nameBn} শপে বুকিং করেছেন ${customers.length} জন`, `${customers.length} people who booked with ${shop.name}`)} />
       <form className="mb-4 flex gap-2">
         <input name="q" defaultValue={q} className="field h-10 max-w-sm" placeholder={pick(locale, "নাম, ফোন বা ইমেইল", "Name, phone or email")} />
         <button className="btn-primary h-10 px-4 text-sm">{pick(locale, "খুঁজুন", "Search")}</button>

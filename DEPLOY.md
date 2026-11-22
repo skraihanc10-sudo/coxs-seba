@@ -18,17 +18,18 @@ The app runs as one container built from `Dockerfile`. SQLite and uploaded photo
   PORT=3000
   HOSTNAME=0.0.0.0
   SHOW_DEMO_LOGINS=0                      # hide the demo box on /login once real users arrive
+  SITE_URL=https://handyo.bd              # canonical URLs, sitemap and Open Graph (falls back to AUTH_URL)
   ```
 
 ## What the container does on start
 `scripts/docker-entrypoint.sh` runs as the `nextjs` user and:
 1. applies Prisma migrations (`prisma migrate deploy`);
 2. seeds demo accounts **only if the database has no users**;
-3. adds any missing Sadar areas, services, FAQs, reply templates and settings (never overwrites admin edits);
+3. makes sure the default shop (HANDYO Cox's Bazar) exists and adds any missing areas, services, FAQs, reply templates and settings for it (never overwrites admin edits; other shops are created from Admin → Shops);
 4. starts `node server.js`.
 
 ## Updating
-Push to `main`, then press **Redeploy** in Coolify (the GitHub webhook can't reach the panel while port 8000 is closed). The `/data` volume is untouched.
+Push to `main`, then press **Redeploy** in Coolify (the GitHub webhook can't reach the panel while port 8000 is closed). The `/data` volume is untouched; `prisma migrate deploy` runs on every start, so schema changes (like the shops migration, which moves every existing row into the default shop) apply themselves.
 
 ## Backups
 The whole state is `/var/lib/docker/volumes/<app>-data/_data/` on the host: `needcoxs.db` plus `uploads/`. Copy that folder.

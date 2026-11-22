@@ -24,7 +24,8 @@ export default async function WorkerHome() {
   const Job = ({ j }: { j: (typeof jobs)[number] }) => {
     const next = workerNext(flowFor(j.category.flow), j.status)
     return (
-      <Link href={`/worker/jobs/${j.code}`} className="card block p-4 transition hover:ring-brand/40">
+      <div className="card relative p-4 transition hover:ring-brand/40">
+        <Link href={`/worker/jobs/${j.code}`} className="absolute inset-0 rounded-[inherit]" aria-label={`${j.code} ${named(locale, j.offering)}`} />
         <div className="flex items-center gap-3">
           <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-brand-soft text-brand"><CategoryIcon name={j.category.icon} className="size-5" /></span>
           <div className="min-w-0 flex-1">
@@ -36,10 +37,10 @@ export default async function WorkerHome() {
         </div>
         <div className="mt-3 flex items-center justify-between gap-3 text-sm">
           <span className="inline-flex min-w-0 items-center gap-1 text-muted-foreground"><MapPin className="size-3.5 shrink-0 text-brand" /><span className="truncate">{named(locale, j.area)} · {j.addressLine}</span></span>
-          <a href={telHref(j.phone)} className="inline-flex shrink-0 items-center gap-1 font-bold text-brand"><Phone className="size-3.5" /> {j.contactName || pick(locale, "কল", "Call")}</a>
+          <a href={telHref(j.phone)} className="relative z-10 inline-flex shrink-0 items-center gap-1 font-bold text-brand"><Phone className="size-3.5" /> {j.contactName || pick(locale, "কল", "Call")}</a>
         </div>
         {next ? <p className="mt-3 rounded-xl bg-brand-soft px-3 py-2 text-center text-sm font-extrabold text-brand">{pick(locale, "পরের ধাপ:", "Next:")} {WORKER_BUTTON[next]?.[locale]}</p> : null}
-      </Link>
+      </div>
     )
   }
 

@@ -22,9 +22,12 @@ export async function notify(userIds: Array<string | null | undefined>, notice: 
   })
 }
 
-/** Everyone in the office who should hear about support events. */
-export async function officeIds() {
-  const rows = await db.user.findMany({ where: { role: { in: ["ADMIN", "SUPPORT"] }, active: true }, select: { id: true } })
+/** The shop's office (admins + support) plus every owner: who hears about events in this shop. */
+export async function officeIds(shopId: string) {
+  const rows = await db.user.findMany({
+    where: { active: true, OR: [{ role: "OWNER" }, { role: { in: ["ADMIN", "SUPPORT"] }, shopId }] },
+    select: { id: true },
+  })
   return rows.map((r) => r.id)
 }
 

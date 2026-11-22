@@ -2,12 +2,12 @@ import Link from "next/link"
 import { TicketCheck } from "lucide-react"
 import type { BookingFull } from "@/lib/bookings"
 import { BOOKING_DAYS, SLOTS, flowOf } from "@/lib/bookings"
-import { isOpen, nextStatuses, statusText, WORKER_BUTTON } from "@/lib/booking-flow"
+import { isOpen, nextStatuses, statusText, stepsFor, WORKER_BUTTON } from "@/lib/booking-flow"
 import { formatDay, taka, upcomingDays, type Locale } from "@/lib/format"
 import { named, pick } from "@/lib/i18n"
 import { billFor } from "@/lib/pricing"
 import { PAYMENT_PROVIDERS } from "@/lib/payments"
-import { assignWorkerAction, moveBookingAction, recordPaymentAction, refundNoteAction, rescheduleAction, sendQuoteAction, setPriceAction } from "@/actions/booking"
+import { assignWorkerAction, forceStatusAction, moveBookingAction, recordPaymentAction, refundNoteAction, rescheduleAction, sendQuoteAction, setPriceAction } from "@/actions/booking"
 import { sendBookingMessageAction } from "@/actions/support"
 import { ActionForm, SubmitButton } from "@/components/forms"
 import { Composer, MessageList, type ChatMessage } from "@/components/chat-pane"
@@ -49,6 +49,7 @@ export function OfficeBooking({
           <div className="min-w-0 flex-1">
             <p className="truncate font-extrabold text-ink">{b.contactName || b.customer.name}</p>
             <p className="text-xs text-muted-foreground">{b.phone} · {named(locale, b.area)} · {formatDay(b.visitDate, locale)} {b.visitSlot}</p>
+            <p className="mt-0.5 text-[11px] font-bold text-brand">{pick(locale, "শপ:", "Shop:")} {named(locale, b.shop)}</p>
           </div>
           <Link href={`/admin/customers/${b.customerId}`} className="text-xs font-bold text-brand">{pick(locale, "প্রোফাইল", "Profile")}</Link>
         </div>
@@ -157,6 +158,21 @@ export function OfficeBooking({
       <div className="space-y-4">
         <Section title={pick(locale, "অবস্থা", "Status")}>
           <Timeline flow={flow} status={b.status} events={b.events} locale={locale} />
+          {isAdmin ? (
+            <details className="mt-3 rounded-xl bg-canvas p-3">
+              <summary className="cursor-pointer text-sm font-bold text-ink">{pick(locale, "ধাপ জোর করে বদলান (অ্যাডমিন)", "Force a step (admin)")}</summary>
+              <p className="mt-1 text-xs text-muted-foreground">{pick(locale, "যেকোনো ধাপে নিয়ে যান, যেমন কর্মী ফোনে জানালে বা ভুল চাপ পড়লে। ইতিহাসে লেখা থাকবে।", "Jump to any step, e.g. when a worker phones in or a wrong tap must be undone. It is logged in the history.")}</p>
+              <ActionForm action={forceStatusAction} resetOnSuccess={false} className="mt-2 flex flex-wrap gap-2">
+                <input type="hidden" name="code" value={b.code} />
+                <select name="to" className="field flex-1" defaultValue="">
+                  <option value="" disabled>{pick(locale, "ধাপ বেছে নিন", "Choose a step")}</option>
+                  {[...stepsFor(flow), "CANCELLED"].filter((s) => s !== b.status).map((s) => <option key={s} value={s}>{statusText(s, locale)}</option>)}
+                </select>
+                <input name="note" className="field flex-1" placeholder={pick(locale, "কারণ (বাতিলে বাধ্যতামূলক)", "Reason (required for cancel)")} maxLength={300} />
+                <SubmitButton className="btn-soft shrink-0 px-4">{pick(locale, "সেট", "Set")}</SubmitButton>
+              </ActionForm>
+            </details>
+          ) : null}
           {b.cancelReason ? <p className="mt-3 text-sm text-danger">{pick(locale, "বাতিলের কারণ:", "Cancel reason:")} {b.cancelReason}</p> : null}
           {b.adminNote ? <p className="mt-2 text-sm text-muted-foreground">{pick(locale, "অ্যাডমিন নোট:", "Admin note:")} {b.adminNote}</p> : null}
         </Section>

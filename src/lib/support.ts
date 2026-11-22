@@ -4,8 +4,9 @@ import { AppError } from "./errors"
 import { notify, officeIds } from "./notify"
 import { bookingFor } from "./bookings"
 import type { Role } from "./roles"
+import { isOffice, staffCanSee } from "./shops-shared"
 
-type Viewer = { id: string; role: string; name: string; worker?: { id: string } | null }
+type Viewer = { id: string; role: string; name: string; shopId?: string | null; worker?: { id: string } | null }
 
 export const TICKET_CATEGORIES = {
   COMPLAINT: { bn: "অভিযোগ", en: "Complaint" },
@@ -28,7 +29,7 @@ export const TICKET_STATUSES = {
   CLOSED: { bn: "বন্ধ", en: "Closed" },
 } as const
 
-const office = (role: string) => role === "ADMIN" || role === "SUPPORT"
+const office = isOffice
 
 function cleanBody(body: string) {
   const text = body.trim()
@@ -66,7 +67,7 @@ export async function sendBookingMessage(user: Viewer, code: string, body: strin
     update: { readAt: new Date() },
     create: { threadId: thread.id, userId: user.id },
   })
-  const recipients = [booking.customerId, booking.worker?.userId, ...(user.role === "CUSTOMER" || user.role === "WORKER" ? await officeIds() : [])]
+  const recipients = [booking.customerId, booking.worker?.userId, ...(user.role === "CUSTOMER" || user.role === "WORKER" ? await officeIds(booking.shopId) : [])]
   await notify(recipients, {
     kind: "MESSAGE",
     title: `${booking.code} · নতুন মেসেজ`,
@@ -75,19 +76,20 @@ export async function sendBookingMessage(user: Viewer, code: string, body: strin
   }, user.id)
 }
 
-// ── Customer care chat (one thread per customer) ──────────────────────────
+// ── Customer care chat (one thread per customer per shop) ─────────────────
 
 const careInclude = {
+  shop: { select: { id: true, slug: true, name: true, nameBn: true } },
   customer: { select: { id: true, name: true, phone: true, email: true } },
   assignee: { select: { id: true, name: true } },
   messages: { orderBy: { createdAt: "asc" as const }, include: { sender: { select: { name: true, role: true } } } },
 }
 
-export async function myCareThread(customerId: string) {
+export async function myCareThread(customerId: string, shopId: string) {
   const thread = await db.careThread.upsert({
-    where: { customerId },
+    where: { customerId_shopId: { customerId, shopId } },
     update: {},
-    create: { customerId },
+    create: { customerId, shopId },
     include: careInclude,
   })
   await markCareRead(thread.id, customerId)
@@ -96,7 +98,8 @@ export async function myCareThread(customerId: string) {
 
 export async function careThreadFor(user: Viewer, id: string) {
   const thread = await db.careThread.findUnique({ where: { id }, include: careInclude })
-  if (!thread || (!office(user.role) && thread.customerId !== user.id)) {
+  const allowed = thread && (office(user.role) ? staffCanSee(user, thread.shopId) : thread.customerId === user.id)
+  if (!thread || !allowed) {
     throw new AppError("চ্যাটটা পাওয়া যায়নি।", "Chat not found.")
   }
   await markCareRead(thread.id, user.id)
@@ -111,14 +114,19 @@ async function markCareRead(threadId: string, userId: string) {
   })
 }
 
-export async function sendCareMessage(user: Viewer, threadId: string | null, body: string) {
+export async function sendCareMessage(user: Viewer, threadId: string | null, body: string, shopId?: string) {
   const text = cleanBody(body)
   let thread
   if (user.role === "CUSTOMER") {
-    thread = await db.careThread.upsert({ where: { customerId: user.id }, update: {}, create: { customerId: user.id } })
+    if (!shopId) throw new AppError("আগে একটা শপ বেছে নিন।", "Choose a shop first.")
+    thread = await db.careThread.upsert({
+      where: { customerId_shopId: { customerId: user.id, shopId } },
+      update: {},
+      create: { customerId: user.id, shopId },
+    })
   } else if (office(user.role) && threadId) {
     thread = await db.careThread.findUnique({ where: { id: threadId } })
-    if (!thread) throw new AppError("চ্যাটটা পাওয়া যায়নি।", "Chat not found.")
+    if (!thread || !staffCanSee(user, thread.shopId)) throw new AppError("চ্যাটটা পাওয়া যায়নি।", "Chat not found.")
   } else {
     throw new AppError("অনুমতি নেই।", "Not allowed.")
   }
@@ -133,7 +141,7 @@ export async function sendCareMessage(user: Viewer, threadId: string | null, bod
   })
   await markCareRead(thread.id, user.id)
   if (user.role === "CUSTOMER") {
-    const to = thread.assigneeId ? [thread.assigneeId] : await officeIds()
+    const to = thread.assigneeId ? [thread.assigneeId] : await officeIds(thread.shopId)
     await notify(to, { kind: "MESSAGE", title: "কাস্টমার কেয়ার · নতুন মেসেজ", body: `${user.name}: ${text.slice(0, 100)}`, link: `/support/care/${thread.id}` })
   } else {
     await notify([thread.customerId], { kind: "MESSAGE", title: "কাস্টমার কেয়ার উত্তর দিয়েছে", body: text.slice(0, 120), link: "/care" })
@@ -142,6 +150,8 @@ export async function sendCareMessage(user: Viewer, threadId: string | null, bod
 
 export async function setCareThread(user: Viewer, threadId: string, change: { assignToMe?: boolean; close?: boolean }) {
   if (!office(user.role)) throw new AppError("অনুমতি নেই।", "Not allowed.")
+  const existing = await db.careThread.findUnique({ where: { id: threadId }, select: { shopId: true } })
+  if (!existing || !staffCanSee(user, existing.shopId)) throw new AppError("চ্যাটটা পাওয়া যায়নি।", "Chat not found.")
   await db.careThread.update({
     where: { id: threadId },
     data: {
@@ -154,6 +164,7 @@ export async function setCareThread(user: Viewer, threadId: string, change: { as
 // ── Tickets ────────────────────────────────────────────────────────────────
 
 const ticketInclude = {
+  shop: { select: { id: true, slug: true, name: true, nameBn: true } },
   user: { select: { id: true, name: true, phone: true, email: true } },
   assignee: { select: { id: true, name: true } },
   booking: { select: { code: true } },
@@ -163,13 +174,20 @@ const ticketInclude = {
 export async function createTicket(
   user: Viewer,
   input: { subject: string; category: string; priority: string; body: string; bookingCode: string },
+  fallbackShopId: string,
 ) {
   if (user.role !== "CUSTOMER") throw new AppError("টিকেট খুলবেন কাস্টমার।", "Only customers open tickets.")
   const subject = input.subject.trim()
   if (subject.length < 4) throw new AppError("বিষয়টা একটু লিখুন।", "Add a short subject.")
   const body = cleanBody(input.body)
   let bookingId: string | null = null
-  if (input.bookingCode) bookingId = (await bookingFor(user, input.bookingCode)).id
+  // A ticket about a booking goes to that booking's shop; otherwise to the shop being browsed.
+  let shopId = fallbackShopId
+  if (input.bookingCode) {
+    const booking = await bookingFor(user, input.bookingCode)
+    bookingId = booking.id
+    shopId = booking.shopId
+  }
   let code = ""
   for (let i = 0; i < 8 && !code; i += 1) {
     const candidate = `TK-${randomInt(10000, 100000)}`
@@ -178,6 +196,7 @@ export async function createTicket(
   const ticket = await db.ticket.create({
     data: {
       code,
+      shopId,
       userId: user.id,
       bookingId,
       subject,
@@ -187,13 +206,14 @@ export async function createTicket(
       reads: { create: { userId: user.id } },
     },
   })
-  await notify(await officeIds(), { kind: "TICKET", title: `নতুন টিকেট ${ticket.code}`, body: subject, link: `/support/tickets/${ticket.code}` })
+  await notify(await officeIds(shopId), { kind: "TICKET", title: `নতুন টিকেট ${ticket.code}`, body: subject, link: `/support/tickets/${ticket.code}` })
   return ticket
 }
 
 export async function ticketFor(user: Viewer, code: string) {
   const ticket = await db.ticket.findUnique({ where: { code }, include: ticketInclude })
-  if (!ticket || (!office(user.role) && ticket.userId !== user.id)) {
+  const allowed = ticket && (office(user.role) ? staffCanSee(user, ticket.shopId) : ticket.userId === user.id)
+  if (!ticket || !allowed) {
     throw new AppError("টিকেটটা পাওয়া যায়নি।", "Ticket not found.")
   }
   await db.ticketRead.upsert({
@@ -226,7 +246,7 @@ export async function replyTicket(user: Viewer, code: string, body: string) {
   if (fromOffice) {
     await notify([ticket.userId], { kind: "TICKET", title: `টিকেট ${ticket.code} · উত্তর এসেছে`, body: text.slice(0, 120), link: `/help/tickets/${ticket.code}` })
   } else {
-    const to = ticket.assigneeId ? [ticket.assigneeId] : await officeIds()
+    const to = ticket.assigneeId ? [ticket.assigneeId] : await officeIds(ticket.shopId)
     await notify(to, { kind: "TICKET", title: `টিকেট ${ticket.code} · নতুন মেসেজ`, body: text.slice(0, 120), link: `/support/tickets/${ticket.code}` })
   }
 }
@@ -286,12 +306,12 @@ export type InboxItem = {
   status: string
 }
 
-/** Everything the support desk has to look at, newest and unread first. */
-export async function inbox(user: Viewer, filter: "all" | "mine" | "unread" = "all"): Promise<InboxItem[]> {
-  if (!office(user.role)) throw new AppError("অনুমতি নেই।", "Not allowed.")
+/** Everything the support desk of one shop has to look at, newest and unread first. */
+export async function inbox(user: Viewer, shopId: string, filter: "all" | "mine" | "unread" = "all"): Promise<InboxItem[]> {
+  if (!office(user.role) || !staffCanSee(user, shopId)) throw new AppError("অনুমতি নেই।", "Not allowed.")
   const [care, tickets, chats] = await Promise.all([
     db.careThread.findMany({
-      where: { status: "OPEN", messages: { some: {} } },
+      where: { shopId, status: "OPEN", messages: { some: {} } },
       include: {
         customer: { select: { name: true, phone: true } },
         assignee: { select: { id: true, name: true } },
@@ -302,7 +322,7 @@ export async function inbox(user: Viewer, filter: "all" | "mine" | "unread" = "a
       take: 100,
     }),
     db.ticket.findMany({
-      where: { status: { in: ["OPEN", "PENDING"] } },
+      where: { shopId, status: { in: ["OPEN", "PENDING"] } },
       include: {
         user: { select: { name: true } },
         assignee: { select: { id: true, name: true } },
@@ -313,7 +333,7 @@ export async function inbox(user: Viewer, filter: "all" | "mine" | "unread" = "a
       take: 100,
     }),
     db.bookingThread.findMany({
-      where: { messages: { some: {} }, booking: { status: { notIn: ["CANCELLED"] } } },
+      where: { messages: { some: {} }, booking: { shopId, status: { notIn: ["CANCELLED"] } } },
       include: {
         booking: { select: { code: true, status: true, customer: { select: { name: true } }, offering: { select: { nameBn: true } } } },
         messages: { orderBy: { createdAt: "desc" }, take: 1, include: { sender: { select: { role: true, name: true } } } },
@@ -387,9 +407,9 @@ export async function inbox(user: Viewer, filter: "all" | "mine" | "unread" = "a
   })
 }
 
-export async function unreadForOffice(user: Viewer) {
+export async function unreadForOffice(user: Viewer, shopId: string) {
   if (!office(user.role)) return 0
-  return (await inbox(user, "unread")).length
+  return (await inbox(user, shopId, "unread")).length
 }
 
 /** Unread booking-chat and care messages for a customer or worker. */
@@ -410,11 +430,13 @@ export async function unreadMessages(user: { id: string; role: Role | string; wo
   })
   let count = threads.filter((t) => !t.reads[0] || t.reads[0].readAt < t.messages[0].createdAt).length
   if (user.role === "CUSTOMER") {
-    const care = await db.careThread.findUnique({
+    const cares = await db.careThread.findMany({
       where: { customerId: user.id },
       select: { reads: { where: { userId: user.id } }, messages: { where: { senderId: { not: user.id } }, orderBy: { createdAt: "desc" }, take: 1 } },
     })
-    if (care?.messages[0] && (!care.reads[0] || care.reads[0].readAt < care.messages[0].createdAt)) count += 1
+    for (const care of cares) {
+      if (care.messages[0] && (!care.reads[0] || care.reads[0].readAt < care.messages[0].createdAt)) count += 1
+    }
   }
   return count
 }

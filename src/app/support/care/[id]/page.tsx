@@ -1,6 +1,8 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { requireUser, getLocale } from "@/lib/auth"
+import { OFFICE } from "@/lib/roles"
+import { officeShop } from "@/lib/shops"
 import { AppError } from "@/lib/errors"
 import { careThreadFor } from "@/lib/support"
 import { replyTemplates } from "@/lib/office"
@@ -11,7 +13,9 @@ import { Composer, MessageList } from "@/components/chat-pane"
 import { PageHeader } from "@/components/bits"
 
 export default async function CareThreadPage({ params }: { params: Promise<{ id: string }> }) {
-  const [{ id }, user, locale, templates] = await Promise.all([params, requireUser(["SUPPORT", "ADMIN"], "/support"), getLocale(), replyTemplates()])
+  const [{ id }, user, locale] = await Promise.all([params, requireUser(OFFICE, "/support"), getLocale()])
+  const shop = await officeShop(user)
+  const templates = await replyTemplates(shop.id)
   let thread
   try {
     thread = await careThreadFor(user, id)

@@ -1,6 +1,8 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { requireUser, getLocale } from "@/lib/auth"
+import { OFFICE } from "@/lib/roles"
+import { officeShop } from "@/lib/shops"
 import { AppError } from "@/lib/errors"
 import { ticketFor, TICKET_CATEGORIES, TICKET_PRIORITIES, TICKET_STATUSES } from "@/lib/support"
 import { replyTemplates } from "@/lib/office"
@@ -11,7 +13,9 @@ import { Composer, MessageList } from "@/components/chat-pane"
 import { PageHeader, Section } from "@/components/bits"
 
 export default async function OfficeTicketPage({ params }: { params: Promise<{ code: string }> }) {
-  const [{ code }, user, locale, templates] = await Promise.all([params, requireUser(["SUPPORT", "ADMIN"], "/support/tickets"), getLocale(), replyTemplates()])
+  const [{ code }, user, locale] = await Promise.all([params, requireUser(OFFICE, "/support/tickets"), getLocale()])
+  const shop = await officeShop(user)
+  const templates = await replyTemplates(shop.id)
   let ticket
   try {
     ticket = await ticketFor(user, code)

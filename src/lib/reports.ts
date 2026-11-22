@@ -25,31 +25,32 @@ export function parsePeriod(value?: string): Period {
 
 const RUNNING = ["CONFIRMED", "ASSIGNED", "ACCEPTED", "ON_THE_WAY", "ARRIVED", "IN_PROGRESS", "PICKED_UP", "AT_LAUNDRY", "READY", "OUT_FOR_DELIVERY"]
 
-export async function dashboard(period: Period, from?: string, to?: string) {
+/** One shop's dashboard numbers. Every count below is scoped to `shopId`. */
+export async function dashboard(shopId: string, period: Period, from?: string, to?: string) {
   const range = periodRange(period, from, to)
   const chartDays = recentDays(period === "today" || period === "week" ? 7 : 30)
   const chartStart = dayStart(chartDays[0])
 
   const [booked, completed, chartRows, running, waiting, openTickets, urgentTickets, customers, workers, recent, careOpen] = await Promise.all([
     db.serviceBooking.findMany({
-      where: { createdAt: { gte: range.gte, lt: range.lt } },
+      where: { shopId, createdAt: { gte: range.gte, lt: range.lt } },
       select: { status: true, categoryId: true, areaId: true },
     }),
     db.serviceBooking.findMany({
-      where: { status: "COMPLETED", completedAt: { gte: range.gte, lt: range.lt } },
+      where: { shopId, status: "COMPLETED", completedAt: { gte: range.gte, lt: range.lt } },
       select: { finalPrice: true, estimatedPrice: true, categoryId: true, areaId: true },
     }),
     db.serviceBooking.findMany({
-      where: { status: "COMPLETED", completedAt: { gte: chartStart } },
+      where: { shopId, status: "COMPLETED", completedAt: { gte: chartStart } },
       select: { finalPrice: true, estimatedPrice: true, completedAt: true },
     }),
-    db.serviceBooking.count({ where: { status: { in: RUNNING } } }),
-    db.serviceBooking.count({ where: { status: "REQUESTED" } }),
-    db.ticket.count({ where: { status: { in: ["OPEN", "PENDING"] } } }),
-    db.ticket.count({ where: { status: { in: ["OPEN", "PENDING"] }, priority: { in: ["HIGH", "URGENT"] } } }),
-    db.user.count({ where: { role: "CUSTOMER" } }),
+    db.serviceBooking.count({ where: { shopId, status: { in: RUNNING } } }),
+    db.serviceBooking.count({ where: { shopId, status: "REQUESTED" } }),
+    db.ticket.count({ where: { shopId, status: { in: ["OPEN", "PENDING"] } } }),
+    db.ticket.count({ where: { shopId, status: { in: ["OPEN", "PENDING"] }, priority: { in: ["HIGH", "URGENT"] } } }),
+    db.user.count({ where: { role: "CUSTOMER", bookings: { some: { shopId } } } }),
     db.workerProfile.findMany({
-      where: { user: { active: true } },
+      where: { shopId, user: { active: true } },
       include: {
         user: { select: { name: true } },
         skills: { include: { category: { select: { nameBn: true, name: true } } } },
@@ -62,11 +63,12 @@ export async function dashboard(period: Period, from?: string, to?: string) {
       orderBy: { rating: "desc" },
     }),
     db.serviceBooking.findMany({
+      where: { shopId },
       orderBy: { createdAt: "desc" },
       take: 8,
       include: { customer: { select: { name: true } }, offering: true, area: true, category: { select: { flow: true } } },
     }),
-    db.careThread.count({ where: { status: "OPEN", messages: { some: {} } } }),
+    db.careThread.count({ where: { shopId, status: "OPEN", messages: { some: {} } } }),
   ])
 
   const amount = (r: { finalPrice: number | null; estimatedPrice: number }) => r.finalPrice ?? r.estimatedPrice
@@ -75,8 +77,8 @@ export async function dashboard(period: Period, from?: string, to?: string) {
   for (const b of booked) byStatus[b.status] = (byStatus[b.status] ?? 0) + 1
 
   const [categories, areas] = await Promise.all([
-    db.serviceCategory.findMany({ select: { id: true, name: true, nameBn: true, icon: true } }),
-    db.serviceArea.findMany({ select: { id: true, name: true, nameBn: true } }),
+    db.serviceCategory.findMany({ where: { shopId }, select: { id: true, name: true, nameBn: true, icon: true } }),
+    db.serviceArea.findMany({ where: { shopId }, select: { id: true, name: true, nameBn: true } }),
   ])
   const top = <T extends { id: string }>(rows: T[], key: "categoryId" | "areaId") =>
     rows
@@ -118,12 +120,12 @@ export async function dashboard(period: Period, from?: string, to?: string) {
 
 export type ReportGroup = "day" | "week" | "month" | "service" | "worker" | "area"
 
-/** Completed-job revenue grouped for the reports page and CSV export. */
-export async function report(range: { gte: Date; lt: Date }, group: ReportGroup) {
-  const settings = await getSettings()
+/** Completed-job revenue of one shop grouped for the reports page and CSV export. */
+export async function report(shopId: string, range: { gte: Date; lt: Date }, group: ReportGroup) {
+  const settings = await getSettings(shopId)
   const share = Number(settings.workerShare) || 40
   const rows = await db.serviceBooking.findMany({
-    where: { status: "COMPLETED", completedAt: { gte: range.gte, lt: range.lt } },
+    where: { shopId, status: "COMPLETED", completedAt: { gte: range.gte, lt: range.lt } },
     include: {
       category: { select: { name: true, nameBn: true } },
       area: { select: { name: true, nameBn: true } },
@@ -176,6 +178,42 @@ export async function report(range: { gte: Date; lt: Date }, group: ReportGroup)
     { jobs: 0, revenue: 0, workerPay: 0, cash: 0, mobile: 0 },
   )
   return { rows: list, total, share }
+}
+
+/** Owner's view: every shop side by side, separate books. */
+export async function ownerOverview(range: { gte: Date; lt: Date }) {
+  const shops = await db.shop.findMany({
+    orderBy: [{ sort: "asc" }, { createdAt: "asc" }],
+    include: {
+      _count: { select: { workers: true, areas: true, categories: true } },
+      users: { where: { role: { in: ["ADMIN", "SUPPORT"] }, active: true }, select: { id: true, name: true, role: true, email: true } },
+    },
+  })
+  const rows = await Promise.all(
+    shops.map(async (shop) => {
+      const [booked, completed, running, waiting, tickets, settings] = await Promise.all([
+        db.serviceBooking.count({ where: { shopId: shop.id, createdAt: { gte: range.gte, lt: range.lt } } }),
+        db.serviceBooking.findMany({
+          where: { shopId: shop.id, status: "COMPLETED", completedAt: { gte: range.gte, lt: range.lt } },
+          select: { finalPrice: true, estimatedPrice: true, visitCharge: true, workerId: true, paymentMethod: true },
+        }),
+        db.serviceBooking.count({ where: { shopId: shop.id, status: { in: RUNNING } } }),
+        db.serviceBooking.count({ where: { shopId: shop.id, status: "REQUESTED" } }),
+        db.ticket.count({ where: { shopId: shop.id, status: { in: ["OPEN", "PENDING"] } } }),
+        getSettings(shop.id),
+      ])
+      const share = Number(settings.workerShare) || 40
+      const revenue = completed.reduce((s, r) => s + (r.finalPrice ?? r.estimatedPrice), 0)
+      const workerPay = completed.reduce((s, r) => s + (r.workerId ? workerShare(r.finalPrice ?? r.estimatedPrice, r.visitCharge, share) : 0), 0)
+      const cash = completed.filter((r) => r.paymentMethod === "CASH").reduce((s, r) => s + (r.finalPrice ?? r.estimatedPrice), 0)
+      return { shop, booked, completed: completed.length, revenue, workerPay, margin: revenue - workerPay, cash, mobile: revenue - cash, running, waiting, tickets }
+    }),
+  )
+  const total = rows.reduce(
+    (t, r) => ({ booked: t.booked + r.booked, completed: t.completed + r.completed, revenue: t.revenue + r.revenue, workerPay: t.workerPay + r.workerPay, margin: t.margin + r.margin, running: t.running + r.running, waiting: t.waiting + r.waiting, tickets: t.tickets + r.tickets }),
+    { booked: 0, completed: 0, revenue: 0, workerPay: 0, margin: 0, running: 0, waiting: 0, tickets: 0 },
+  )
+  return { rows, total }
 }
 
 function csvCell(value: string | number) {

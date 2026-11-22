@@ -55,7 +55,7 @@ export async function getUser() {
     const { payload } = await jwtVerify(token, authSecret())
     const id = String(payload.sub || "")
     if (!id) return null
-    const user = await db.user.findUnique({ where: { id }, include: { worker: true } })
+    const user = await db.user.findUnique({ where: { id }, include: { worker: true, shop: { select: { id: true, slug: true, name: true, nameBn: true, active: true } } } })
     if (!user || !user.active) return null
     return user
   } catch {

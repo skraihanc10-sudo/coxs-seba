@@ -1,5 +1,7 @@
 import { Trash2 } from "lucide-react"
 import { requireUser, getLocale } from "@/lib/auth"
+import { OFFICE } from "@/lib/roles"
+import { officeShop } from "@/lib/shops"
 import { replyTemplates } from "@/lib/office"
 import { pick } from "@/lib/i18n"
 import { deleteTemplateAction, saveTemplateAction } from "@/actions/admin"
@@ -7,7 +9,9 @@ import { ActionForm, SubmitButton } from "@/components/forms"
 import { PageHeader, Section } from "@/components/bits"
 
 export default async function TemplatesPage() {
-  const [, locale, templates] = await Promise.all([requireUser(["SUPPORT", "ADMIN"], "/support/templates"), getLocale(), replyTemplates()])
+  const [user, locale] = await Promise.all([requireUser(OFFICE, "/support/templates"), getLocale()])
+  const shop = await officeShop(user)
+  const templates = await replyTemplates(shop.id)
   return (
     <div className="mx-auto max-w-3xl">
       <PageHeader title={pick(locale, "তৈরি উত্তর", "Reply templates")} sub={pick(locale, "চ্যাট আর টিকেটে এক ক্লিকে বসে।", "One tap to drop into a chat or ticket.")} />
@@ -21,11 +25,9 @@ export default async function TemplatesPage() {
                 <input name="title" defaultValue={t.title} className="field" required maxLength={60} />
                 <textarea name="body" defaultValue={t.body} className="field" required maxLength={1000} />
                 <input type="hidden" name="sort" value={t.sort} />
-                <div className="flex gap-2">
-                  <SubmitButton className="btn-soft h-10 flex-1 text-sm">{pick(locale, "সেভ", "Save")}</SubmitButton>
-                  <form action={deleteTemplateAction}><input type="hidden" name="id" value={t.id} /><button className="btn-danger h-10 px-3"><Trash2 className="size-4" /></button></form>
-                </div>
+                <SubmitButton className="btn-soft h-10 w-full text-sm">{pick(locale, "সেভ", "Save")}</SubmitButton>
               </ActionForm>
+              <form action={deleteTemplateAction} className="mt-2 text-right"><input type="hidden" name="id" value={t.id} /><button className="btn-danger h-9 px-3 text-xs"><Trash2 className="size-4" /> {pick(locale, "মুছুন", "Delete")}</button></form>
             </details>
           ))}
         </div>

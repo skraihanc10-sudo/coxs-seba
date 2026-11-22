@@ -11,6 +11,7 @@ export function BookingFacts({ booking, locale, showCustomer = false }: { bookin
   const b = booking
   const bill = b.finalPrice ?? billFor(b)
   const pay = paymentProvider(b.paymentMethod)
+  const rental = b.category.flow === "RENTAL"
   return (
     <div className="divide-y divide-line">
       {showCustomer ? (
@@ -24,15 +25,16 @@ export function BookingFacts({ booking, locale, showCustomer = false }: { bookin
         <Row label={pick(locale, "পরিমাণ", "Quantity")}>
           {b.quantity} {unitLabel(b.pricing, locale)}
           {b.category.flow === "TEAM" ? ` × ${b.days} ${pick(locale, "দিন", "days")} · ${b.teamSize} ${pick(locale, "জন", "people")}` : ""}
+          {b.pricing === "PER_DAY" || b.pricing === "PER_HOUR" ? <span className="block text-xs font-normal text-muted-foreground">{b.quantity} × {taka(b.unitPrice, locale)}/{unitLabel(b.pricing, locale)}</span> : null}
         </Row>
       ) : null}
-      <Row label={pick(locale, "এলাকা", "Area")}>{named(locale, b.area)}</Row>
-      <Row label={pick(locale, "ঠিকানা", "Address")}>
+      <Row label={rental ? pick(locale, "পিকআপ এলাকা", "Pickup area") : pick(locale, "এলাকা", "Area")}>{named(locale, b.area)}</Row>
+      <Row label={rental ? pick(locale, "পিকআপ", "Pickup") : pick(locale, "ঠিকানা", "Address")}>
         <span className="block">{b.addressLine}</span>
         {b.landmark ? <span className="block text-xs font-normal text-muted-foreground">{b.landmark}</span> : null}
         <a href={mapsUrl(`${b.addressLine}, ${b.area.name}`)} target="_blank" rel="noreferrer" className="mt-1 inline-flex items-center gap-1 text-xs text-brand"><Navigation className="size-3" /> {pick(locale, "ম্যাপে দেখুন", "Open in Maps")}</a>
       </Row>
-      <Row label={pick(locale, "সময়", "When")}>{formatDay(b.visitDate, locale)} · {b.visitSlot}</Row>
+      <Row label={rental ? pick(locale, "পিকআপ সময়", "Pickup time") : pick(locale, "সময়", "When")}>{formatDay(b.visitDate, locale)} · {b.visitSlot}</Row>
       {b.notes ? <Row label={pick(locale, "নোট", "Notes")}><span className="whitespace-pre-wrap font-normal">{b.notes}</span></Row> : null}
       <Row label={b.status === "COMPLETED" ? pick(locale, "বিল", "Bill") : pick(locale, "আনুমানিক দাম", "Estimate")}>
         {b.pricing === "QUOTE" && b.quoteStatus !== "ACCEPTED" && !b.finalPrice ? (

@@ -1,27 +1,28 @@
 import { db } from "./db"
 
-export async function activeCategories() {
+/** Public catalog of one shop. Every query here is shop-scoped. */
+export async function activeCategories(shopId: string) {
   return db.serviceCategory.findMany({
-    where: { active: true },
+    where: { shopId, active: true },
     orderBy: { sort: "asc" },
     include: { offerings: { where: { active: true }, orderBy: { sort: "asc" } } },
   })
 }
 
-export async function categoryBySlug(slug: string) {
+export async function categoryBySlug(shopId: string, slug: string) {
   return db.serviceCategory.findFirst({
-    where: { slug, active: true },
+    where: { shopId, slug, active: true },
     include: { offerings: { where: { active: true }, orderBy: { sort: "asc" } } },
   })
 }
 
-export async function activeAreas() {
-  return db.serviceArea.findMany({ where: { active: true }, orderBy: { sort: "asc" } })
+export async function activeAreas(shopId: string) {
+  return db.serviceArea.findMany({ where: { shopId, active: true }, orderBy: { sort: "asc" } })
 }
 
-export async function publishedReviews(take = 6) {
+export async function publishedReviews(shopId: string, take = 6) {
   return db.bookingReview.findMany({
-    where: { published: true, rating: { gte: 4 } },
+    where: { published: true, rating: { gte: 4 }, booking: { shopId } },
     orderBy: { createdAt: "desc" },
     take,
     include: {
@@ -31,6 +32,7 @@ export async function publishedReviews(take = 6) {
   })
 }
 
+/** FAQs are shared by every shop. */
 export async function activeFaqs() {
   return db.faq.findMany({ where: { active: true }, orderBy: { sort: "asc" } })
 }

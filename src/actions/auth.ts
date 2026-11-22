@@ -12,7 +12,8 @@ import { limited } from "@/lib/rate-limit"
 import { normalisePhone } from "@/lib/format"
 import { sendOtp, verifyOtp } from "@/lib/otp"
 import { formObject, loginSchema, otpSchema, parse, phoneInput, profileSchema, addressSchema } from "@/lib/validation"
-import { sadarArea } from "@/lib/bookings"
+import { db as database } from "@/lib/db"
+import { SHOP_COOKIE } from "@/lib/shops"
 
 export async function loginAction(_prev: ActionState, form: FormData): Promise<ActionState> {
   const input = parse(loginSchema, formObject(form))
@@ -80,9 +81,21 @@ export async function setLocaleAction(form: FormData) {
   redirect(back.startsWith("/") && !back.startsWith("//") ? back : "/")
 }
 
+/** Customer picks which shop (city/branch) they are browsing. */
+export async function setShopAction(form: FormData) {
+  const slug = String(form.get("shop") ?? "")
+  const shop = await database.shop.findFirst({ where: { slug, active: true }, select: { slug: true } })
+  const back = String(form.get("back") ?? "/")
+  if (shop) {
+    const jar = await cookies()
+    jar.set(SHOP_COOKIE, shop.slug, { path: "/", maxAge: 60 * 60 * 24 * 365, sameSite: "lax" })
+  }
+  redirect(back.startsWith("/") && !back.startsWith("//") ? back : "/")
+}
+
 export async function updateProfileAction(_prev: ActionState, form: FormData): Promise<ActionState> {
   return run(async () => {
-    const user = await actor(["CUSTOMER", "WORKER", "SUPPORT", "ADMIN"])
+    const user = await actor(["CUSTOMER", "WORKER", "SUPPORT", "ADMIN", "OWNER"])
     const input = parse(profileSchema, formObject(form))
     if (input.email) {
       const taken = await db.user.findFirst({ where: { email: input.email.toLowerCase(), NOT: { id: user.id } } })
@@ -105,7 +118,8 @@ export async function saveAddressAction(_prev: ActionState, form: FormData): Pro
   return run(async () => {
     const user = await actor(["CUSTOMER"])
     const input = parse(addressSchema, formObject(form))
-    const area = await sadarArea(input.areaId)
+    const area = await database.serviceArea.findFirst({ where: { id: input.areaId, active: true, shop: { active: true } } })
+    if (!area) throw new AppError("এলাকা বেছে নিন।", "Choose an area.")
     const phone = normalisePhone(input.phone)
     if (!phone) throw new AppError("সঠিক মোবাইল নম্বর দিন।", "Enter a valid mobile number.")
     const count = await db.address.count({ where: { userId: user.id } })

@@ -49,7 +49,6 @@ const bn = {
   empty: "এখনো কিছু নেই",
   seeAll: "সব দেখুন",
   language: "ভাষা",
-  sadarOnly: "শুধু কক্সবাজার সদর",
 }
 
 const en: typeof bn = {
@@ -90,7 +89,6 @@ const en: typeof bn = {
   empty: "Nothing here yet",
   seeAll: "See all",
   language: "Language",
-  sadarOnly: "Cox's Bazar Sadar only",
 }
 
 export function words(locale: Locale) {

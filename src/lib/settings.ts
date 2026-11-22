@@ -1,7 +1,7 @@
 import { db } from "./db"
 import { brand } from "../theme/brand"
 
-/** Everything the admin can change from Settings. Stored as key/value rows. */
+/** Everything a shop admin can change from Settings. Stored as key/value rows per shop. */
 export const SETTING_DEFAULTS: Record<string, string> = {
   helpline: brand.supportPhone,
   whatsapp: brand.whatsapp,
@@ -13,8 +13,8 @@ export const SETTING_DEFAULTS: Record<string, string> = {
   addressEn: brand.address,
   heroBn: "আপনি নিশ্চিন্তে থাকুন, কাজটা আমরা করে দিই।",
   heroEn: "You relax. We get it done.",
-  bannerBn: "কক্সবাজার সদরে ঘরে বসেই সব সেবা: লন্ড্রি, ইলেকট্রিশিয়ান, প্লাম্বার, ক্লিনিং আর আরও অনেক কিছু।",
-  bannerEn: "Every home service in Cox's Bazar Sadar: laundry, electricians, plumbers, cleaning and more.",
+  bannerBn: "ঘরে বসেই সব সেবা: লন্ড্রি, ইলেকট্রিশিয়ান, প্লাম্বার, ক্লিনিং আর আরও অনেক কিছু।",
+  bannerEn: "Every home service at your door: laundry, electricians, plumbers, cleaning and more.",
   /** Share of the final bill paid to the worker who did the job, in percent. */
   workerShare: "40",
   payCash: "1",
@@ -24,18 +24,21 @@ export const SETTING_DEFAULTS: Record<string, string> = {
 
 export const SETTING_KEYS = Object.keys(SETTING_DEFAULTS)
 
-export async function getSettings() {
-  const rows = await db.setting.findMany()
+export type Settings = Record<string, string>
+
+/** Settings of one shop, with defaults filled in. */
+export async function getSettings(shopId: string): Promise<Settings> {
+  const rows = await db.setting.findMany({ where: { shopId } })
   const map = { ...SETTING_DEFAULTS }
   for (const row of rows) map[row.key] = row.value
   return map
 }
 
-export async function saveSettings(entries: Record<string, string>) {
+export async function saveSettings(shopId: string, entries: Record<string, string>) {
   const known = Object.entries(entries).filter(([key]) => SETTING_KEYS.includes(key))
   await db.$transaction(
     known.map(([key, value]) =>
-      db.setting.upsert({ where: { key }, update: { value }, create: { key, value } }),
+      db.setting.upsert({ where: { shopId_key: { shopId, key } }, update: { value }, create: { shopId, key, value } }),
     ),
   )
 }

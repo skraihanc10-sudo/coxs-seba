@@ -33,6 +33,7 @@ export default async function WorkerJobPage({ params }: { params: Promise<{ code
   const open = isOpen(b.status)
   const quoteNeeded = b.pricing === "QUOTE" && b.quoteStatus !== "ACCEPTED" && open
   const blockedByQuote = next === "IN_PROGRESS" && b.pricing === "QUOTE" && b.quoteStatus !== "ACCEPTED"
+  const rental = b.category.flow === "RENTAL"
 
   return (
     <div className="mx-auto max-w-2xl space-y-4">
@@ -44,6 +45,7 @@ export default async function WorkerJobPage({ params }: { params: Promise<{ code
           <p className="text-xs font-bold text-muted-foreground uppercase">{pick(locale, "কাস্টমার", "Customer")}</p>
           <p className="truncate font-extrabold text-ink">{b.contactName || b.customer.name}</p>
           <p className="text-xs text-muted-foreground">{b.visitSlot} · {named(locale, b.area)}</p>
+          {rental ? <p className="mt-1 text-xs text-muted-foreground"><span className="font-bold text-ink">{pick(locale, "পিকআপ পয়েন্ট", "Pickup point")}:</span> {b.addressLine}</p> : null}
         </div>
         <a href={telHref(b.phone)} className="btn-primary h-11 px-4"><Phone className="size-4" /> {pick(locale, "কল", "Call")}</a>
       </div>
@@ -58,6 +60,7 @@ export default async function WorkerJobPage({ params }: { params: Promise<{ code
           ) : (
             <SubmitButton className="btn-primary h-16 w-full text-lg" pendingText="…">{WORKER_BUTTON[next]?.[locale]}</SubmitButton>
           )}
+          {rental && open ? <p className="mt-2 text-center text-xs text-muted-foreground">{pick(locale, "ভাড়ার ট্রিপ: পৌঁছে 'কাজ শুরু' চাপুন, ট্রিপ শেষে 'কাজ শেষ'", "Rental trip: tap 'Start work' at pickup and 'Job done' when the trip ends.")}</p> : null}
         </ActionForm>
       ) : null}
 

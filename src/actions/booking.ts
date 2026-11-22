@@ -29,7 +29,7 @@ import { customerByPhone } from "./auth"
 
 function code(form: FormData) {
   const value = String(form.get("code") ?? "").trim()
-  if (!/^CS-\d{5}$/.test(value)) throw new AppError("বুকিং নম্বর ঠিক নেই।", "Bad booking number.")
+  if (!/^[A-Z]{2,3}-\d{5,8}$/.test(value)) throw new AppError("বুকিং নম্বর ঠিক নেই।", "Bad booking number.")
   return value
 }
 
@@ -51,7 +51,7 @@ export async function createBookingAction(_prev: ActionState, form: FormData): P
     if (!customer) {
       if (!input.otp) throw new AppError("মোবাইলে পাঠানো কোডটা দিন।", "Enter the code we sent to your phone.")
       const verified = await verifyOtp(phone, input.otp)
-      customer = { ...(await customerByPhone(verified, input.name || input.contactName)), worker: null }
+      customer = { ...(await customerByPhone(verified, input.name || input.contactName)), worker: null, shop: null }
       out.signedIn = customer
     }
     const photos = await saveImages(form.getAll("photos"), 4)
@@ -66,16 +66,27 @@ export async function createBookingAction(_prev: ActionState, form: FormData): P
 
 export async function moveBookingAction(_prev: ActionState, form: FormData): Promise<ActionState> {
   return run(async () => {
-    const user = await actor(["CUSTOMER", "WORKER", "SUPPORT", "ADMIN"])
+    const user = await actor(["CUSTOMER", "WORKER", "SUPPORT", "ADMIN", "OWNER"])
     const to = String(form.get("to") ?? "")
     await moveBooking({ ...user, role: user.role as Role }, code(form), to, String(form.get("note") ?? ""))
     revalidatePath("/", "layout")
   })
 }
 
+/** Admin override: put a booking on any step of its flow (e.g. a worker phoned in, or a mistake must be undone). */
+export async function forceStatusAction(_prev: ActionState, form: FormData): Promise<ActionState> {
+  return run(async () => {
+    const user = await actor(["ADMIN", "OWNER"])
+    const to = String(form.get("to") ?? "")
+    await moveBooking({ ...user, role: user.role as Role }, code(form), to, String(form.get("note") ?? ""), { force: true })
+    revalidatePath("/", "layout")
+    return "ধাপ বদলানো হয়েছে।"
+  })
+}
+
 export async function assignWorkerAction(_prev: ActionState, form: FormData): Promise<ActionState> {
   return run(async () => {
-    const user = await actor(["SUPPORT", "ADMIN"])
+    const user = await actor(["SUPPORT", "ADMIN", "OWNER"])
     await assignWorker({ ...user, role: user.role as Role }, code(form), String(form.get("workerId") ?? ""))
     revalidatePath("/", "layout")
     return "কর্মী ঠিক করা হয়েছে।"
@@ -84,7 +95,7 @@ export async function assignWorkerAction(_prev: ActionState, form: FormData): Pr
 
 export async function sendQuoteAction(_prev: ActionState, form: FormData): Promise<ActionState> {
   return run(async () => {
-    const user = await actor(["WORKER", "SUPPORT", "ADMIN"])
+    const user = await actor(["WORKER", "SUPPORT", "ADMIN", "OWNER"])
     const input = parse(quoteSchema, formObject(form))
     await sendQuote({ ...user, role: user.role as Role }, input.code, input.amount, input.note)
     revalidatePath("/", "layout")
@@ -102,7 +113,7 @@ export async function answerQuoteAction(_prev: ActionState, form: FormData): Pro
 
 export async function rescheduleAction(_prev: ActionState, form: FormData): Promise<ActionState> {
   return run(async () => {
-    const user = await actor(["CUSTOMER", "SUPPORT", "ADMIN"])
+    const user = await actor(["CUSTOMER", "SUPPORT", "ADMIN", "OWNER"])
     const input = parse(rescheduleSchema, formObject(form))
     await reschedule({ ...user, role: user.role as Role }, input.code, input.visitDate, input.visitSlot)
     revalidatePath("/", "layout")
@@ -122,7 +133,7 @@ export async function reviewAction(_prev: ActionState, form: FormData): Promise<
 
 export async function setQuantityAction(_prev: ActionState, form: FormData): Promise<ActionState> {
   return run(async () => {
-    const user = await actor(["WORKER", "SUPPORT", "ADMIN"])
+    const user = await actor(["WORKER", "SUPPORT", "ADMIN", "OWNER"])
     const quantity = Number(form.get("quantity"))
     await setQuantity({ ...user, role: user.role as Role }, code(form), quantity)
     revalidatePath("/", "layout")
@@ -132,8 +143,8 @@ export async function setQuantityAction(_prev: ActionState, form: FormData): Pro
 
 export async function setPriceAction(_prev: ActionState, form: FormData): Promise<ActionState> {
   return run(async () => {
-    const user = await actor(["ADMIN"])
-    await setPrice({ ...user, role: "ADMIN" }, code(form), Number(form.get("finalPrice")), String(form.get("note") ?? ""))
+    const user = await actor(["ADMIN", "OWNER"])
+    await setPrice({ ...user, role: user.role as Role }, code(form), Number(form.get("finalPrice")), String(form.get("note") ?? ""))
     revalidatePath("/", "layout")
     return "দাম আপডেট হয়েছে।"
   })
@@ -141,7 +152,7 @@ export async function setPriceAction(_prev: ActionState, form: FormData): Promis
 
 export async function refundNoteAction(_prev: ActionState, form: FormData): Promise<ActionState> {
   return run(async () => {
-    const user = await actor(["SUPPORT", "ADMIN"])
+    const user = await actor(["SUPPORT", "ADMIN", "OWNER"])
     await setRefundNote({ ...user, role: user.role as Role }, code(form), String(form.get("note") ?? ""))
     revalidatePath("/", "layout")
     return "নোট সেভ হয়েছে।"
@@ -150,7 +161,7 @@ export async function refundNoteAction(_prev: ActionState, form: FormData): Prom
 
 export async function recordPaymentAction(_prev: ActionState, form: FormData): Promise<ActionState> {
   return run(async () => {
-    const user = await actor(["WORKER", "SUPPORT", "ADMIN"])
+    const user = await actor(["WORKER", "SUPPORT", "ADMIN", "OWNER"])
     await recordPayment({ ...user, role: user.role as Role }, code(form), String(form.get("method") ?? ""), String(form.get("reference") ?? ""))
     revalidatePath("/", "layout")
     return "পেমেন্ট হিসাবে লেখা হয়েছে।"
@@ -159,7 +170,7 @@ export async function recordPaymentAction(_prev: ActionState, form: FormData): P
 
 export async function uploadPhotosAction(_prev: ActionState, form: FormData): Promise<ActionState> {
   return run(async () => {
-    const user = await actor(["WORKER", "ADMIN", "CUSTOMER"])
+    const user = await actor(["WORKER", "ADMIN", "OWNER", "CUSTOMER"])
     const kind = String(form.get("kind") ?? "")
     if (kind !== "BEFORE" && kind !== "AFTER" && kind !== "CUSTOMER") throw new AppError("ছবির ধরন ঠিক নেই।", "Bad photo type.")
     const names = await saveImages(form.getAll("photos"))
