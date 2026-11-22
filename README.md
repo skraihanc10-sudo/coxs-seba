@@ -15,6 +15,7 @@ Next.js 16 · Prisma 6 + SQLite · Tailwind 4 · Playwright. Runs as one Docker 
 | **WORKER** (one shop) | `/worker` | see today's jobs, Accept → On the way → Arrived → Start → Done (laundry: Pick up → At laundry → Ready → Delivering → Done), send quotes, before/after photos, chat, earnings |
 | **SUPPORT** (one shop) | `/support` | that shop's inbox: care chats + tickets + booking chats, assign to self, reply templates, assign workers, move bookings |
 | **ADMIN** (one shop) | `/admin` | that shop's dashboard, bookings, workers, customers, services & prices, areas & charges, reports + CSV, staff, settings |
+| **PARTNER** (a WORKER whose profile is `kind: PARTNER`) | `/partner` to apply, then `/worker` | an outside car/bike owner: applies with their first vehicle, waits for admin approval, then gets rental orders, chats with the customer and sees their share of each rental under *My vehicles / Earnings* |
 | **OWNER** (all shops) | `/admin/shops` + `/admin` | create shops (copy services & prices from an existing one, paste areas, create the first admin), compare every shop's revenue / worker pay / margin side by side, switch into any shop's admin panel |
 
 ## Run locally
@@ -35,6 +36,7 @@ Demo logins are listed on `/login` (and below). OTP in demo mode is always **123
 | Laundry rider | rider@needcoxs.test / rider123 |
 | WiFi · Electrician · Cleaning · Plumber · AC · Driver | sumon.wifi@ · jamal.electric@ · rina.clean@ · karim.plumber@ · rafiq.ac@ · faruk.driver@needcoxs.test / rider123 |
 | Electrician · Dhaka | dhaka.electric@needcoxs.test / rider123 |
+| Vehicle partner (Cox's Bazar) | partner.rony@needcoxs.test / rider123 |
 
 ## Checks
 ```bash
@@ -54,6 +56,14 @@ npx tsx scripts/screenshots.ts       # phone + desktop screenshots into ./screen
 - `src/lib/seo.ts`, `src/app/sitemap.ts`, `src/app/robots.ts`, `src/app/opengraph-image.tsx`, `src/components/seo/json-ld.tsx` — metadata, canonical URLs, sitemap, Open Graph image and JSON-LD (LocalBusiness per branch, Service catalogs, FAQ, breadcrumbs).
 - `src/app/api/uploads/[name]` — serves photos from `/data/uploads`.
 - Fonts: **Nikosh** (Bangladesh Government standard) for Bangla headings, Noto Sans Bengali for body, Plus Jakarta Sans for English.
+
+## Rent-a-car and vehicle partners
+The rental category (`flow: RENTAL`) lists real vehicles, not just price types. `/services/rent-a-car` shows every live vehicle with photo, seats and hourly/daily rate; the customer books one, the order gets a `CR-` number and the exact vehicle is kept on the booking. Vehicles come from two places:
+
+- **Shop fleet** — admin → **Vehicles → New vehicle** (owner left blank = HANDYO's own).
+- **Partners** — a vehicle owner fills `/partner` (name, mobile, password, first vehicle, photos). That creates an inactive WORKER with `kind: PARTNER` and a PENDING vehicle. Admin → **Vehicles** shows it first; **Approve** switches the login on and puts the vehicle on the site, **Reject** needs a reason. Partners can add more vehicles (each needs approval), pause one, and edit rates.
+
+When a rental order arrives, the admin opens it and clicks **Send to the vehicle owner** (one click; the owner is preselected in the worker dropdown too). From there it is a normal job in the owner's `/worker` panel: accept, on the way, done, booking chat with the customer. Partners earn `partnerShare` % of the rental (Settings, default 85); staff workers keep `workerShare` %.
 
 ## Adding a shop
 Sign in as the owner → **Admin → Shops → New shop**. Give it a slug, names, city, contact, paste its areas (one per line: `slug | English | বাংলা | charge`), choose which shop to copy services & prices from, and create its first admin. That admin then signs in and only ever sees their own shop.

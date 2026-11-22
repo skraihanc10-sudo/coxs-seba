@@ -11,6 +11,7 @@ export const LIMITS = {
   otpSend: { max: 3, windowMs: 10 * 60_000 },
   otpVerify: { max: 8, windowMs: 10 * 60_000 },
   booking: { max: 10, windowMs: 60 * 60_000 },
+  partner: { max: 5, windowMs: 60 * 60_000 },
   message: { max: 60, windowMs: 10 * 60_000 },
 } as const
 

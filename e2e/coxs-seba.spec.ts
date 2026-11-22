@@ -230,7 +230,7 @@ test("5. customer care chat and a support ticket, both answered by support", asy
   await support.getByRole("button", { name: "সেভ" }).click()
   await customer.goto(`/help/tickets/${ticket}`)
   await expect(customer.getByText("বাড়তি টাকা বিকাশে ফেরত").first()).toBeVisible()
-  await expect(customer.getByText("সমাধান হয়েছে")).toBeVisible()
+  await expect(customer.getByText("সমাধান হয়েছে", { exact: true })).toBeVisible()
 })
 
 test("6. a customer cannot open someone else's booking, and panels need the right role", async ({ browser }) => {
@@ -284,4 +284,81 @@ test("8. customer can switch branch and sees that branch's areas; rent-a-car is 
   const options = await customer.locator("#area option").allTextContents()
   expect(options.join(" ")).toContain("কলাতলী")
   expect(options.join(" ")).not.toContain("ধানমন্ডি")
+})
+
+test("9. rent-a-car: a partner applies, the admin approves, a customer books that vehicle and the order reaches the partner", async ({ browser }) => {
+  const phone = `0181${String(Date.now()).slice(-7)}`
+  const carBn = `টেস্ট করোলা ${phone.slice(-4)}`
+  // 1. Vehicle owner applies from the public page.
+  const owner = await freshPage(browser)
+  await owner.goto("/partner")
+  await ready(owner)
+  await owner.fill('input[name="name"]', "টেস্ট পার্টনার")
+  await owner.fill('input[name="phone"]', phone)
+  await owner.fill('input[name="password"]', "partner123")
+  await owner.selectOption('select[name="offeringId"]', { index: 1 })
+  await owner.fill('input[name="title"]', "Test Corolla 2015")
+  await owner.fill('input[name="titleBn"]', carBn)
+  await owner.fill('input[name="pricePerHour"]', "400")
+  await owner.fill('input[name="pricePerDay"]', "3000")
+  await owner.check('input[name="agree"]')
+  await owner.getByRole("button", { name: "আবেদন জমা দিন" }).click()
+  await expect(owner.getByText("আবেদন জমা হয়েছে")).toBeVisible()
+
+  // Not approved yet: login is refused.
+  await owner.goto("/login?tab=staff")
+  await ready(owner)
+  await owner.fill("#identifier", phone)
+  await owner.fill("#password", "partner123")
+  await owner.getByRole("button", { name: "লগইন" }).click()
+  await expect(owner).toHaveURL(/\/login/)
+
+  // 2. Admin sees it pending and approves.
+  const admin = await freshPage(browser)
+  await loginWithPassword(admin, ADMIN)
+  await admin.goto("/admin/vehicles")
+  await ready(admin)
+  const card = admin.locator(".card", { hasText: carBn }).first()
+  await expect(card).toBeVisible()
+  await card.getByRole("button", { name: "অনুমোদন দিন" }).click()
+  await expect(admin.locator(".card", { hasText: carBn }).first().getByRole("button", { name: "অনুমোদন দিন" })).toHaveCount(0)
+  await expect(admin.locator(".card", { hasText: carBn }).first().getByText("চালু").first()).toBeVisible()
+
+  // 3. A customer picks exactly that vehicle and books it by the hour.
+  const customer = await freshPage(browser)
+  await loginWithPassword(customer, CUSTOMER)
+  await customer.goto("/services/rent-a-car")
+  const vehicleCard = customer.locator(".card", { hasText: carBn }).first()
+  await expect(vehicleCard).toBeVisible()
+  await vehicleCard.getByRole("link", { name: "এই গাড়িটা বুক করুন" }).click()
+  await expect(customer).toHaveURL(/vehicle=/)
+  await expect(customer.getByText(carBn).first()).toBeVisible()
+  const code = await book(customer, customer.url(), { quantity: 3 })
+  expect(code.startsWith("CR-")).toBeTruthy()
+  await expect(customer.getByText(carBn).first()).toBeVisible()
+  await expect(customer.getByText(/৳১,২০০|৳1,200/).first()).toBeVisible()
+
+  // 4. Admin sends the order to the vehicle owner with one click.
+  await admin.goto(`/admin/bookings/${code}`)
+  await ready(admin)
+  await admin.getByRole("button", { name: "গাড়ির মালিকের কাছে পাঠান" }).click()
+  await expect(admin.getByText("টেস্ট পার্টনার").first()).toBeVisible()
+
+  // 5. The partner logs in and sees it in the partner panel, with chat to the customer.
+  await owner.goto("/login?tab=staff")
+  await ready(owner)
+  await owner.fill("#identifier", phone)
+  await owner.fill("#password", "partner123")
+  await owner.getByRole("button", { name: "লগইন" }).click()
+  await owner.waitForURL(/\/worker/)
+  await expect(owner.getByText("পার্টনার প্যানেল").first()).toBeVisible()
+  await expect(owner.getByText(code).first()).toBeVisible()
+  await owner.goto(`/worker/jobs/${code}`)
+  await ready(owner)
+  await owner.fill('textarea[name="body"]', "আমি ৯টায় হোটেলের গেটে থাকব।")
+  await owner.getByRole("button", { name: "Send" }).click()
+  await customer.goto(`/bookings/${code}`)
+  await expect(customer.getByText("আমি ৯টায় হোটেলের গেটে থাকব।")).toBeVisible()
+  await owner.goto("/worker/vehicles")
+  await expect(owner.getByText(carBn).first()).toBeVisible()
 })

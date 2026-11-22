@@ -37,6 +37,8 @@ export default async function WorkersPage() {
               <span className={`pill ${w.bookings.length ? "bg-emerald-100 text-emerald-800" : "bg-canvas text-muted-foreground"}`}>{w.bookings.length ? `${w.bookings.length} ${pick(locale, "জব", "jobs")}` : pick(locale, "ফ্রি", "free")}</span>
             </div>
             <p className="mt-3 flex flex-wrap gap-1">
+              {w.kind === "PARTNER" ? <Link href="/admin/vehicles" className="pill bg-sky-50 text-sky-700 hover:bg-sky-100">{pick(locale, "পার্টনার (গাড়ির মালিক)", "Partner (vehicle owner)")}</Link> : null}
+              {!w.approved ? <Link href="/admin/vehicles" className="pill bg-amber-100 text-amber-800 hover:bg-amber-200">{pick(locale, "অনুমোদনের অপেক্ষায়", "Waiting for approval")}</Link> : null}
               {w.isRider ? <span className="pill bg-teal-50 text-teal-700">{pick(locale, "রাইডার", "Rider")}</span> : null}
               {w.skills.map((s) => <span key={s.categoryId} className="pill bg-brand-soft text-brand">{named(locale, s.category)}</span>)}
             </p>

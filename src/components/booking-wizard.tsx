@@ -22,21 +22,29 @@ export type WizardProps = {
   days: string[]
   payments: Array<{ id: string; label: string; labelBn: string; hint: string; hintBn: string }>
   user: { name: string; phone: string; addresses: Address[] } | null
+  /** Rentals: the exact vehicle picked on the category page. Its rates replace the offering's. */
+  vehicle?: { id: string; title: string; titleBn: string; seats: number; plate: string; photo: string; pricePerHour: number; pricePerDay: number; minHours: number; owner: string } | null
 }
 
-export function BookingWizard({ locale, shop, category, offering, areas, slots, days, payments, user }: WizardProps) {
+export function BookingWizard({ locale, shop, category, offering, areas, slots, days, payments, user, vehicle = null }: WizardProps) {
   const bn = locale === "bn"
   const T = (b: string, e: string) => (bn ? b : e)
   const name = (r: { name: string; nameBn: string }) => (bn ? r.nameBn : r.name)
-  const quantityJob = usesQuantity(offering.pricing)
   const team = category.flow === "TEAM"
   const custom = category.flow === "CUSTOM"
   const rental = category.flow === "RENTAL"
   const city = bn ? shop.cityBn : shop.city
   const quote = offering.pricing === "QUOTE"
 
+  // A picked vehicle is billed by the hour or by the day at its own rates.
+  const [rentalUnit, setRentalUnit] = useState<"HOUR" | "DAY">(vehicle ? (vehicle.pricePerHour ? "HOUR" : "DAY") : "HOUR")
+  const pricing = vehicle ? (rentalUnit === "DAY" ? "PER_DAY" : "PER_HOUR") : offering.pricing
+  const unitPrice = vehicle ? (rentalUnit === "DAY" ? vehicle.pricePerDay : vehicle.pricePerHour) : offering.price
+  const minQty = vehicle ? (rentalUnit === "DAY" ? 1 : vehicle.minHours) : offering.minQty
+  const quantityJob = usesQuantity(pricing)
+
   const [step, setStep] = useState(1)
-  const [quantity, setQuantity] = useState(offering.minQty)
+  const [quantity, setQuantity] = useState(minQty)
   const [teamSize, setTeamSize] = useState(team ? 3 : 1)
   const [dayCount, setDayCount] = useState(1)
   const [areaId, setAreaId] = useState(user?.addresses[0]?.areaId ?? "")
@@ -55,9 +63,14 @@ export function BookingWizard({ locale, shop, category, offering, areas, slots, 
 
   const area = areas.find((a) => a.id === areaId)
   const price = useMemo(
-    () => estimate({ pricing: offering.pricing, unitPrice: offering.price, quantity, days: dayCount, areaCharge: area?.charge ?? 0 }),
-    [offering, quantity, dayCount, area],
+    () => estimate({ pricing, unitPrice, quantity: Math.max(minQty, quantity), days: dayCount, areaCharge: area?.charge ?? 0 }),
+    [pricing, unitPrice, minQty, quantity, dayCount, area],
   )
+
+  function switchUnit(unit: "HOUR" | "DAY") {
+    setRentalUnit(unit)
+    setQuantity(unit === "DAY" ? 1 : (vehicle?.minHours ?? 1))
+  }
 
   function next() {
     setProblem("")
@@ -101,6 +114,8 @@ export function BookingWizard({ locale, shop, category, offering, areas, slots, 
       <input type="hidden" name="quantity" value={quantity} />
       <input type="hidden" name="teamSize" value={teamSize} />
       <input type="hidden" name="days" value={dayCount} />
+      {vehicle ? <input type="hidden" name="vehicleId" value={vehicle.id} /> : null}
+      {vehicle ? <input type="hidden" name="rentalUnit" value={rentalUnit} /> : null}
 
       {/* Stepper */}
       <ol className="mb-5 grid grid-cols-3 gap-2">
@@ -119,17 +134,43 @@ export function BookingWizard({ locale, shop, category, offering, areas, slots, 
 
       {/* Step 1: options */}
       <section className={step === 1 ? "space-y-4" : "hidden"}>
-        <div className="card p-4">
-          <p className="text-xs font-bold text-brand">{name(category)}</p>
-          <h2 className="display text-xl font-extrabold text-ink">{name(offering)}</h2>
-          <p className="mt-1 text-sm text-muted-foreground">{bn ? offering.detailBn : offering.detail}</p>
-          <p className="mt-2 text-sm font-bold text-ink">
-            {quote ? (offering.price ? T(`পরিদর্শন ফি ${taka(offering.price, locale)}, কাজের দাম দেখে জানানো হবে`, `Inspection ${taka(offering.price, locale)}; the job is quoted after a visit`) : T("দাম দেখে জানানো হবে", "Priced after we see the job")) : `${taka(offering.price, locale)} / ${unitLabel(offering.pricing, locale)}`}
-          </p>
-        </div>
+        {vehicle ? (
+          <div className="card overflow-hidden">
+            {vehicle.photo ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={`/api/uploads/${vehicle.photo}`} alt={bn ? vehicle.titleBn : vehicle.title} className="aspect-[16/9] w-full object-cover" />
+            ) : null}
+            <div className="p-4">
+              <p className="text-xs font-bold text-brand">{name(category)} · {name(offering)}</p>
+              <h2 className="display text-xl font-extrabold text-ink">{bn ? vehicle.titleBn : vehicle.title}</h2>
+              <p className="mt-1 text-sm text-muted-foreground">{vehicle.seats} {T("সিট", "seats")}{vehicle.plate ? ` · ${vehicle.plate}` : ""} · {vehicle.owner}</p>
+              <div className="mt-3 grid grid-cols-2 gap-2" role="radiogroup" aria-label={T("ভাড়ার ধরন", "Rental type")}>
+                {vehicle.pricePerHour ? (
+                  <button type="button" role="radio" aria-checked={rentalUnit === "HOUR"} onClick={() => switchUnit("HOUR")} className="chip justify-center" data-on={rentalUnit === "HOUR"}>
+                    {taka(vehicle.pricePerHour, locale)}/{T("ঘণ্টা", "hour")}{vehicle.minHours > 1 ? ` · ${T(`কমপক্ষে ${vehicle.minHours} ঘণ্টা`, `min ${vehicle.minHours} h`)}` : ""}
+                  </button>
+                ) : null}
+                {vehicle.pricePerDay ? (
+                  <button type="button" role="radio" aria-checked={rentalUnit === "DAY"} onClick={() => switchUnit("DAY")} className="chip justify-center" data-on={rentalUnit === "DAY"}>
+                    {taka(vehicle.pricePerDay, locale)}/{T("দিন", "day")}
+                  </button>
+                ) : null}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="card p-4">
+            <p className="text-xs font-bold text-brand">{name(category)}</p>
+            <h2 className="display text-xl font-extrabold text-ink">{name(offering)}</h2>
+            <p className="mt-1 text-sm text-muted-foreground">{bn ? offering.detailBn : offering.detail}</p>
+            <p className="mt-2 text-sm font-bold text-ink">
+              {quote ? (offering.price ? T(`পরিদর্শন ফি ${taka(offering.price, locale)}, কাজের দাম দেখে জানানো হবে`, `Inspection ${taka(offering.price, locale)}; the job is quoted after a visit`) : T("দাম দেখে জানানো হবে", "Priced after we see the job")) : `${taka(offering.price, locale)} / ${unitLabel(offering.pricing, locale)}`}
+            </p>
+          </div>
+        )}
 
         {quantityJob ? (
-          <Counter label={offering.pricing === "PER_ROOM" ? T("কত রুম?", "How many rooms?") : offering.pricing === "PER_KG" ? T("আনুমানিক কত কেজি?", "Roughly how many kg?") : offering.pricing === "PER_HOUR" ? T("কত ঘণ্টা?", "How many hours?") : offering.pricing === "PER_DAY" ? T("কত দিন?", "How many days?") : T("কত পিস?", "How many items?")} value={quantity} min={offering.minQty} max={200} onChange={setQuantity} hint={offering.minQty > 1 ? T(`সর্বনিম্ন ${offering.minQty}`, `Minimum ${offering.minQty}`) : undefined} />
+          <Counter label={pricing === "PER_ROOM" ? T("কত রুম?", "How many rooms?") : pricing === "PER_KG" ? T("আনুমানিক কত কেজি?", "Roughly how many kg?") : pricing === "PER_HOUR" ? T("কত ঘণ্টা?", "How many hours?") : pricing === "PER_DAY" ? T("কত দিন?", "How many days?") : T("কত পিস?", "How many items?")} value={quantity} min={minQty} max={200} onChange={setQuantity} hint={minQty > 1 ? T(`সর্বনিম্ন ${minQty}`, `Minimum ${minQty}`) : undefined} />
         ) : null}
         {team ? (
           <>
@@ -208,8 +249,9 @@ export function BookingWizard({ locale, shop, category, offering, areas, slots, 
       <section className={step === 3 ? "space-y-4" : "hidden"}>
         <div className="card divide-y divide-line p-4 text-[15px]">
           <Line k={T("সেবা", "Service")} v={`${name(category)} · ${name(offering)}`} />
+          {vehicle ? <Line k={T("গাড়ি", "Vehicle")} v={`${bn ? vehicle.titleBn : vehicle.title} · ${taka(unitPrice, locale)}/${unitLabel(pricing, locale)}`} /> : null}
           <Line k={T("শাখা", "Branch")} v={city} />
-          {quantityJob ? <Line k={T("পরিমাণ", "Quantity")} v={`${quantity} ${unitLabel(offering.pricing, locale)}${team ? ` × ${dayCount} ${T("দিন", "days")} · ${teamSize} ${T("জন", "people")}` : ""}`} /> : null}
+          {quantityJob ? <Line k={T("পরিমাণ", "Quantity")} v={`${Math.max(minQty, quantity)} ${unitLabel(pricing, locale)}${team ? ` × ${dayCount} ${T("দিন", "days")} · ${teamSize} ${T("জন", "people")}` : ""}`} /> : null}
           <Line k={rental ? T("পিকআপ এলাকা", "Pickup area") : T("এলাকা", "Area")} v={area ? name(area) : "—"} />
           <Line k={rental ? T("পিকআপ", "Pickup") : T("ঠিকানা", "Address")} v={`${addressLine}${landmark ? `, ${landmark}` : ""}`} />
           <Line k={rental ? T("পিকআপ সময়", "Pickup time") : T("সময়", "When")} v={`${formatDay(visitDate, locale)} · ${visitSlot}`} />

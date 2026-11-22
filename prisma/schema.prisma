@@ -44,6 +44,7 @@ model Shop {
   tickets     Ticket[]
   templates   ReplyTemplate[]
   settings    Setting[]
+  vehicles    Vehicle[]
 }
 
 model User {
@@ -86,6 +87,10 @@ model WorkerProfile {
   nid         String   @default("")
   nidPhoto    String   @default("")
   isRider     Boolean  @default(false)
+  /// STAFF = our own team. PARTNER = an outside vehicle owner who rents through us.
+  kind        String   @default("STAFF")
+  /// Partners start unapproved; the admin approves them (and their vehicle) before they can log in.
+  approved    Boolean  @default(true)
   available   Boolean  @default(true)
   rating      Float    @default(0)
   ratingCount Int      @default(0)
@@ -95,8 +100,44 @@ model WorkerProfile {
   areas    WorkerArea[]
   bookings ServiceBooking[]
   reviews  BookingReview[]
+  vehicles Vehicle[]
 
   @@index([shopId])
+}
+
+/// A car, bike, jeep or microbus customers can rent. Owned by a partner (workerId)
+/// or by the shop itself (workerId null). offeringId is its type inside the rental category.
+model Vehicle {
+  id            String          @id @default(cuid())
+  shopId        String
+  shop          Shop            @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  workerId      String?
+  worker        WorkerProfile?  @relation(fields: [workerId], references: [id], onDelete: SetNull)
+  offeringId    String
+  offering      ServiceOffering @relation(fields: [offeringId], references: [id], onDelete: Cascade)
+  title         String
+  titleBn       String
+  plate         String          @default("")
+  seats         Int             @default(2)
+  /// Uploaded photo names, comma separated; the first is the cover.
+  photos        String          @default("")
+  detail        String          @default("")
+  detailBn      String          @default("")
+  pricePerHour  Int             @default(0)
+  pricePerDay   Int             @default(0)
+  minHours      Int             @default(2)
+  /// PENDING (waiting for admin), APPROVED (bookable), PAUSED (owner hid it), REJECTED
+  status        String          @default("PENDING")
+  rejectNote    String          @default("")
+  sort          Int             @default(0)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  bookings ServiceBooking[]
+
+  @@index([shopId, status])
+  @@index([workerId])
+  @@index([offeringId])
 }
 
 model WorkerSkill {
@@ -180,6 +221,7 @@ model ServiceOffering {
   sort        Int             @default(0)
   active      Boolean         @default(true)
   bookings    ServiceBooking[]
+  vehicles    Vehicle[]
 
   @@unique([categoryId, slug])
 }
@@ -237,6 +279,9 @@ model ServiceBooking {
   status        String          @default("REQUESTED")
   workerId      String?
   worker        WorkerProfile?  @relation(fields: [workerId], references: [id], onDelete: SetNull)
+  /// Rentals: the exact vehicle the customer picked.
+  vehicleId     String?
+  vehicle       Vehicle?        @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
   cancelReason  String          @default("")
   refundNote    String          @default("")
   adminNote     String          @default("")
@@ -259,6 +304,7 @@ model ServiceBooking {
   @@index([status, visitDate])
   @@index([categoryId])
   @@index([areaId])
+  @@index([vehicleId])
 }
 
 /// Every status change: who, when, from what, to what.

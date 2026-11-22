@@ -367,6 +367,10 @@ export async function saveSettingsAction(_prev: ActionState, form: FormData): Pr
       const share = Number(entries.workerShare)
       if (!(share >= 0 && share <= 100)) throw new AppError("কর্মীর ভাগ ০–১০০% এর মধ্যে দিন।", "Worker share must be 0–100%.")
     }
+    if (entries.partnerShare !== undefined) {
+      const share = Number(entries.partnerShare)
+      if (!(share >= 0 && share <= 100)) throw new AppError("পার্টনারের ভাগ ০–১০০% এর মধ্যে দিন।", "Partner share must be 0–100%.")
+    }
     await saveSettings(shopId, entries)
     done()
     return "সেটিংস সেভ হয়েছে।"

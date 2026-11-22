@@ -40,6 +40,11 @@ export function OfficeBooking({
   const moves = nextStatuses(flow, b.status).filter((s) => s !== "ASSIGNED")
   const assignable = ["REQUESTED", "CONFIRMED", "ASSIGNED", "ACCEPTED"].includes(b.status)
   const eligible = workers.filter((w) => w.skilled).sort((a, c) => Number(c.inArea) - Number(a.inArea) || a.busy - c.busy || c.rating - a.rating)
+  const vehicle = b.vehicle
+  const ownerId = vehicle?.workerId ?? null
+  const owner = ownerId ? workers.find((w) => w.id === ownerId) : undefined
+  const sendToOwner = Boolean(ownerId && owner && ["REQUESTED", "CONFIRMED"].includes(b.status) && b.workerId !== ownerId)
+  const vehiclePhoto = vehicle ? vehicle.photos.split(",").map((p) => p.trim()).filter(Boolean)[0] : undefined
 
   return (
     <div className="grid gap-4 lg:grid-cols-[1fr_380px]">
@@ -54,13 +59,36 @@ export function OfficeBooking({
           <Link href={`/admin/customers/${b.customerId}`} className="text-xs font-bold text-brand">{pick(locale, "প্রোফাইল", "Profile")}</Link>
         </div>
 
+        {vehicle ? (
+          <Section title={pick(locale, "গাড়ি", "Vehicle")}>
+            <div className="flex items-center gap-3">
+              {vehiclePhoto ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={`/api/uploads/${vehiclePhoto}`} alt="" className="size-16 shrink-0 rounded-xl object-cover ring-1 ring-line" />
+              ) : null}
+              <div className="min-w-0 flex-1 text-sm">
+                <p className="truncate font-extrabold text-ink">{locale === "bn" ? vehicle.titleBn || vehicle.title : vehicle.title || vehicle.titleBn}</p>
+                <p className="text-xs text-muted-foreground">{vehicle.plate ? `${vehicle.plate} · ` : ""}{vehicle.seats} {pick(locale, "সিট", "seats")}{owner ? ` · ${pick(locale, "মালিক:", "Owner:")} ${owner.name}` : ` · ${pick(locale, "HANDYO-র নিজের", "HANDYO's own")}`}</p>
+              </div>
+              {isAdmin ? <Link href={`/admin/vehicles/${vehicle.id}`} className="text-xs font-bold text-brand">{pick(locale, "গাড়ি", "Vehicle")} →</Link> : null}
+            </div>
+            {sendToOwner && ownerId ? (
+              <ActionForm action={assignWorkerAction} resetOnSuccess={false} className="mt-3">
+                <input type="hidden" name="code" value={b.code} />
+                <input type="hidden" name="workerId" value={ownerId} />
+                <SubmitButton className="btn-primary h-10 w-full text-sm">{pick(locale, "গাড়ির মালিকের কাছে পাঠান", "Send to the vehicle owner")}</SubmitButton>
+              </ActionForm>
+            ) : null}
+          </Section>
+        ) : null}
+
         {assignable ? (
           <Section title={b.worker ? pick(locale, "কর্মী বদলান", "Reassign worker") : pick(locale, "কর্মী ঠিক করুন", "Assign a worker")}>
             {b.worker ? <p className="mb-2 text-sm text-muted-foreground">{pick(locale, "এখন:", "Now:")} <span className="font-bold text-ink">{b.worker.user.name}</span></p> : null}
             {!eligible.length ? <p className="text-sm text-danger">{pick(locale, "এই সেবার দক্ষতাসহ কোনো সক্রিয় কর্মী নেই। Workers পেজে দক্ষতা যোগ করুন।", "No active worker has this skill. Add it on the Workers page.")}</p> : (
               <ActionForm action={assignWorkerAction} resetOnSuccess={false} className="flex gap-2">
                 <input type="hidden" name="code" value={b.code} />
-                <select name="workerId" className="field flex-1" defaultValue={b.workerId ?? eligible[0]?.id}>
+                <select name="workerId" className="field flex-1" defaultValue={b.workerId ?? (ownerId && eligible.some((w) => w.id === ownerId) ? ownerId : eligible[0]?.id)}>
                   {eligible.map((w) => (
                     <option key={w.id} value={w.id}>
                       {w.name} · ★{w.rating ? w.rating.toFixed(1) : "—"} · {w.busy} {pick(locale, "চলমান", "active")}{w.inArea ? ` · ${pick(locale, "এই এলাকায়", "in area")}` : ""}

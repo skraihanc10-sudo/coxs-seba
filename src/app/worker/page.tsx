@@ -5,6 +5,7 @@ import { db } from "@/lib/db"
 import { flowFor, WORKER_BUTTON, workerNext } from "@/lib/booking-flow"
 import { formatDay, localToday, telHref } from "@/lib/format"
 import { named, pick } from "@/lib/i18n"
+import { vehicleName } from "@/lib/vehicles"
 import { CategoryIcon } from "@/components/category-icon"
 import { EmptyState, PageHeader, StatusPill } from "@/components/bits"
 
@@ -15,7 +16,7 @@ export default async function WorkerHome() {
     ? await db.serviceBooking.findMany({
         where: { workerId: user.worker.id, status: { notIn: ["COMPLETED", "CANCELLED"] } },
         orderBy: [{ visitDate: "asc" }, { visitSlot: "asc" }],
-        include: { category: true, offering: true, area: true },
+        include: { category: true, offering: true, area: true, vehicle: { select: { title: true, titleBn: true } } },
       })
     : []
   const todays = jobs.filter((j) => j.visitDate <= today)
@@ -31,6 +32,7 @@ export default async function WorkerHome() {
           <div className="min-w-0 flex-1">
             <p className="truncate font-extrabold text-ink">{named(locale, j.offering)}</p>
             <p className="text-xs text-muted-foreground">{j.code} · {formatDay(j.visitDate, locale)} · <span className="font-bold text-ink">{j.visitSlot}</span></p>
+            {j.vehicle ? <p className="truncate text-xs text-muted-foreground">{pick(locale, "গাড়ি:", "Vehicle:")} <span className="font-bold text-ink">{vehicleName(j.vehicle, locale)}</span></p> : null}
           </div>
           <StatusPill status={j.status} locale={locale} />
           <ChevronRight className="size-4 text-muted-foreground" />

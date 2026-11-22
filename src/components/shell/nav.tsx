@@ -6,6 +6,7 @@ import {
   BarChart3,
   Bell,
   BriefcaseBusiness,
+  Car,
   ClipboardList,
   HardHat,
   HelpCircle,
@@ -46,6 +47,7 @@ const ICONS: Record<string, LucideIcon> = {
   reports: BarChart3,
   settings: Settings,
   staff: BriefcaseBusiness,
+  car: Car,
 }
 
 export type NavItem = { href: string; label: string; icon: keyof typeof ICONS; badge?: number; exact?: boolean }

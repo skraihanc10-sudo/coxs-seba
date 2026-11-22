@@ -1,6 +1,7 @@
 import { requireUser, getLocale } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { workerShare } from "@/lib/bookings"
+import { partnerShare } from "@/lib/vehicles"
 import { getSettings } from "@/lib/settings"
 import { dayStart, formatDay, localDate, localToday, shiftDays, taka } from "@/lib/format"
 import { named, pick } from "@/lib/i18n"
@@ -17,7 +18,9 @@ export default async function EarningsPage() {
     )
   }
   const settings = await getSettings(user.shopId)
-  const share = Number(settings.workerShare) || 40
+  const partner = user.worker?.kind === "PARTNER"
+  const share = partner ? Number(settings.partnerShare) || 85 : Number(settings.workerShare) || 40
+  const cut = (price: number, visit: number) => (partner ? partnerShare(price, visit, share) : workerShare(price, visit, share))
   const jobs = user.worker
     ? await db.serviceBooking.findMany({
         where: { workerId: user.worker.id, status: "COMPLETED" },
@@ -26,7 +29,7 @@ export default async function EarningsPage() {
         take: 200,
       })
     : []
-  const rows = jobs.map((j) => ({ ...j, pay: workerShare(j.finalPrice ?? j.estimatedPrice, j.visitCharge, share), day: localDate(j.completedAt!) }))
+  const rows = jobs.map((j) => ({ ...j, pay: cut(j.finalPrice ?? j.estimatedPrice, j.visitCharge), day: localDate(j.completedAt!) }))
   const today = localToday()
   const week = shiftDays(today, -6)
   const month = `${today.slice(0, 7)}-01`
@@ -36,7 +39,7 @@ export default async function EarningsPage() {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <PageHeader title={pick(locale, "আমার আয়", "My earnings")} sub={pick(locale, `প্রতিটা কাজের ${share}% আপনার, ভিজিট চার্জের অর্ধেকসহ`, `${share}% of each job is yours, plus half the visit charge`)} />
+      <PageHeader title={pick(locale, "আমার আয়", "My earnings")} sub={partner ? pick(locale, `প্রতিটা ভাড়ার ${share}% আপনার`, `${share}% of each rental is yours`) : pick(locale, `প্রতিটা কাজের ${share}% আপনার, ভিজিট চার্জের অর্ধেকসহ`, `${share}% of each job is yours, plus half the visit charge`)} />
       <div className="grid grid-cols-3 gap-2">
         {[[pick(locale, "আজ", "Today"), sum(today)], [pick(locale, "৭ দিন", "7 days"), sum(week)], [pick(locale, "এই মাস", "This month"), sum(month)]].map(([label, value], i) => (
           <div key={label as string} className="kpi p-4" data-primary={i === 2}>

@@ -22,5 +22,7 @@ export const demoWorkers = [
   { shop: "coxs", email: "karim.plumber@needcoxs.test", name: "করিম (প্লাম্বার)", phone: "01811000005", isRider: false, skills: ["plumber", "labour", "shifting"] },
   { shop: "coxs", email: "rafiq.ac@needcoxs.test", name: "রফিক (এসি ও ফ্রিজ মেকানিক)", phone: "01811000006", isRider: false, skills: ["ac-fridge", "electrician", "other"] },
   { shop: "coxs", email: "faruk.driver@needcoxs.test", name: "ফারুক (ড্রাইভার)", phone: "01811000007", isRider: false, skills: ["rent-a-car"] },
+  /** An outside vehicle owner (partner) who rents through HANDYO. */
+  { shop: "coxs", email: "partner.rony@needcoxs.test", name: "রনি (গাড়ির মালিক, পার্টনার)", phone: "01811000008", isRider: false, skills: ["rent-a-car"], kind: "PARTNER" },
   { shop: "dhaka", email: "dhaka.electric@needcoxs.test", name: "হাসান (ইলেকট্রিশিয়ান, ঢাকা)", phone: "01811000101", isRider: false, skills: ["electrician", "ac-fridge"] },
 ] as const

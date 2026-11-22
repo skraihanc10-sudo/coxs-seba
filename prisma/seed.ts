@@ -90,10 +90,11 @@ async function demo(coxs: { id: string }) {
     const shopId = w.shop === "dhaka" ? dhaka.id : coxs.id
     const cats = w.shop === "dhaka" ? dhakaCategories : categories
     const u = await user(w.email, { name: w.name, phone: w.phone, role: "WORKER", password: WORKER_PASSWORD, shopId })
+    const kind = "kind" in w && w.kind === "PARTNER" ? "PARTNER" : "STAFF"
     const profile = await db.workerProfile.upsert({
       where: { userId: u.id },
       update: {},
-      create: { userId: u.id, shopId, isRider: w.isRider, nid: `19${w.phone.slice(-8)}0012345`.slice(0, 17) },
+      create: { userId: u.id, shopId, isRider: w.isRider, kind, approved: true, nid: `19${w.phone.slice(-8)}0012345`.slice(0, 17) },
     })
     for (const slug of w.skills) {
       const cat = cats[slug]
@@ -105,6 +106,40 @@ async function demo(coxs: { id: string }) {
       })
     }
     workers[w.email] = { id: profile.id, userId: u.id }
+  }
+
+  // Vehicles customers can pick on the rent-a-car page: two of HANDYO's own, two from the partner, one waiting for approval.
+  const rentalOfferings = Object.fromEntries((await db.serviceOffering.findMany({ where: { categoryId: categories["rent-a-car"].id } })).map((o) => [o.slug, o]))
+  const vehicles: Array<{ key: string; type: string; owner: string | null; title: string; titleBn: string; plate: string; seats: number; hour: number; day: number; minHours: number; detail: string; detailBn: string; status: string }> = [
+    { key: "noah", type: "car-daily", owner: null, title: "Toyota Noah 2018 (AC)", titleBn: "টয়োটা নোয়া ২০১৮ (এসি)", plate: "Cox-Ga-11-2233", seats: 7, hour: 600, day: 4000, minHours: 2, detail: "Driver and fuel included inside town; Inani/Himchari day trips.", detailBn: "ড্রাইভার ও তেলসহ, শহরের মধ্যে; ইনানী-হিমছড়ি ডে ট্রিপ।", status: "APPROVED" },
+    { key: "jeep", type: "open-roof-jeep", owner: null, title: "Open-roof Marine Drive jeep", titleBn: "ছাদখোলা মেরিন ড্রাইভ জিপ", plate: "Cox-Tha-12-4455", seats: 8, hour: 0, day: 4500, minHours: 1, detail: "Open-roof jeep for the Marine Drive run to Inani, with driver.", detailBn: "মেরিন ড্রাইভ ধরে ইনানী পর্যন্ত ছাদখোলা জিপ, ড্রাইভারসহ।", status: "APPROVED" },
+    { key: "scooter", type: "scooter-bike", owner: "partner.rony@needcoxs.test", title: "Yamaha Ray ZR scooter", titleBn: "ইয়ামাহা রে ZR স্কুটার", plate: "Cox-Ha-21-7788", seats: 2, hour: 150, day: 800, minHours: 2, detail: "Self-drive, two helmets, licence required. Fuel extra.", detailBn: "নিজে চালাবেন, দুইটা হেলমেট, লাইসেন্স লাগবে। তেল আলাদা।", status: "APPROVED" },
+    { key: "premio", type: "car-hourly", owner: "partner.rony@needcoxs.test", title: "Toyota Premio 2016 (AC)", titleBn: "টয়োটা প্রিমিও ২০১৬ (এসি)", plate: "Cox-Ga-14-9911", seats: 4, hour: 500, day: 3500, minHours: 2, detail: "AC sedan with driver and fuel, inside town.", detailBn: "এসি সেডান, ড্রাইভার ও তেলসহ, শহরের মধ্যে।", status: "APPROVED" },
+    { key: "hiace", type: "microbus", owner: "partner.rony@needcoxs.test", title: "Toyota Hiace microbus (11 seats)", titleBn: "টয়োটা হাইয়েস মাইক্রোবাস (১১ সিট)", plate: "Cox-Cha-11-3344", seats: 11, hour: 900, day: 6500, minHours: 3, detail: "For groups: Teknaf, Inani, Ramu day tours.", detailBn: "গ্রুপের জন্য: টেকনাফ, ইনানী, রামু ডে ট্যুর।", status: "PENDING" },
+  ]
+  for (const [i, v] of vehicles.entries()) {
+    const offering = rentalOfferings[v.type]
+    if (!offering) continue
+    const existing = await db.vehicle.findFirst({ where: { shopId: coxs.id, plate: v.plate } })
+    if (existing) continue
+    await db.vehicle.create({
+      data: {
+        shopId: coxs.id,
+        workerId: v.owner ? workers[v.owner].id : null,
+        offeringId: offering.id,
+        title: v.title,
+        titleBn: v.titleBn,
+        plate: v.plate,
+        seats: v.seats,
+        pricePerHour: v.hour,
+        pricePerDay: v.day,
+        minHours: v.minHours,
+        detail: v.detail,
+        detailBn: v.detailBn,
+        status: v.status,
+        sort: i,
+      },
+    })
   }
 
   // A few more neighbours so the dashboard and reports have history.

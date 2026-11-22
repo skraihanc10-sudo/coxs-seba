@@ -38,7 +38,10 @@ export default async function SettingsPage() {
             <Field k="heroEn" label={pick(locale, "হোমপেজ শিরোনাম (ইংরেজি)", "Homepage headline (English)")} value={s.heroEn} />
             <div><label className="label" htmlFor="bannerBn">{pick(locale, "হোমপেজ ব্যানার (বাংলা)", "Homepage banner (Bangla)")}</label><textarea id="bannerBn" name="bannerBn" defaultValue={s.bannerBn} className="field min-h-20" /></div>
             <div><label className="label" htmlFor="bannerEn">{pick(locale, "হোমপেজ ব্যানার (ইংরেজি)", "Homepage banner (English)")}</label><textarea id="bannerEn" name="bannerEn" defaultValue={s.bannerEn} className="field min-h-20" /></div>
-            <Field k="workerShare" label={pick(locale, "কর্মীর ভাগ (% of job)", "Worker share (% of job)")} type="number" value={s.workerShare} />
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field k="workerShare" label={pick(locale, "কর্মীর ভাগ (% of job)", "Worker share (% of job)")} type="number" value={s.workerShare} />
+              <Field k="partnerShare" label={pick(locale, "পার্টনারের ভাগ (ভাড়ার %)", "Partner share (% of rental)")} type="number" value={s.partnerShare} />
+            </div>
             <div>
               <p className="label">{pick(locale, "পেমেন্টের ধরন", "Payment methods")}</p>
               <div className="flex flex-wrap gap-3">

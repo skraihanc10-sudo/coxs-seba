@@ -17,6 +17,8 @@ export const SETTING_DEFAULTS: Record<string, string> = {
   bannerEn: "Every home service at your door: laundry, electricians, plumbers, cleaning and more.",
   /** Share of the final bill paid to the worker who did the job, in percent. */
   workerShare: "40",
+  /** Share of a rental bill paid to the partner who owns the vehicle, in percent. */
+  partnerShare: "85",
   payCash: "1",
   payBkash: "1",
   payNagad: "1",

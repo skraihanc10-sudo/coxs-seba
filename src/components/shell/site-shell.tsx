@@ -45,6 +45,7 @@ export async function SiteShell({ children }: { children: React.ReactNode }) {
             <Link href="/how-it-works">{pick(locale, "কীভাবে কাজ করে", "How it works")}</Link>
             <Link href="/branches">{pick(locale, "শাখা", "Branches")}</Link>
             <Link href="/help">{t.help}</Link>
+            <Link href="/partner" className="text-brand">{pick(locale, "গাড়ি ভাড়া দিন", "Rent out your vehicle")}</Link>
           </nav>
           <div className="ml-auto flex items-center gap-2">
             <ShopSwitch shops={shopOptions} current={shop.slug} locale={locale} />
@@ -96,6 +97,7 @@ export async function SiteShell({ children }: { children: React.ReactNode }) {
               <li><Link href="/how-it-works">{pick(locale, "কীভাবে কাজ করে", "How it works")}</Link></li>
               <li><Link href="/branches">{pick(locale, "আমাদের শাখা", "Our branches")}</Link></li>
               <li><Link href="/help">{t.help}</Link></li>
+              <li><Link href="/partner" className="font-bold text-brand">{pick(locale, "গাড়ি ভাড়া দিন", "Rent out your vehicle")}</Link></li>
               <li><Link href="/login">{pick(locale, "কর্মী বা অফিস লগইন", "Worker & office login")}</Link></li>
             </ul>
           </div>

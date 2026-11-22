@@ -29,6 +29,7 @@ export const bookingInclude = {
   offering: true,
   area: true,
   worker: { include: { user: { select: { id: true, name: true, phone: true } } } },
+  vehicle: { select: { id: true, title: true, titleBn: true, plate: true, seats: true, photos: true, pricePerHour: true, pricePerDay: true, workerId: true } },
   events: { orderBy: { createdAt: "asc" }, include: { actor: { select: { name: true, role: true } } } },
   photos: { orderBy: { createdAt: "asc" } },
   review: true,
@@ -113,6 +114,8 @@ export type NewBooking = {
   teamSize: number
   days: number
   paymentMethod: string
+  vehicleId?: string
+  rentalUnit?: "HOUR" | "DAY"
 }
 
 export async function createBooking(customer: { id: string; name: string }, input: NewBooking) {
@@ -136,11 +139,28 @@ export async function createBooking(customer: { id: string; name: string }, inpu
     throw new AppError("কী কাজ লাগবে, একটু বিস্তারিত লিখুন।", "Tell us a little more about the job.")
   }
 
-  const quantity = usesQuantity(offering.pricing) ? Math.max(offering.minQty, input.quantity) : 1
+  // Rentals: the chosen vehicle sets the rate (by the hour or by the day).
+  let pricing = offering.pricing
+  let unitPrice = offering.price
+  let minQty = offering.minQty
+  let vehicleId: string | null = null
+  if (input.vehicleId) {
+    const vehicle = await db.vehicle.findFirst({
+      where: { id: input.vehicleId, shopId, offeringId: offering.id, status: "APPROVED", OR: [{ workerId: null }, { worker: { approved: true, user: { active: true } } }] },
+    })
+    if (!vehicle) throw new AppError("এই গাড়িটা এখন পাওয়া যাচ্ছে না, অন্য একটা বেছে নিন।", "That vehicle is not available right now; pick another.")
+    const byDay = input.rentalUnit === "DAY" ? true : !vehicle.pricePerHour
+    if (byDay && !vehicle.pricePerDay) throw new AppError("এই গাড়ি শুধু ঘণ্টায় ভাড়া হয়।", "This vehicle is rented by the hour only.")
+    pricing = byDay ? "PER_DAY" : "PER_HOUR"
+    unitPrice = byDay ? vehicle.pricePerDay : vehicle.pricePerHour
+    minQty = byDay ? 1 : vehicle.minHours
+    vehicleId = vehicle.id
+  }
+  const quantity = usesQuantity(pricing) ? Math.max(minQty, input.quantity) : 1
   const team = offering.category.flow === "TEAM"
   const days = team ? Math.min(30, Math.max(1, input.days)) : 1
   const teamSize = team ? Math.min(20, Math.max(1, input.teamSize)) : 1
-  const price = estimate({ pricing: offering.pricing, unitPrice: offering.price, quantity, days, areaCharge: area.charge })
+  const price = estimate({ pricing, unitPrice, quantity, days, areaCharge: area.charge })
 
   const code = await newCode(offering.category)
   const booking = await db.serviceBooking.create({
@@ -158,8 +178,9 @@ export async function createBooking(customer: { id: string; name: string }, inpu
       visitDate: input.visitDate,
       visitSlot: input.visitSlot,
       notes: input.notes.trim(),
-      pricing: offering.pricing,
-      unitPrice: offering.price,
+      pricing,
+      unitPrice,
+      vehicleId,
       quantity,
       teamSize,
       days,

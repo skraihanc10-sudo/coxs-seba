@@ -65,6 +65,40 @@ export const bookingSchema = z.object({
   paymentMethod: z.enum(["CASH", "BKASH", "NAGAD"], msg("পেমেন্টের ধরন বেছে নিন।", "Choose how you'll pay.")),
   otp: optionalText(6),
   name: optionalText(80),
+  /** Rentals: the vehicle picked and whether it is billed by the hour or by the day. */
+  vehicleId: optionalText(40),
+  rentalUnit: z.enum(["HOUR", "DAY"]).default("HOUR"),
+})
+
+const vehicleFields = {
+  offeringId: id,
+  title: z.string().trim().min(2, msg("গাড়ির নাম দিন (যেমন Toyota Noah 2018)।", "Name the vehicle (e.g. Toyota Noah 2018).")).max(80),
+  titleBn: optionalText(80),
+  plate: optionalText(30),
+  seats: int(1, 60, "সিট সংখ্যা ১–৬০।", "Seats must be 1–60.").default(2),
+  detail: optionalText(500),
+  detailBn: optionalText(500),
+  pricePerHour: int(0, 100000, "ঘণ্টার ভাড়া ০–১,০০,০০০।", "Hourly rate must be 0–100,000.").default(0),
+  pricePerDay: int(0, 500000, "দিনের ভাড়া ০–৫,০০,০০০।", "Daily rate must be 0–500,000.").default(0),
+  minHours: int(1, 24, "সর্বনিম্ন ঘণ্টা ১–২৪।", "Minimum hours must be 1–24.").default(2),
+}
+
+/** A partner (vehicle owner) signing up with their first vehicle. */
+export const partnerApplySchema = z.object({
+  name: z.string().trim().min(2, msg("আপনার নাম দিন।", "Add your name.")).max(80),
+  phone: phoneInput,
+  email: z.union([z.literal(""), z.string().trim().email(msg("সঠিক ইমেইল দিন।", "Enter a valid email."))]).default(""),
+  password: z.string().min(6, msg("পাসওয়ার্ড অন্তত ৬ অক্ষরের দিন।", "Password must be at least 6 characters.")).max(100),
+  agree: z.preprocess((v) => v === "on" || v === "1" || v === true, z.literal(true, msg("শর্তে সম্মতি দিন।", "Please accept the terms."))),
+  ...vehicleFields,
+})
+
+/** A partner editing/adding one of their vehicles, or an admin editing any vehicle of the shop. */
+export const vehicleSchema = z.object({
+  id: optionalText(40),
+  workerId: optionalText(40),
+  sort: int(0, 999, "ক্রম ০–৯৯৯।", "Sort must be 0–999.").default(0),
+  ...vehicleFields,
 })
 
 export const quoteSchema = z.object({

@@ -15,8 +15,10 @@ import { clip, pageMeta } from "@/lib/seo"
 import { PageHeader } from "@/components/bits"
 import { BookingWizard } from "@/components/booking-wizard"
 import { breadcrumbs, JsonLd } from "@/components/seo/json-ld"
+import { photosOf, vehicleById } from "@/lib/vehicles"
 
 type Params = Promise<{ category: string; offering: string }>
+type Search = Promise<{ vehicle?: string }>
 
 async function load(shopId: string, catSlug: string, offerSlug: string) {
   const category = await db.serviceCategory.findFirst({ where: { shopId, slug: catSlug, active: true } })
@@ -38,11 +40,14 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   })
 }
 
-export default async function BookPage({ params }: { params: Params }) {
-  const [{ category: catSlug, offering: offerSlug }, locale, user, shop] = await Promise.all([params, getLocale(), getUser(), currentShop()])
+export default async function BookPage({ params, searchParams }: { params: Params; searchParams: Search }) {
+  const [{ category: catSlug, offering: offerSlug }, { vehicle: vehicleId = "" }, locale, user, shop] = await Promise.all([params, searchParams, getLocale(), getUser(), currentShop()])
   if (user && user.role !== "CUSTOMER") redirect(homeFor(user.role))
   const [areas, settings, { category, offering }] = await Promise.all([activeAreas(shop.id), getSettings(shop.id), load(shop.id, catSlug, offerSlug)])
   if (!category || !offering) notFound()
+  // Rentals: a vehicle picked on the category page. A stale or foreign id falls back to the plain offering.
+  const picked = category.flow === "RENTAL" && vehicleId ? await vehicleById(vehicleId) : null
+  const vehicle = picked && picked.shopId === shop.id && picked.offeringId === offering.id && picked.status === "APPROVED" ? picked : null
   const addresses = user ? await db.address.findMany({ where: { userId: user.id, area: { shopId: shop.id } }, orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }] }) : []
 
   return (
@@ -66,6 +71,7 @@ export default async function BookPage({ params }: { params: Params }) {
         days={upcomingDays(BOOKING_DAYS)}
         payments={enabledProviders(settings).map((p) => ({ id: p.id, label: p.label, labelBn: p.labelBn, hint: p.hint, hintBn: p.hintBn }))}
         user={user ? { name: user.name, phone: user.phone ?? "", addresses: addresses.map((a) => ({ id: a.id, label: a.label, areaId: a.areaId, line: a.line, landmark: a.landmark, phone: a.phone })) } : null}
+        vehicle={vehicle ? { id: vehicle.id, title: vehicle.title, titleBn: vehicle.titleBn, seats: vehicle.seats, plate: vehicle.plate, photo: photosOf(vehicle)[0] ?? "", pricePerHour: vehicle.pricePerHour, pricePerDay: vehicle.pricePerDay, minHours: vehicle.minHours, owner: vehicle.worker ? pick(locale, `পার্টনার: ${vehicle.worker.user.name}`, `Partner: ${vehicle.worker.user.name}`) : pick(locale, "HANDYO-র নিজের গাড়ি", "HANDYO fleet") } : null}
       />
     </div>
   )

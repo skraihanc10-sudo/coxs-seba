@@ -9,6 +9,7 @@ import { named, pick } from "@/lib/i18n"
 import { billFor, unitLabel, usesQuantity } from "@/lib/pricing"
 import { PAYMENT_PROVIDERS } from "@/lib/payments"
 import { bookingChat } from "@/lib/support"
+import { vehicleName } from "@/lib/vehicles"
 import { moveBookingAction, recordPaymentAction, sendQuoteAction, setQuantityAction, uploadPhotosAction } from "@/actions/booking"
 import { sendBookingMessageAction } from "@/actions/support"
 import { ActionForm, SubmitButton } from "@/components/forms"
@@ -46,6 +47,7 @@ export default async function WorkerJobPage({ params }: { params: Promise<{ code
           <p className="truncate font-extrabold text-ink">{b.contactName || b.customer.name}</p>
           <p className="text-xs text-muted-foreground">{b.visitSlot} · {named(locale, b.area)}</p>
           {rental ? <p className="mt-1 text-xs text-muted-foreground"><span className="font-bold text-ink">{pick(locale, "পিকআপ পয়েন্ট", "Pickup point")}:</span> {b.addressLine}</p> : null}
+          {b.vehicle ? <p className="mt-1 text-xs text-muted-foreground"><span className="font-bold text-ink">{pick(locale, "গাড়ি", "Vehicle")}:</span> {vehicleName(b.vehicle, locale)}{b.vehicle.plate ? ` · ${b.vehicle.plate}` : ""}</p> : null}
         </div>
         <a href={telHref(b.phone)} className="btn-primary h-11 px-4"><Phone className="size-4" /> {pick(locale, "কল", "Call")}</a>
       </div>

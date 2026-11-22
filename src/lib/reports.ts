@@ -2,6 +2,17 @@ import { db } from "./db"
 import { dayStart, localDate, localToday, recentDays, shiftDays } from "./format"
 import { getSettings } from "./settings"
 import { workerShare } from "./bookings"
+import { partnerShare } from "./vehicles"
+
+/** What the assigned worker earns from one completed job: partners (vehicle owners) get the rental share, staff the job share. */
+function payFor(r: { workerId: string | null; visitCharge: number; worker?: { kind: string } | null }, price: number, shares: { worker: number; partner: number }) {
+  if (!r.workerId) return 0
+  return r.worker?.kind === "PARTNER" ? partnerShare(price, r.visitCharge, shares.partner) : workerShare(price, r.visitCharge, shares.worker)
+}
+
+function sharesOf(settings: Record<string, string>) {
+  return { worker: Number(settings.workerShare) || 40, partner: Number(settings.partnerShare) || 85 }
+}
 
 export type Period = "today" | "week" | "month" | "year" | "custom"
 
@@ -123,13 +134,14 @@ export type ReportGroup = "day" | "week" | "month" | "service" | "worker" | "are
 /** Completed-job revenue of one shop grouped for the reports page and CSV export. */
 export async function report(shopId: string, range: { gte: Date; lt: Date }, group: ReportGroup) {
   const settings = await getSettings(shopId)
-  const share = Number(settings.workerShare) || 40
+  const shares = sharesOf(settings)
+  const share = shares.worker
   const rows = await db.serviceBooking.findMany({
     where: { shopId, status: "COMPLETED", completedAt: { gte: range.gte, lt: range.lt } },
     include: {
       category: { select: { name: true, nameBn: true } },
       area: { select: { name: true, nameBn: true } },
-      worker: { include: { user: { select: { name: true } } } },
+      worker: { select: { kind: true, user: { select: { name: true } } } },
     },
     orderBy: { completedAt: "asc" },
   })
@@ -166,7 +178,7 @@ export async function report(shopId: string, range: { gte: Date; lt: Date }, gro
     const g = groups.get(key) ?? { key, label, labelBn, jobs: 0, revenue: 0, workerPay: 0, cash: 0, mobile: 0 }
     g.jobs += 1
     g.revenue += price
-    g.workerPay += r.workerId ? workerShare(price, r.visitCharge, share) : 0
+    g.workerPay += payFor(r, price, shares)
     if (r.paymentMethod === "CASH") g.cash += price
     else g.mobile += price
     groups.set(key, g)
@@ -195,16 +207,16 @@ export async function ownerOverview(range: { gte: Date; lt: Date }) {
         db.serviceBooking.count({ where: { shopId: shop.id, createdAt: { gte: range.gte, lt: range.lt } } }),
         db.serviceBooking.findMany({
           where: { shopId: shop.id, status: "COMPLETED", completedAt: { gte: range.gte, lt: range.lt } },
-          select: { finalPrice: true, estimatedPrice: true, visitCharge: true, workerId: true, paymentMethod: true },
+          select: { finalPrice: true, estimatedPrice: true, visitCharge: true, workerId: true, paymentMethod: true, worker: { select: { kind: true } } },
         }),
         db.serviceBooking.count({ where: { shopId: shop.id, status: { in: RUNNING } } }),
         db.serviceBooking.count({ where: { shopId: shop.id, status: "REQUESTED" } }),
         db.ticket.count({ where: { shopId: shop.id, status: { in: ["OPEN", "PENDING"] } } }),
         getSettings(shop.id),
       ])
-      const share = Number(settings.workerShare) || 40
+      const shares = sharesOf(settings)
       const revenue = completed.reduce((s, r) => s + (r.finalPrice ?? r.estimatedPrice), 0)
-      const workerPay = completed.reduce((s, r) => s + (r.workerId ? workerShare(r.finalPrice ?? r.estimatedPrice, r.visitCharge, share) : 0), 0)
+      const workerPay = completed.reduce((s, r) => s + payFor(r, r.finalPrice ?? r.estimatedPrice, shares), 0)
       const cash = completed.filter((r) => r.paymentMethod === "CASH").reduce((s, r) => s + (r.finalPrice ?? r.estimatedPrice), 0)
       return { shop, booked, completed: completed.length, revenue, workerPay, margin: revenue - workerPay, cash, mobile: revenue - cash, running, waiting, tickets }
     }),
