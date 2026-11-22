@@ -41,7 +41,8 @@ export function estimate({ pricing, unitPrice, quantity, days, areaCharge }: Est
 }
 
 /** The amount the customer actually pays when the job closes. */
-export function billFor(b: { pricing: string; estimatedPrice: number; visitCharge: number; quoteAmount: number | null; quoteStatus: string }) {
-  if (b.pricing === "QUOTE" && b.quoteStatus === "ACCEPTED" && b.quoteAmount) return b.quoteAmount + b.visitCharge
+export function billFor(b: { pricing: string; estimatedPrice: number; visitCharge: number; quoteAmount: number | null; quoteStatus: string; discount?: number }) {
+  // A coupon discount is already inside estimatedPrice; a quoted job applies it to the quote instead.
+  if (b.pricing === "QUOTE" && b.quoteStatus === "ACCEPTED" && b.quoteAmount) return Math.max(0, b.quoteAmount - (b.discount ?? 0)) + b.visitCharge
   return b.estimatedPrice
 }

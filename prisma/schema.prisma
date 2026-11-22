@@ -45,6 +45,38 @@ model Shop {
   templates   ReplyTemplate[]
   settings    Setting[]
   vehicles    Vehicle[]
+  coupons     Coupon[]
+}
+
+/// A discount code of one shop. PERCENT takes `value` % off the work price
+/// (capped by maxDiscount when set); FIXED takes `value` taka off.
+model Coupon {
+  id          String    @id @default(cuid())
+  shopId      String
+  shop        Shop      @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  code        String
+  kind        String    @default("PERCENT")
+  value       Int
+  minAmount   Int       @default(0)
+  maxDiscount Int       @default(0)
+  /// Only this category when set.
+  categoryId  String?
+  category    ServiceCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  startsAt    DateTime?
+  endsAt      DateTime?
+  /// 0 = unlimited
+  usageLimit  Int       @default(0)
+  usedCount   Int       @default(0)
+  /// Uses per customer; 0 = unlimited
+  perCustomer Int       @default(1)
+  note        String    @default("")
+  active      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+
+  bookings ServiceBooking[]
+
+  @@unique([shopId, code])
+  @@index([shopId, active])
 }
 
 model User {
@@ -198,6 +230,7 @@ model ServiceCategory {
   offerings ServiceOffering[]
   workers   WorkerSkill[]
   bookings  ServiceBooking[]
+  coupons   Coupon[]
 
   @@unique([shopId, slug])
 }
@@ -266,6 +299,11 @@ model ServiceBooking {
   teamSize      Int             @default(1)
   days          Int             @default(1)
   visitCharge   Int             @default(0)
+  /// Coupon applied at booking time; `discount` is already taken off estimatedPrice.
+  couponId      String?
+  coupon        Coupon?         @relation(fields: [couponId], references: [id], onDelete: SetNull)
+  couponCode    String          @default("")
+  discount      Int             @default(0)
   estimatedPrice Int            @default(0)
   quoteAmount   Int?
   /// NONE, SENT, ACCEPTED, DECLINED
@@ -305,6 +343,7 @@ model ServiceBooking {
   @@index([categoryId])
   @@index([areaId])
   @@index([vehicleId])
+  @@index([couponId])
 }
 
 /// Every status change: who, when, from what, to what.

@@ -39,7 +39,10 @@ async function catalogFor(shopId: string, areas: typeof AREAS, categories: typeo
   }
   for (const [i, c] of categories.entries()) {
     const { offerings, ...cat } = c
-    const row = await db.serviceCategory.upsert({ where: { shopId_slug: { shopId, slug: c.slug } }, update: {}, create: { ...cat, shopId, sort: i } })
+    // Existing rows keep their own edits; only a missing/bundled illustration is refreshed to the current bundled one.
+    const current = await db.serviceCategory.findUnique({ where: { shopId_slug: { shopId, slug: c.slug } }, select: { image: true } })
+    const refreshImage = current && (!current.image || current.image.startsWith("/services/")) && current.image !== cat.image
+    const row = await db.serviceCategory.upsert({ where: { shopId_slug: { shopId, slug: c.slug } }, update: refreshImage ? { image: cat.image } : {}, create: { ...cat, shopId, sort: i } })
     for (const [j, o] of offerings.entries()) {
       await db.serviceOffering.upsert({
         where: { categoryId_slug: { categoryId: row.id, slug: o.slug } },
@@ -140,6 +143,14 @@ async function demo(coxs: { id: string }) {
         sort: i,
       },
     })
+  }
+
+  // Two demo discount codes: one site-wide percent, one fixed amount for rentals.
+  for (const c of [
+    { code: "HANDYO10", kind: "PERCENT", value: 10, maxDiscount: 300, minAmount: 0, categoryId: null as string | null, perCustomer: 1, note: "প্রথম বুকিংয়ে ১০% ছাড়, সর্বোচ্চ ৳৩০০" },
+    { code: "MARINE500", kind: "FIXED", value: 500, maxDiscount: 0, minAmount: 3000, categoryId: categories["rent-a-car"].id, perCustomer: 0, note: "গাড়ি ভাড়ায় ৳৩,০০০-এর ওপরে ৳৫০০ ছাড়" },
+  ]) {
+    await db.coupon.upsert({ where: { shopId_code: { shopId: coxs.id, code: c.code } }, update: {}, create: { ...c, shopId: coxs.id } })
   }
 
   // A few more neighbours so the dashboard and reports have history.
@@ -376,8 +387,30 @@ async function demo(coxs: { id: string }) {
   console.log(`Demo data ready: ${demos.length} Cox's Bazar bookings + 1 Dhaka booking`)
 }
 
+/**
+ * A database upgraded from the single-shop days has admins but no OWNER, and only
+ * an OWNER can open Admin → Shops. Runs on every start (--catalog too) at the
+ * user's request: creates the owner login once if no OWNER exists. Override the
+ * email/password with OWNER_EMAIL / OWNER_PASSWORD; change the password after login.
+ */
+async function ensureOwner() {
+  if (await db.user.count({ where: { role: "OWNER" } })) return
+  const demo = demoAccounts.find((a) => a.role === "OWNER")!
+  const email = process.env.OWNER_EMAIL?.trim().toLowerCase() || demo.email
+  const password = process.env.OWNER_PASSWORD || demo.password
+  const existing = await db.user.findUnique({ where: { email } })
+  if (existing) {
+    await db.user.update({ where: { email }, data: { role: "OWNER", shopId: null, active: true } })
+  } else {
+    const phoneTaken = await db.user.findUnique({ where: { phone: demo.phone } })
+    await db.user.create({ data: { email, name: demo.name, phone: phoneTaken ? null : demo.phone, role: "OWNER", shopId: null, passwordHash: await bcrypt.hash(password, 10) } })
+  }
+  console.log(`Owner login ready: ${email}${process.env.OWNER_PASSWORD ? "" : ` / ${password} (change it after logging in)`}`)
+}
+
 async function main() {
   const coxs = await catalog()
+  await ensureOwner()
   if (catalogOnly) return
   await demo(coxs)
   console.log("Logins:")

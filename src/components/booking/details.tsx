@@ -51,6 +51,12 @@ export function BookingFacts({ booking, locale, showCustomer = false }: { bookin
       </Row>
       <Row label={rental ? pick(locale, "পিকআপ সময়", "Pickup time") : pick(locale, "সময়", "When")}>{formatDay(b.visitDate, locale)} · {b.visitSlot}</Row>
       {b.notes ? <Row label={pick(locale, "নোট", "Notes")}><span className="whitespace-pre-wrap font-normal">{b.notes}</span></Row> : null}
+      {b.discount > 0 ? (
+        <Row label={pick(locale, "ছাড়", "Discount")}>
+          <span className="text-ok">−{taka(b.discount, locale)}</span>
+          {b.couponCode ? <span className="ml-1 font-mono text-xs font-normal text-muted-foreground">({b.couponCode})</span> : null}
+        </Row>
+      ) : null}
       <Row label={b.status === "COMPLETED" ? pick(locale, "বিল", "Bill") : pick(locale, "আনুমানিক দাম", "Estimate")}>
         {b.pricing === "QUOTE" && b.quoteStatus !== "ACCEPTED" && !b.finalPrice ? (
           <span>{b.unitPrice ? pick(locale, `পরিদর্শন ${taka(b.unitPrice, locale)}`, `Inspection ${taka(b.unitPrice, locale)}`) : pick(locale, "দেখে জানানো হবে", "Quoted on site")}{b.visitCharge ? ` + ${taka(b.visitCharge, locale)}` : ""}</span>

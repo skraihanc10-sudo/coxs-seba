@@ -13,7 +13,8 @@ import { saveImages } from "@/lib/uploads"
 import { saveSettings, SETTING_DEFAULTS, SETTING_KEYS } from "@/lib/settings"
 import { ADMINS, OFFICE } from "@/lib/roles"
 import { OFFICE_SHOP_COOKIE, officeShopId, staffCanSee } from "@/lib/shops"
-import { areaSchema, categorySchema, faqSchema, formObject, offeringSchema, parse, shopSchema, staffSchema, templateSchema, workerSchema } from "@/lib/validation"
+import { areaSchema, categorySchema, couponSchema, faqSchema, formObject, offeringSchema, parse, shopSchema, staffSchema, templateSchema, workerSchema } from "@/lib/validation"
+import { saveCoupon } from "@/lib/coupons"
 
 const done = (path = "/admin") => {
   revalidatePath(path, "layout")
@@ -415,4 +416,27 @@ export async function deleteTemplateAction(form: FormData) {
   await db.replyTemplate.deleteMany({ where: { id: String(form.get("id") ?? ""), shopId } })
   revalidatePath("/support", "layout")
   revalidatePath("/admin", "layout")
+}
+
+/** Admin: create or edit a discount code of their shop. */
+export async function saveCouponAction(_prev: ActionState, form: FormData): Promise<ActionState> {
+  return run(async () => {
+    const me = await actor(ADMINS)
+    const shopId = await officeShopId(me)
+    const input = parse(couponSchema, formObject(form))
+    await saveCoupon(shopId, { ...input, id: input.id || undefined })
+    revalidatePath("/admin/coupons")
+    return "কুপন সেভ হয়েছে।"
+  })
+}
+
+/** Admin: switch a coupon on/off. */
+export async function toggleCouponAction(form: FormData) {
+  const me = await actor(ADMINS)
+  const shopId = await officeShopId(me)
+  const id = String(form.get("id") ?? "")
+  const coupon = await db.coupon.findFirst({ where: { id, shopId } })
+  if (!coupon) throw new AppError("কুপন পাওয়া যায়নি।", "Coupon not found.")
+  await db.coupon.update({ where: { id }, data: { active: !coupon.active } })
+  revalidatePath("/admin/coupons")
 }

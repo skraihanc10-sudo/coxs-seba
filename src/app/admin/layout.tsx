@@ -25,6 +25,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     { href: "/admin/vehicles", label: pick(locale, "গাড়ি", "Vehicles"), icon: "car", badge: pendingVehicles },
     { href: "/admin/customers", label: pick(locale, "কাস্টমার", "Customers"), icon: "users" },
     { href: "/admin/services", label: pick(locale, "সেবা ও দাম", "Services & prices"), icon: "services" },
+    { href: "/admin/coupons", label: pick(locale, "কুপন", "Coupons"), icon: "tag" },
     { href: "/admin/areas", label: pick(locale, "এলাকা", "Areas"), icon: "map" },
     { href: "/support", label: pick(locale, "সাপোর্ট ইনবক্স", "Support inbox"), icon: "inbox", badge: unread },
     { href: "/admin/reports", label: pick(locale, "রিপোর্ট", "Reports"), icon: "reports" },

@@ -65,6 +65,9 @@ The rental category (`flow: RENTAL`) lists real vehicles, not just price types. 
 
 When a rental order arrives, the admin opens it and clicks **Send to the vehicle owner** (one click; the owner is preselected in the worker dropdown too). From there it is a normal job in the owner's `/worker` panel: accept, on the way, done, booking chat with the customer. Partners earn `partnerShare` % of the rental (Settings, default 85); staff workers keep `workerShare` %.
 
+## Coupons
+Admin → **Coupons**: a code per shop, percent or fixed taka, optional cap, minimum job amount, one category only, start/end dates, total and per-customer limits. The customer types it on the last step of the booking wizard; the discount comes off the work price only (never the area/visit charge), is stored on the booking (`couponCode`, `discount`) and shows on every booking view. Demo codes: `HANDYO10` (10 %, max ৳300, once per customer) and `MARINE500` (৳500 off rentals over ৳3,000).
+
 ## Adding a shop
 Sign in as the owner → **Admin → Shops → New shop**. Give it a slug, names, city, contact, paste its areas (one per line: `slug | English | বাংলা | charge`), choose which shop to copy services & prices from, and create its first admin. That admin then signs in and only ever sees their own shop.
 

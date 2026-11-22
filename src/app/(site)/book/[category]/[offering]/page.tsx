@@ -64,7 +64,7 @@ export default async function BookPage({ params, searchParams }: { params: Param
       <BookingWizard
         locale={locale}
         shop={{ slug: shop.slug, name: shop.name, nameBn: shop.nameBn, city: shop.city, cityBn: shop.cityBn }}
-        category={{ slug: category.slug, name: category.name, nameBn: category.nameBn, flow: category.flow }}
+        category={{ id: category.id, slug: category.slug, name: category.name, nameBn: category.nameBn, flow: category.flow }}
         offering={{ id: offering.id, name: offering.name, nameBn: offering.nameBn, pricing: offering.pricing, price: offering.price, minQty: offering.minQty, detail: offering.detail, detailBn: offering.detailBn }}
         areas={areas.map((a) => ({ id: a.id, name: a.name, nameBn: a.nameBn, charge: a.charge }))}
         slots={SLOTS}

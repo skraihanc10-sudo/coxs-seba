@@ -68,6 +68,23 @@ export const bookingSchema = z.object({
   /** Rentals: the vehicle picked and whether it is billed by the hour or by the day. */
   vehicleId: optionalText(40),
   rentalUnit: z.enum(["HOUR", "DAY"]).default("HOUR"),
+  couponCode: optionalText(20),
+})
+
+export const couponSchema = z.object({
+  id: optionalText(40),
+  code: z.string().trim().min(3, msg("কোড দিন (৩–২০ অক্ষর)।", "Enter a code (3–20 characters).")).max(20),
+  kind: z.enum(["PERCENT", "FIXED"], msg("ছাড়ের ধরন বেছে নিন।", "Choose the discount type.")),
+  value: int(1, 500000, "ছাড়ের মান ১-এর বেশি দিন।", "Discount value must be at least 1."),
+  minAmount: int(0, 10000000, "ন্যূনতম বিল ০ বা তার বেশি।", "Minimum amount must be 0 or more.").default(0),
+  maxDiscount: int(0, 10000000, "সর্বোচ্চ ছাড় ০ বা তার বেশি।", "Max discount must be 0 or more.").default(0),
+  categoryId: optionalText(40),
+  startsAt: optionalText(10),
+  endsAt: optionalText(10),
+  usageLimit: int(0, 1000000, "মোট ব্যবহার ০ (সীমাহীন) বা তার বেশি।", "Usage limit must be 0 (unlimited) or more.").default(0),
+  perCustomer: int(0, 1000, "প্রতি কাস্টমার ০ (সীমাহীন) বা তার বেশি।", "Per-customer limit must be 0 (unlimited) or more.").default(1),
+  note: optionalText(200),
+  active: z.preprocess((v) => v === "on" || v === "1" || v === true, z.boolean()),
 })
 
 const vehicleFields = {

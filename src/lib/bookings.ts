@@ -5,6 +5,7 @@ import { upcomingDays } from "./format"
 import { notify, officeIds } from "./notify"
 import { getSettings } from "./settings"
 import { billFor, estimate, usesQuantity } from "./pricing"
+import { quoteCoupon } from "./coupons"
 import { paymentProvider } from "./payments"
 import type { Role } from "./roles"
 import { outsideMessage } from "./shops"
@@ -116,6 +117,7 @@ export type NewBooking = {
   paymentMethod: string
   vehicleId?: string
   rentalUnit?: "HOUR" | "DAY"
+  couponCode?: string
 }
 
 export async function createBooking(customer: { id: string; name: string }, input: NewBooking) {
@@ -161,6 +163,9 @@ export async function createBooking(customer: { id: string; name: string }, inpu
   const days = team ? Math.min(30, Math.max(1, input.days)) : 1
   const teamSize = team ? Math.min(20, Math.max(1, input.teamSize)) : 1
   const price = estimate({ pricing, unitPrice, quantity, days, areaCharge: area.charge })
+  // A coupon takes its cut off the work price only; the area/visit charge stays.
+  const coupon = input.couponCode?.trim() ? await quoteCoupon(shopId, input.couponCode, { categoryId: offering.categoryId, work: price.work, customerId: customer.id }) : null
+  const discount = coupon?.discount ?? 0
 
   const code = await newCode(offering.category)
   const booking = await db.serviceBooking.create({
@@ -185,13 +190,17 @@ export async function createBooking(customer: { id: string; name: string }, inpu
       teamSize,
       days,
       visitCharge: area.charge,
-      estimatedPrice: price.total,
+      estimatedPrice: price.total - discount,
+      couponId: coupon?.coupon.id ?? null,
+      couponCode: coupon?.coupon.code ?? "",
+      discount,
       paymentMethod: method.id,
       events: { create: { toStatus: "REQUESTED", note: "Booked", actorId: customer.id, actorRole: "CUSTOMER" } },
       chat: { create: {} },
     },
     include: bookingInclude,
   })
+  if (coupon) await db.coupon.update({ where: { id: coupon.coupon.id }, data: { usedCount: { increment: 1 } } })
   await notify([customer.id], {
     kind: "BOOKING",
     title: "বুকিং হয়েছে",

@@ -199,7 +199,7 @@ export const CATEGORIES: Array<{
     blurbBn: "রুম সংখ্যা, টিম আর কত দিন বলুন। পুরো টিম পাঠাব।",
     blurb: "Tell us rooms, team size and days. We send a full crew.",
     icon: "building",
-    image: "/services/cleaning.svg",
+    image: "/services/resort-cleaning.svg",
     flow: "TEAM",
     offerings: [
       { slug: "room-turnover", nameBn: "রুম টার্নওভার", name: "Room turnover", detailBn: "চেক-আউটের পর রুম রেডি করা – প্রতি রুম প্রতি দিন।", detail: "Rooms made ready after check-out – per room per day.", pricing: "PER_ROOM", price: 250, minQty: 5, durationMin: 480 },
@@ -264,7 +264,7 @@ export const CATEGORIES: Array<{
     blurbBn: "বাইক, কার, মাইক্রো আর ছাদখোলা জিপ – ড্রাইভারসহ। মেরিন ড্রাইভ ঘুরতে বা শহরের কাজে।",
     blurb: "Bikes, cars, microbuses and open-roof jeeps with a driver. Cruise Marine Drive or get around town.",
     icon: "car",
-    image: "",
+    image: "/services/rent-a-car.svg",
     flow: "RENTAL",
     offerings: [
       { slug: "scooter-bike", nameBn: "স্কুটার / বাইক (সারা দিন)", name: "Scooter or bike (full day)", detailBn: "হেলমেটসহ, নিজে চালাবেন। সকাল ৮টা থেকে রাত ৮টা। তেল আলাদা।", detail: "Self-drive with helmet, 8 am to 8 pm. Fuel extra.", pricing: "PER_DAY", price: 800, durationMin: 720 },
@@ -283,7 +283,7 @@ export const CATEGORIES: Array<{
     blurbBn: "তালিকায় নেই? আপনার কাজটা লিখুন, আমরা কল দিয়ে দাম জানাব।",
     blurb: "Not on the list? Describe the job and we'll call with a price.",
     icon: "pencil",
-    image: "",
+    image: "/services/other.svg",
     flow: "CUSTOM",
     offerings: [
       { slug: "custom-job", nameBn: "আপনার কাজটা লিখুন", name: "Describe your job", detailBn: "নিজের ভাষায় লিখুন কী লাগবে। আমাদের টিম কল দিয়ে দাম জানাবে।", detail: "Tell us in your own words. Our team will call with a price.", pricing: "QUOTE", price: 0, durationMin: 60 },

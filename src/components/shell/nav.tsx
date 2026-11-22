@@ -19,6 +19,7 @@ import {
   MessageSquareText,
   Settings,
   Sparkles,
+  Tag,
   UserRound,
   Users,
   Wallet,
@@ -48,6 +49,7 @@ const ICONS: Record<string, LucideIcon> = {
   settings: Settings,
   staff: BriefcaseBusiness,
   car: Car,
+  tag: Tag,
 }
 
 export type NavItem = { href: string; label: string; icon: keyof typeof ICONS; badge?: number; exact?: boolean }

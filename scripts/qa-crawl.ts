@@ -60,6 +60,7 @@ const ROUTES: Array<[string, string[]]> = [
   ["/admin/staff", ["owner", "admin-coxs", "admin-dhaka"]],
   ["/admin/settings", ["owner", "admin-coxs", "admin-dhaka"]],
   ["/admin/vehicles", ["owner", "admin-coxs", "admin-dhaka"]],
+  ["/admin/coupons", ["owner", "admin-coxs", "admin-dhaka"]],
   ["/admin/vehicles/new", ["owner", "admin-coxs", "admin-dhaka"]],
   ["/admin/shops", ["owner"]],
   ["/admin/shops/new", ["owner"]],

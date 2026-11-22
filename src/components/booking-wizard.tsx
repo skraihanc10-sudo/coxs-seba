@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react"
 import { Camera, Check, ChevronLeft, MapPin } from "lucide-react"
-import { createBookingAction } from "@/actions/booking"
+import { checkCouponAction, createBookingAction } from "@/actions/booking"
 import { sendOtpAction } from "@/actions/auth"
 import { ActionForm, SubmitButton } from "./forms"
 import { estimate, unitLabel, usesQuantity } from "@/lib/pricing"
@@ -15,7 +15,7 @@ export type WizardProps = {
   locale: Locale
   /** The branch the customer is booking with; its city drives every "we only serve …" line. */
   shop: { slug: string; name: string; nameBn: string; city: string; cityBn: string }
-  category: { slug: string; name: string; nameBn: string; flow: string }
+  category: { id: string; slug: string; name: string; nameBn: string; flow: string }
   offering: { id: string; name: string; nameBn: string; pricing: string; price: number; minQty: number; detail: string; detailBn: string }
   areas: Area[]
   slots: string[]
@@ -57,6 +57,10 @@ export function BookingWizard({ locale, shop, category, offering, areas, slots, 
   const [notes, setNotes] = useState("")
   const [payment, setPayment] = useState(payments[0]?.id ?? "CASH")
   const [otpNote, setOtpNote] = useState("")
+  const [couponCode, setCouponCode] = useState("")
+  const [coupon, setCoupon] = useState<{ code: string; discount: number; label: string } | null>(null)
+  const [couponNote, setCouponNote] = useState("")
+  const [checkingCoupon, startCheckingCoupon] = useTransition()
   const [otpSent, setOtpSent] = useState(false)
   const [sending, startSending] = useTransition()
   const [problem, setProblem] = useState("")
@@ -66,6 +70,26 @@ export function BookingWizard({ locale, shop, category, offering, areas, slots, 
     () => estimate({ pricing, unitPrice, quantity: Math.max(minQty, quantity), days: dayCount, areaCharge: area?.charge ?? 0 }),
     [pricing, unitPrice, minQty, quantity, dayCount, area],
   )
+
+  const discount = coupon ? Math.min(coupon.discount, price.work) : 0
+  const payable = Math.max(0, price.total - discount)
+
+  function applyCoupon() {
+    const fd = new FormData()
+    fd.set("code", couponCode)
+    fd.set("categoryId", category.id)
+    fd.set("work", String(price.work))
+    startCheckingCoupon(async () => {
+      const r = await checkCouponAction(fd)
+      if (r.ok && r.discount != null) {
+        setCoupon({ code: couponCode.trim().toUpperCase(), discount: r.discount, label: r.label ?? "" })
+        setCouponNote("")
+      } else {
+        setCoupon(null)
+        setCouponNote(r.error ?? "")
+      }
+    })
+  }
 
   function switchUnit(unit: "HOUR" | "DAY") {
     setRentalUnit(unit)
@@ -114,6 +138,7 @@ export function BookingWizard({ locale, shop, category, offering, areas, slots, 
       <input type="hidden" name="quantity" value={quantity} />
       <input type="hidden" name="teamSize" value={teamSize} />
       <input type="hidden" name="days" value={dayCount} />
+      <input type="hidden" name="couponCode" value={coupon?.code ?? ""} />
       {vehicle ? <input type="hidden" name="vehicleId" value={vehicle.id} /> : null}
       {vehicle ? <input type="hidden" name="rentalUnit" value={rentalUnit} /> : null}
 
@@ -257,7 +282,20 @@ export function BookingWizard({ locale, shop, category, offering, areas, slots, 
           <Line k={rental ? T("পিকআপ সময়", "Pickup time") : T("সময়", "When")} v={`${formatDay(visitDate, locale)} · ${visitSlot}`} />
           <Line k={T("যোগাযোগ", "Contact")} v={`${contactName || "—"} · ${phone}`} />
           {notes ? <Line k={T("নোট", "Notes")} v={notes} /> : null}
+          {coupon ? <Line k={T("ছাড়", "Discount")} v={`${coupon.code} · −${taka(discount, locale)}`} /> : null}
         </div>
+
+        {!quote || offering.price ? (
+          <div className="card p-4">
+            <label className="label" htmlFor="coupon">{T("কুপন / ডিসকাউন্ট কোড (থাকলে)", "Coupon / discount code (optional)")}</label>
+            <div className="flex gap-2">
+              <input id="coupon" value={couponCode} onChange={(e) => { setCouponCode(e.target.value.toUpperCase()); if (coupon) { setCoupon(null); setCouponNote("") } }} className="field flex-1 uppercase" placeholder="HANDYO10" maxLength={20} autoCapitalize="characters" />
+              <button type="button" onClick={applyCoupon} disabled={checkingCoupon || !couponCode.trim()} className="btn-soft shrink-0 px-4">{checkingCoupon ? "…" : T("প্রয়োগ", "Apply")}</button>
+            </div>
+            {coupon ? <p className="mt-2 text-sm font-semibold text-ok">✓ {coupon.label} · {T(`−${taka(discount, locale)}`, `−${taka(discount, locale)}`)}</p> : null}
+            {couponNote ? <p className="mt-2 text-sm font-semibold text-danger">{couponNote}</p> : null}
+          </div>
+        ) : null}
 
         <div className="card p-4">
           <p className="label">{T("কীভাবে টাকা দেবেন?", "How will you pay?")}</p>
@@ -296,7 +334,7 @@ export function BookingWizard({ locale, shop, category, offering, areas, slots, 
           <div className="min-w-0 flex-1">
             <p className="text-[11px] font-bold text-muted-foreground uppercase">{quote ? T("আনুমানিক", "Estimate") : T("আনুমানিক দাম", "Estimated price")}</p>
             <p className="text-lg font-extrabold text-ink">
-              {quote && !offering.price ? T("দেখে জানাব", "Quoted on site") : taka(price.total, locale)}
+              {quote && !offering.price ? T("দেখে জানাব", "Quoted on site") : discount ? <><span className="mr-2 text-sm font-semibold text-muted-foreground line-through">{taka(price.total, locale)}</span>{taka(payable, locale)}</> : taka(price.total, locale)}
               {area?.charge ? <span className="ml-1 text-xs font-semibold text-muted-foreground">({rental ? T("পিকআপ চার্জসহ", "incl. pickup charge") : T("ভিজিট চার্জসহ", "incl. visit charge")})</span> : null}
             </p>
           </div>

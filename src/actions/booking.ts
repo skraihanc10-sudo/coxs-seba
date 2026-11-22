@@ -25,6 +25,9 @@ import {
   setRefundNote,
 } from "@/lib/bookings"
 import { bookingSchema, formObject, parse, quoteSchema, rescheduleSchema, reviewSchema } from "@/lib/validation"
+import { describeCoupon, quoteCoupon } from "@/lib/coupons"
+import { currentShop } from "@/lib/shops"
+import { getLocale } from "@/lib/auth"
 import { customerByPhone } from "./auth"
 
 function code(form: FormData) {
@@ -62,6 +65,19 @@ export async function createBookingAction(_prev: ActionState, form: FormData): P
   if (!state.ok || !out.created) return state
   if (out.signedIn) await setSession(out.signedIn)
   redirect(`/bookings/${out.created.code}?new=1`)
+}
+
+/** Wizard: check a coupon before booking. Returns the discount for the given work price. */
+export async function checkCouponAction(form: FormData): Promise<{ ok: boolean; discount?: number; label?: string; error?: string }> {
+  try {
+    const [shop, user, locale] = await Promise.all([currentShop(), getUser(), getLocale()])
+    const work = Math.max(0, Math.round(Number(form.get("work") ?? 0)))
+    const q = await quoteCoupon(shop.id, String(form.get("code") ?? ""), { categoryId: String(form.get("categoryId") ?? ""), work, customerId: user?.id ?? null })
+    return { ok: true, discount: q.discount, label: `${q.coupon.code}: ${describeCoupon(q.coupon, locale)}` }
+  } catch (error) {
+    if (error instanceof AppError) return { ok: false, error: (await getLocale()) === "bn" ? error.message : error.en }
+    return { ok: false, error: "কুপন যাচাই করা যায়নি।" }
+  }
 }
 
 export async function moveBookingAction(_prev: ActionState, form: FormData): Promise<ActionState> {

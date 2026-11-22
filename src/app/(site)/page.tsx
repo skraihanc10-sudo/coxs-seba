@@ -11,6 +11,7 @@ import { unitLabel } from "@/lib/pricing"
 import { clip, pageMeta } from "@/lib/seo"
 import { ofBn } from "@/lib/bangla"
 import { CategoryIcon } from "@/components/category-icon"
+import { HeroShowcase } from "@/components/hero-showcase"
 import { faqLd, JsonLd, localBusiness, organization } from "@/components/seo/json-ld"
 import { brand } from "@/theme/brand"
 
@@ -46,8 +47,9 @@ export default async function HomePage() {
       <JsonLd data={[organization(), localBusiness(shop, settings, areas), ...(faqs.length ? [faqLd(faqs.map((f) => ({ question: bn ? f.questionBn : f.question, answer: bn ? f.answerBn : f.answer })))] : [])]} />
 
       {/* Hero + search */}
-      <section aria-labelledby="hero-title" className="relative overflow-hidden rounded-3xl bg-[linear-gradient(135deg,#0b1f3a,#0a3fb0_60%,#1259e8)] px-5 py-9 text-white md:px-10 md:py-14">
+      <section aria-labelledby="hero-title" className="relative overflow-hidden rounded-3xl bg-[linear-gradient(135deg,#0b1f3a,#0a3fb0_60%,#1259e8)] px-5 py-8 text-white md:px-10 md:py-12 lg:grid lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:gap-10">
         <div className="pointer-events-none absolute -top-20 -right-20 size-72 rounded-full bg-white/10 blur-2xl" aria-hidden />
+        <div className="relative">
         <p className="pill inline-flex items-center gap-1 bg-white/15 text-white"><MapPin className="size-3.5" aria-hidden /> {coverageText(shop, locale)}</p>
         <h1 id="hero-title" className="display mt-4 max-w-2xl text-3xl font-extrabold leading-tight md:text-5xl">
           {bn ? settings.heroBn : settings.heroEn}
@@ -63,6 +65,27 @@ export default async function HomePage() {
           <li className="rounded-full bg-white/15 px-3 py-1.5">✓ {pick(locale, "দাম আগেই জানুন", "Price up front")}</li>
           <li className="rounded-full bg-white/15 px-3 py-1.5">✓ {pick(locale, "ক্যাশ / বিকাশ / নগদ", "Cash / bKash / Nagad")}</li>
         </ul>
+        </div>
+        {/* Featured-services board: rotating illustrated cards, one per category. */}
+        <div className="relative mt-7 lg:mt-0">
+          <HeroShowcase
+            locale={locale}
+            items={categories
+              .filter((c) => c.image)
+              .map((c) => {
+                const from = fromPrice(c.offerings)
+                const cheapest = c.offerings.find((o) => o.price === from)
+                return {
+                  slug: c.slug,
+                  name: c.name,
+                  nameBn: c.nameBn,
+                  image: c.image,
+                  blurb: bn ? c.blurbBn : c.blurb,
+                  priceLine: from && cheapest ? `${t.from} ${taka(from, locale)}/${unitLabel(cheapest.pricing, locale)}` : null,
+                }
+              })}
+          />
+        </div>
       </section>
 
       {/* Service grid */}
@@ -76,13 +99,23 @@ export default async function HomePage() {
             const from = fromPrice(c.offerings)
             const cheapest = c.offerings.find((o) => o.price === from)
             return (
-              <Link key={c.id} href={`/services/${c.slug}`} className="card group flex flex-col gap-3 p-4 transition hover:-translate-y-0.5 hover:ring-brand/40">
-                <span className="grid size-12 place-items-center rounded-2xl bg-brand-soft text-brand transition group-hover:bg-brand group-hover:text-white" aria-hidden>
-                  <CategoryIcon name={c.icon} />
-                </span>
-                <span className="text-[15px] font-extrabold leading-snug text-ink">{named(locale, c)}</span>
-                <span className="mt-auto text-xs text-muted-foreground">
-                  {from && cheapest ? `${t.from} ${taka(from, locale)}/${unitLabel(cheapest.pricing, locale)}` : pick(locale, "দেখে দাম", "Quote after visit")}
+              <Link key={c.id} href={`/services/${c.slug}`} className="card group flex flex-col overflow-hidden transition hover:-translate-y-0.5 hover:ring-brand/40">
+                {c.image ? (
+                  <span className="relative block aspect-[5/3] w-full overflow-hidden bg-brand-soft">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={c.image} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105" />
+                  </span>
+                ) : null}
+                <span className="flex flex-1 flex-col gap-2 p-3.5">
+                  <span className="flex items-center gap-2">
+                    <span className="grid size-8 shrink-0 place-items-center rounded-xl bg-brand-soft text-brand transition group-hover:bg-brand group-hover:text-white" aria-hidden>
+                      <CategoryIcon name={c.icon} className="size-4" />
+                    </span>
+                    <span className="text-[15px] font-extrabold leading-snug text-ink">{named(locale, c)}</span>
+                  </span>
+                  <span className="mt-auto text-xs text-muted-foreground">
+                    {from && cheapest ? `${t.from} ${taka(from, locale)}/${unitLabel(cheapest.pricing, locale)}` : pick(locale, "দেখে দাম", "Quote after visit")}
+                  </span>
                 </span>
               </Link>
             )

@@ -80,6 +80,9 @@ export default async function CategoryPage({ params }: { params: Params }) {
                           {cover ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img src={`/api/uploads/${cover}`} alt={vehicleName(v, locale)} className="aspect-[16/10] w-full object-cover" loading="lazy" />
+                          ) : category.image ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={category.image} alt="" className="aspect-[16/10] w-full object-cover" loading="lazy" />
                           ) : (
                             <div className="grid aspect-[16/10] w-full place-items-center bg-brand-soft text-brand" aria-hidden><CategoryIcon name={category.icon} className="size-10" /></div>
                           )}
