@@ -23,7 +23,7 @@ export default async function AdminBookingPage({ params }: { params: Promise<{ c
   const [workers, templates] = await Promise.all([workerOptions(booking.shopId, booking.categoryId, booking.areaId), replyTemplates(booking.shopId)])
   return (
     <div>
-      <PageHeader back="/admin/bookings" title={`${booking.code} · ${named(locale, booking.offering)}`} sub={named(locale, booking.category)} action={<StatusPill status={booking.status} locale={locale} className="mt-1" />} />
+      <PageHeader back="/admin/bookings" title={`${booking.code} · ${named(locale, booking.offering)}`} sub={named(locale, booking.category)} action={<StatusPill status={booking.status} locale={locale} flow={booking.category.flow} className="mt-1" />} />
       <OfficeBooking booking={booking} locale={locale} me={user.id} isAdmin={isAdmin(user.role)} workers={workers} messages={thread.messages} templates={templates} />
     </div>
   )

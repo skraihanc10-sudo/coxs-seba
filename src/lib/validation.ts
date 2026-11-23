@@ -104,6 +104,95 @@ const vehicleFields = {
   minHours: int(1, 24, "সর্বনিম্ন ঘণ্টা ১–২৪।", "Minimum hours must be 1–24.").default(2),
 }
 
+const time = z.string().trim().regex(/^\d{2}:\d{2}$/, msg("সময় HH:MM ফরম্যাটে দিন।", "Time must be HH:MM.")).default("14:00")
+
+const propertyFields = {
+  kind: z.enum(["RESORT", "HOTEL", "COTTAGE", "GUESTHOUSE"], msg("ধরন বেছে নিন।", "Pick a kind.")),
+  areaId: id,
+  name: z.string().trim().min(2, msg("রিসোর্ট/হোটেলের নাম দিন।", "Name the property.")).max(100),
+  nameBn: optionalText(100),
+  address: optionalText(200),
+  addressBn: optionalText(200),
+  amenities: optionalText(300),
+  checkIn: time,
+  checkOut: time,
+  policy: optionalText(600),
+  policyBn: optionalText(600),
+  detail: optionalText(1000),
+  detailBn: optionalText(1000),
+  rooms: z.string().trim().min(3, msg("অন্তত একটা রুমের ধরন দিন।", "Add at least one room type.")).max(4000),
+}
+
+/** A resort/hotel owner signing up with their first property. */
+export const stayPartnerApplySchema = z.object({
+  ...propertyFields,
+  /** The owner's own name; the property's name is `name`. */
+  ownerName: z.string().trim().min(2, msg("আপনার নাম দিন।", "Add your name.")).max(80),
+  phone: phoneInput,
+  email: z.union([z.literal(""), z.string().trim().email(msg("সঠিক ইমেইল দিন।", "Enter a valid email."))]).default(""),
+  password: z.string().min(6, msg("পাসওয়ার্ড অন্তত ৬ অক্ষরের দিন।", "Password must be at least 6 characters.")).max(100),
+})
+
+/** A partner editing/adding a property, or an admin editing any property of the shop. */
+export const propertySchema = z.object({
+  id: optionalText(40),
+  workerId: optionalText(40),
+  sort: int(0, 999, "ক্রম ০–৯৯৯।", "Sort must be 0–999.").default(0),
+  ...propertyFields,
+})
+
+/** A customer booking rooms for a date range. */
+export const stayBookingSchema = z.object({
+  propertyId: id,
+  roomTypeId: id,
+  checkIn: iso,
+  checkOut: iso,
+  rooms: int(1, 10, "১ থেকে ১০টা রুম।", "Rooms must be 1–10.").default(1),
+  guests: int(1, 60, "১ থেকে ৬০ জন।", "Guests must be 1–60.").default(2),
+  phone: phoneInput,
+  contactName: optionalText(80),
+  notes: optionalText(1000),
+  paymentMethod: z.enum(["CASH", "BKASH", "NAGAD"], msg("পেমেন্টের ধরন বেছে নিন।", "Choose how you'll pay.")),
+  otp: optionalText(6),
+  name: optionalText(80),
+  couponCode: optionalText(20),
+})
+
+export const productSchema = z.object({
+  id: optionalText(40),
+  groupId: id,
+  name: z.string().trim().min(2, msg("প্রোডাক্টের নাম দিন।", "Name the product.")).max(100),
+  nameBn: optionalText(100),
+  slug: optionalText(80),
+  badge: optionalText(30),
+  detail: optionalText(1000),
+  detailBn: optionalText(1000),
+  variants: z.string().trim().min(3, msg("অন্তত একটা ভ্যারিয়েন্ট দিন।", "Add at least one variant.")).max(2000),
+  sort: int(0, 999, "ক্রম ০–৯৯৯।", "Sort must be 0–999.").default(0),
+  active: z.preprocess((v) => v === "on" || v === "1" || v === true, z.boolean()),
+})
+
+export const productGroupSchema = z.object({
+  id: optionalText(40),
+  name: z.string().trim().min(2, msg("গ্রুপের নাম দিন।", "Name the group.")).max(60),
+  nameBn: optionalText(60),
+  sort: int(0, 999, "ক্রম ০–৯৯৯।", "Sort must be 0–999.").default(0),
+})
+
+/** A customer checking out their cart. */
+export const shopOrderSchema = z.object({
+  cart: z.string().min(2, msg("কার্ট খালি।", "Your cart is empty.")).max(8000),
+  phone: phoneInput,
+  contactName: z.string().trim().min(2, msg("নাম দিন।", "Add your name.")).max(80),
+  addressLine: z.string().trim().min(6, msg("পুরো ডেলিভারি ঠিকানা লিখুন।", "Enter the full delivery address.")).max(300),
+  landmark: optionalText(120),
+  notes: optionalText(500),
+  paymentMethod: z.enum(["CASH", "BKASH", "NAGAD"], msg("পেমেন্টের ধরন বেছে নিন।", "Choose how you'll pay.")),
+  otp: optionalText(6),
+  name: optionalText(80),
+  couponCode: optionalText(20),
+})
+
 /** A partner (vehicle owner) signing up with their first vehicle. */
 export const partnerApplySchema = z.object({
   name: z.string().trim().min(2, msg("আপনার নাম দিন।", "Add your name.")).max(80),
@@ -161,7 +250,7 @@ export const categorySchema = z.object({
   blurbBn: optionalText(200),
   icon: optionalText(30),
   image: optionalText(200),
-  flow: z.enum(["STANDARD", "LAUNDRY", "TEAM", "CUSTOM", "RENTAL"]).catch("STANDARD"),
+  flow: z.enum(["STANDARD", "LAUNDRY", "TEAM", "CUSTOM", "RENTAL", "STAY", "SHOP"]).catch("STANDARD"),
   codePrefix: z.preprocess((v) => String(v ?? "").trim().toUpperCase(), z.string().regex(/^([A-Z]{2,3})?$/, msg("বুকিং নম্বরের প্রিফিক্স ২–৩টা ইংরেজি বড় হাতের অক্ষর (যেমন CL)।", "Booking prefix: 2–3 capital letters (e.g. CL)."))),
   sort: int(0, 999, "ক্রম ০–৯৯৯ দিন।", "Order must be 0–999.").default(0),
 })

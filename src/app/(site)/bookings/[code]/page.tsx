@@ -12,6 +12,7 @@ import { bookingChat } from "@/lib/support"
 import { answerQuoteAction, moveBookingAction, rescheduleAction, reviewAction } from "@/actions/booking"
 import { sendBookingMessageAction } from "@/actions/support"
 import { PageHeader, Section, StatusPill } from "@/components/bits"
+import { ClearCart } from "@/components/clear-cart"
 import { ActionForm, Stars, SubmitButton } from "@/components/forms"
 import { Composer, MessageList } from "@/components/chat-pane"
 import { Timeline } from "@/components/booking/timeline"
@@ -38,7 +39,8 @@ export default async function BookingPage({ params, searchParams }: { params: Pr
 
   return (
     <div className="mx-auto max-w-2xl">
-      <PageHeader back="/bookings" title={named(locale, b.offering)} sub={`${b.code} · ${named(locale, b.category)} · ${named(locale, b.shop)}`} action={<StatusPill status={b.status} locale={locale} className="mt-1" />} />
+      {b.category.flow === "SHOP" ? <ClearCart /> : null}
+      <PageHeader back="/bookings" title={named(locale, b.offering)} sub={`${b.code} · ${named(locale, b.category)} · ${named(locale, b.shop)}`} action={<StatusPill status={b.status} locale={locale} flow={b.category.flow} className="mt-1" />} />
 
       {fresh ? (
         <div className="mb-4 rounded-2xl bg-ok/10 px-4 py-3 text-sm font-bold text-emerald-900">

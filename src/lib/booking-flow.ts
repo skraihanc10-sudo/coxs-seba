@@ -9,12 +9,33 @@
  */
 import type { Role } from "./roles"
 
-export type Flow = "VISIT" | "LAUNDRY"
+export type Flow = "VISIT" | "LAUNDRY" | "STAY" | "SHOP"
 
 export const VISIT_STEPS = ["REQUESTED", "CONFIRMED", "ASSIGNED", "ACCEPTED", "ON_THE_WAY", "ARRIVED", "IN_PROGRESS", "COMPLETED"] as const
 export const LAUNDRY_STEPS = ["REQUESTED", "CONFIRMED", "ASSIGNED", "ACCEPTED", "PICKED_UP", "AT_LAUNDRY", "READY", "OUT_FOR_DELIVERY", "COMPLETED"] as const
 
+/** Stays: the resort confirms, the guest checks in, then checks out. */
+export const STAY_STEPS = ["REQUESTED", "CONFIRMED", "ASSIGNED", "ACCEPTED", "IN_PROGRESS", "COMPLETED"] as const
+
+/** Shop orders: confirm, pack, hand to the courier, delivered. */
+export const SHOP_STEPS = ["REQUESTED", "CONFIRMED", "IN_PROGRESS", "OUT_FOR_DELIVERY", "COMPLETED"] as const
+
 export const TERMINAL = ["COMPLETED", "CANCELLED"]
+
+const SHOP_NEXT: Record<string, string[]> = {
+  REQUESTED: ["CONFIRMED", "CANCELLED"],
+  CONFIRMED: ["IN_PROGRESS", "CANCELLED"],
+  IN_PROGRESS: ["OUT_FOR_DELIVERY", "CANCELLED"],
+  OUT_FOR_DELIVERY: ["COMPLETED"],
+}
+
+const STAY_NEXT: Record<string, string[]> = {
+  REQUESTED: ["CONFIRMED", "ASSIGNED", "CANCELLED"],
+  CONFIRMED: ["ASSIGNED", "CANCELLED"],
+  ASSIGNED: ["ACCEPTED", "CANCELLED"],
+  ACCEPTED: ["IN_PROGRESS", "CANCELLED"],
+  IN_PROGRESS: ["COMPLETED"],
+}
 
 const VISIT_NEXT: Record<string, string[]> = {
   REQUESTED: ["CONFIRMED", "ASSIGNED", "CANCELLED"],
@@ -43,15 +64,15 @@ const WORKER_MOVES = ["ACCEPTED", "ON_THE_WAY", "ARRIVED", "IN_PROGRESS", "PICKE
 const OFFICE_MOVES = ["CONFIRMED", "ASSIGNED", "CANCELLED", ...WORKER_MOVES]
 
 export function flowFor(categoryFlow: string): Flow {
-  return categoryFlow === "LAUNDRY" ? "LAUNDRY" : "VISIT"
+  return categoryFlow === "LAUNDRY" ? "LAUNDRY" : categoryFlow === "STAY" ? "STAY" : categoryFlow === "SHOP" ? "SHOP" : "VISIT"
 }
 
 export function stepsFor(flow: Flow): readonly string[] {
-  return flow === "LAUNDRY" ? LAUNDRY_STEPS : VISIT_STEPS
+  return flow === "LAUNDRY" ? LAUNDRY_STEPS : flow === "STAY" ? STAY_STEPS : flow === "SHOP" ? SHOP_STEPS : VISIT_STEPS
 }
 
 export function nextStatuses(flow: Flow, status: string) {
-  return (flow === "LAUNDRY" ? LAUNDRY_NEXT : VISIT_NEXT)[status] ?? []
+  return (flow === "LAUNDRY" ? LAUNDRY_NEXT : flow === "STAY" ? STAY_NEXT : flow === "SHOP" ? SHOP_NEXT : VISIT_NEXT)[status] ?? []
 }
 
 export function canMove(flow: Flow, from: string, to: string) {
@@ -108,9 +129,44 @@ export const WORKER_BUTTON: Record<string, { bn: string; en: string }> = {
   OUT_FOR_DELIVERY: { bn: "ডেলিভারিতে যাচ্ছি", en: "Out for delivery" },
 }
 
-export function statusText(status: string, locale: "bn" | "en") {
-  const row = STATUS_TEXT[status]
+/** Stays read differently: the "worker" is the resort and the job is the stay itself. */
+const STAY_STATUS_TEXT: Record<string, { bn: string; en: string }> = {
+  ASSIGNED: { bn: "রিসোর্টে পাঠানো হয়েছে", en: "Sent to the resort" },
+  ACCEPTED: { bn: "রিসোর্ট নিশ্চিত করেছে", en: "Resort confirmed" },
+  IN_PROGRESS: { bn: "চেক-ইন হয়েছে", en: "Checked in" },
+  COMPLETED: { bn: "চেক-আউট সম্পন্ন", en: "Checked out" },
+}
+
+const STAY_BUTTON: Record<string, { bn: string; en: string }> = {
+  ACCEPTED: { bn: "বুকিং গ্রহণ করুন", en: "Accept booking" },
+  IN_PROGRESS: { bn: "গেস্ট চেক-ইন করেছে", en: "Guest checked in" },
+  COMPLETED: { bn: "চেক-আউট হয়েছে", en: "Checked out" },
+}
+
+const SHOP_STATUS_TEXT: Record<string, { bn: string; en: string }> = {
+  REQUESTED: { bn: "অর্ডার হয়েছে", en: "Ordered" },
+  CONFIRMED: { bn: "অর্ডার কনফার্ম", en: "Order confirmed" },
+  IN_PROGRESS: { bn: "প্যাক হচ্ছে", en: "Being packed" },
+  OUT_FOR_DELIVERY: { bn: "কুরিয়ারে পাঠানো হয়েছে", en: "Shipped" },
+  COMPLETED: { bn: "ডেলিভারি হয়েছে", en: "Delivered" },
+}
+
+const SHOP_BUTTON: Record<string, { bn: string; en: string }> = {
+  CONFIRMED: { bn: "অর্ডার কনফার্ম করুন", en: "Confirm order" },
+  IN_PROGRESS: { bn: "প্যাকিং শুরু", en: "Start packing" },
+  OUT_FOR_DELIVERY: { bn: "কুরিয়ারে পাঠানো হয়েছে", en: "Handed to courier" },
+  COMPLETED: { bn: "ডেলিভারি হয়েছে", en: "Delivered" },
+}
+
+export function statusText(status: string, locale: "bn" | "en", flow?: Flow) {
+  const row = (flow === "STAY" ? STAY_STATUS_TEXT[status] : flow === "SHOP" ? SHOP_STATUS_TEXT[status] : undefined) ?? STATUS_TEXT[status]
   return row ? row[locale] : status
+}
+
+/** The label of the forward-step button for a flow. */
+export function workerButton(flow: Flow, status: string, locale: "bn" | "en") {
+  const row = (flow === "STAY" ? STAY_BUTTON[status] : flow === "SHOP" ? SHOP_BUTTON[status] : undefined) ?? WORKER_BUTTON[status]
+  return row ? row[locale] : statusText(status, locale, flow)
 }
 
 export function statusTone(status: string) {

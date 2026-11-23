@@ -2,7 +2,7 @@ import { notFound } from "next/navigation"
 import { Camera, Phone } from "lucide-react"
 import { requireUser, getLocale } from "@/lib/auth"
 import { flowOf } from "@/lib/bookings"
-import { isOpen, WORKER_BUTTON, workerNext } from "@/lib/booking-flow"
+import { isOpen, workerButton, workerNext } from "@/lib/booking-flow"
 import { AppError } from "@/lib/errors"
 import { taka, telHref } from "@/lib/format"
 import { named, pick } from "@/lib/i18n"
@@ -38,7 +38,7 @@ export default async function WorkerJobPage({ params }: { params: Promise<{ code
 
   return (
     <div className="mx-auto max-w-2xl space-y-4">
-      <PageHeader back="/worker" title={named(locale, b.offering)} sub={`${b.code} · ${named(locale, b.category)}`} action={<StatusPill status={b.status} locale={locale} className="mt-1" />} />
+      <PageHeader back="/worker" title={named(locale, b.offering)} sub={`${b.code} · ${named(locale, b.category)}`} action={<StatusPill status={b.status} locale={locale} flow={b.category.flow} className="mt-1" />} />
 
       {/* Customer + call */}
       <div className="card flex items-center gap-3 p-4">
@@ -48,6 +48,7 @@ export default async function WorkerJobPage({ params }: { params: Promise<{ code
           <p className="text-xs text-muted-foreground">{b.visitSlot} · {named(locale, b.area)}</p>
           {rental ? <p className="mt-1 text-xs text-muted-foreground"><span className="font-bold text-ink">{pick(locale, "পিকআপ পয়েন্ট", "Pickup point")}:</span> {b.addressLine}</p> : null}
           {b.vehicle ? <p className="mt-1 text-xs text-muted-foreground"><span className="font-bold text-ink">{pick(locale, "গাড়ি", "Vehicle")}:</span> {vehicleName(b.vehicle, locale)}{b.vehicle.plate ? ` · ${b.vehicle.plate}` : ""}</p> : null}
+          {b.property ? <p className="mt-1 text-xs text-muted-foreground"><span className="font-bold text-ink">{pick(locale, "রিসোর্ট", "Property")}:</span> {locale === "bn" ? b.property.nameBn || b.property.name : b.property.name || b.property.nameBn}{b.roomType ? ` · ${b.roomType.name} × ${b.rooms}` : ""} · {b.nights} {pick(locale, "রাত", "nights")}</p> : null}
         </div>
         <a href={telHref(b.phone)} className="btn-primary h-11 px-4"><Phone className="size-4" /> {pick(locale, "কল", "Call")}</a>
       </div>
@@ -60,7 +61,7 @@ export default async function WorkerJobPage({ params }: { params: Promise<{ code
           {blockedByQuote ? (
             <p className="rounded-xl bg-amber-50 px-4 py-3 text-center text-sm font-bold text-amber-800">{pick(locale, "আগে দাম পাঠান। কাস্টমার মেনে নিলে কাজ শুরু করা যাবে।", "Send the quote first. Work starts once the customer accepts.")}</p>
           ) : (
-            <SubmitButton className="btn-primary h-16 w-full text-lg" pendingText="…">{WORKER_BUTTON[next]?.[locale]}</SubmitButton>
+            <SubmitButton className="btn-primary h-16 w-full text-lg" pendingText="…">{workerButton(flow, next, locale)}</SubmitButton>
           )}
           {rental && open ? <p className="mt-2 text-center text-xs text-muted-foreground">{pick(locale, "ভাড়ার ট্রিপ: পৌঁছে 'কাজ শুরু' চাপুন, ট্রিপ শেষে 'কাজ শেষ'", "Rental trip: tap 'Start work' at pickup and 'Job done' when the trip ends.")}</p> : null}
         </ActionForm>

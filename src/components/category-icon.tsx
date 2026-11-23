@@ -1,4 +1,4 @@
-import { Building2, Droplets, HardHat, Pencil, Shirt, Snowflake, Sparkles, Truck, Wifi, Wrench, Zap, type LucideIcon, Car } from "lucide-react"
+import { Building2, Droplets, Fish, HardHat, Pencil, Shirt, Snowflake, Sparkles, Truck, Wifi, Wrench, Zap, type LucideIcon, Car } from "lucide-react"
 
 const ICONS: Record<string, LucideIcon> = {
   shirt: Shirt,
@@ -13,6 +13,7 @@ const ICONS: Record<string, LucideIcon> = {
   pencil: Pencil,
   wrench: Wrench,
   car: Car,
+  fish: Fish,
 }
 
 export const ICON_NAMES = Object.keys(ICONS)

@@ -23,7 +23,7 @@ export default async function SupportBookingPage({ params }: { params: Promise<{
   const [workers, templates] = await Promise.all([workerOptions(shop.id, booking.categoryId, booking.areaId), replyTemplates(shop.id)])
   return (
     <div>
-      <PageHeader back="/support/bookings" title={`${booking.code} · ${named(locale, booking.offering)}`} sub={named(locale, booking.category)} action={<StatusPill status={booking.status} locale={locale} className="mt-1" />} />
+      <PageHeader back="/support/bookings" title={`${booking.code} · ${named(locale, booking.offering)}`} sub={named(locale, booking.category)} action={<StatusPill status={booking.status} locale={locale} flow={booking.category.flow} className="mt-1" />} />
       <OfficeBooking booking={booking} locale={locale} me={user.id} isAdmin={isAdmin(user.role)} workers={workers} messages={thread.messages} templates={templates} />
     </div>
   )

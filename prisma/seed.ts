@@ -9,6 +9,7 @@ import bcrypt from "bcryptjs"
 import { AREAS, CATEGORIES, DHAKA_AREAS, FAQS, REPLY_TEMPLATES, SHOPS } from "./catalog"
 import { demoAccounts, demoShopStaff, demoWorkers, WORKER_PASSWORD } from "../src/theme/demo-accounts"
 import { SETTING_DEFAULTS } from "../src/lib/settings"
+import { SHOP_GROUPS, SHOP_PRODUCTS } from "./shop-demo"
 
 const db = new PrismaClient()
 const catalogOnly = process.argv.includes("--catalog")
@@ -43,7 +44,7 @@ async function catalogFor(shopId: string, areas: typeof AREAS, categories: typeo
     const current = await db.serviceCategory.findUnique({ where: { shopId_slug: { shopId, slug: c.slug } }, select: { image: true } })
     const refreshImage = current && (!current.image || current.image.startsWith("/services/")) && current.image !== cat.image
     // Car & bike rental is the lead category: pinned first on every seed.
-    const pin = c.slug === "rent-a-car" ? { sort: -1 } : {}
+    const pin = c.slug === "rent-a-car" ? { sort: -3 } : c.slug === "resort-booking" ? { sort: -2 } : c.slug === "cox-shutki" ? { sort: -1 } : {}
     const row = await db.serviceCategory.upsert({ where: { shopId_slug: { shopId, slug: c.slug } }, update: { ...(refreshImage ? { image: cat.image } : {}), ...pin }, create: { ...cat, shopId, sort: i, ...pin } })
     for (const [j, o] of offerings.entries()) {
       await db.serviceOffering.upsert({
@@ -502,11 +503,74 @@ async function syncRentalTypes() {
   }
 }
 
+/**
+ * Starter resorts so the booking page is never empty: four HANDYO-managed
+ * properties with stock photos (public/demo/stays). Only when the shop has none.
+ */
+async function ensureDemoProperties(shop: { id: string }) {
+  const category = await db.serviceCategory.findFirst({ where: { shopId: shop.id, flow: "STAY" } })
+  if (!category || (await db.property.count({ where: { shopId: shop.id } }))) return
+  const areas = await db.serviceArea.findMany({ where: { shopId: shop.id } })
+  const area = (slug: string) => areas.find((a) => a.slug === slug) ?? areas[0]
+  if (!areas.length) return
+  const list = [
+    { area: "marine-drive-sadar", kind: "RESORT", photos: ["sea-view-resort", "infinity-pool", "deluxe-room"], name: "Blue Bay Sea View Resort", nameBn: "ব্লু বে সি ভিউ রিসোর্ট", address: "Marine Drive, Inani", addressBn: "মেরিন ড্রাইভ, ইনানী", amenities: "Sea view, Pool, Breakfast, WiFi, Parking, Restaurant", detail: "Beachfront resort on Marine Drive with an infinity pool facing the sea. Breakfast and WiFi included.", detailBn: "মেরিন ড্রাইভে সমুদ্রের সামনে রিসোর্ট, সাগরমুখী ইনফিনিটি পুল। সকালের নাস্তা ও ওয়াইফাই সহ।",
+      rooms: [{ name: "Deluxe Sea View", sleeps: 2, pricePerNight: 6500, totalRooms: 8, amenities: "Sea view balcony, AC, King bed" }, { name: "Family Suite", sleeps: 4, pricePerNight: 11000, totalRooms: 4, amenities: "2 bedrooms, Sea view, AC, Mini fridge" }] },
+    { area: "kolatoli", kind: "HOTEL", photos: ["city-hotel", "hotel-lobby", "deluxe-room"], name: "Kolatoli Grand Hotel", nameBn: "কলাতলী গ্র্যান্ড হোটেল", address: "Kolatoli Main Road", addressBn: "কলাতলী মেইন রোড", amenities: "Beach 2 min, Pool, Breakfast, WiFi, Elevator, Restaurant", detail: "City hotel two minutes from Kolatoli beach, rooftop pool and 24-hour reception.", detailBn: "কলাতলী সৈকত থেকে ২ মিনিট, ছাদে পুল, ২৪ ঘণ্টা রিসেপশন।",
+      rooms: [{ name: "Standard Double", sleeps: 2, pricePerNight: 3500, totalRooms: 20, amenities: "AC, Queen bed, TV" }, { name: "Premium Twin", sleeps: 3, pricePerNight: 4800, totalRooms: 10, amenities: "AC, 2 beds, City view" }, { name: "Executive Suite", sleeps: 4, pricePerNight: 8500, totalRooms: 3, amenities: "Living room, Bathtub, Sea view" }] },
+    { area: "marine-drive-sadar", kind: "COTTAGE", photos: ["beach-cottage", "cottage-room", "garden-pool"], name: "Himchari Hill Cottages", nameBn: "হিমছড়ি হিল কটেজ", address: "Himchari, Marine Drive", addressBn: "হিমছড়ি, মেরিন ড্রাইভ", amenities: "Hill view, Garden, Breakfast, Bonfire, Parking", detail: "Wooden cottages on the hill above Himchari waterfall; sunset over the sea from every deck.", detailBn: "হিমছড়ি ঝরনার ওপরের পাহাড়ে কাঠের কটেজ; প্রতিটা ডেক থেকে সাগরে সূর্যাস্ত।",
+      rooms: [{ name: "Hill Cottage", sleeps: 2, pricePerNight: 4200, totalRooms: 6, amenities: "Private deck, Fan + AC, Breakfast" }, { name: "Family Cottage", sleeps: 5, pricePerNight: 7500, totalRooms: 3, amenities: "2 rooms, Deck, Kitchenette" }] },
+    { area: "laboni-point", kind: "GUESTHOUSE", photos: ["garden-pool", "cottage-room"], name: "Laboni Point Guest House", nameBn: "লাবণী পয়েন্ট গেস্ট হাউস", address: "Laboni Beach Road", addressBn: "লাবণী বিচ রোড", amenities: "Beach 5 min, WiFi, Family friendly, Parking", detail: "Budget-friendly guest house near Laboni point, clean rooms and a quiet garden.", detailBn: "লাবণী পয়েন্টের কাছে সাশ্রয়ী গেস্ট হাউস, পরিষ্কার রুম আর নিরিবিলি বাগান।",
+      rooms: [{ name: "Economy Double", sleeps: 2, pricePerNight: 1800, totalRooms: 12, amenities: "AC, Double bed" }, { name: "Family Room", sleeps: 4, pricePerNight: 3200, totalRooms: 5, amenities: "AC, 2 beds, Balcony" }] },
+  ]
+  let n = 0
+  for (const [i, p] of list.entries()) {
+    const a = area(p.area)
+    await db.property.create({
+      data: {
+        shopId: shop.id, areaId: a.id, kind: p.kind, name: p.name, nameBn: p.nameBn, address: p.address, addressBn: p.addressBn, amenities: p.amenities, detail: p.detail, detailBn: p.detailBn,
+        photos: p.photos.map((x) => `/demo/stays/${x}.jpg`).join(","), status: "APPROVED", sort: i,
+        policyBn: "চেক-ইন দুপুর ২টা, চেক-আউট দুপুর ১২টা। ২৪ ঘণ্টা আগে বাতিল করলে পুরো টাকা ফেরত।", policy: "Check-in 2 pm, check-out 12 pm. Free cancellation up to 24 hours before check-in.",
+        rooms: { create: p.rooms.map((r, j) => ({ ...r, sort: j })) },
+      },
+    })
+    n++
+  }
+  console.log(`Demo resorts added: ${n} properties with stock photos`)
+}
+
+/**
+ * The product shop needs a hidden "nationwide" delivery area (orders ship by
+ * courier anywhere) and, the first time, the owner's catalogue as demo data.
+ */
+async function ensureProductShop(shop: { id: string }) {
+  await db.serviceArea.upsert({ where: { shopId_slug: { shopId: shop.id, slug: "nationwide" } }, update: {}, create: { shopId: shop.id, slug: "nationwide", name: "Nationwide courier", nameBn: "সারা দেশে কুরিয়ার", charge: 0, sort: 999, active: false } })
+  if (await db.product.count({ where: { shopId: shop.id } })) return
+  const groups: Record<string, string> = {}
+  for (const [i, g] of SHOP_GROUPS.entries()) {
+    const row = await db.productGroup.upsert({ where: { shopId_slug: { shopId: shop.id, slug: g.slug } }, update: {}, create: { shopId: shop.id, slug: g.slug, name: g.name, nameBn: g.nameBn, sort: i } })
+    groups[g.slug] = row.id
+  }
+  let n = 0
+  for (const [i, p] of SHOP_PRODUCTS.entries()) {
+    const groupId = groups[p.group]
+    if (!groupId) continue
+    const slug = p.photo.replace(/\.jpg$/, "")
+    await db.product.create({
+      data: { shopId: shop.id, groupId, slug, name: p.name, nameBn: p.nameBn, photos: `/demo/shop/${p.photo}`, badge: p.badge, sort: i, variants: { create: p.variants.map((v, j) => ({ ...v, sort: j })) } },
+    })
+    n++
+  }
+  console.log(`Demo shop added: ${n} products in ${SHOP_GROUPS.length} groups`)
+}
+
 async function main() {
   const coxs = await catalog()
   await ensureOwner()
   await syncRentalTypes()
   await ensureDemoVehicles(coxs)
+  await ensureDemoProperties(coxs)
+  await ensureProductShop(coxs)
   if (catalogOnly) return
   await demo(coxs)
   console.log("Logins:")

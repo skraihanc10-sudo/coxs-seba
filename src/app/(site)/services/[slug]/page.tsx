@@ -10,6 +10,11 @@ import { taka } from "@/lib/format"
 import { PRICING_TEXT, unitLabel } from "@/lib/pricing"
 import { marketVehicles, photoUrl, photosOf, specsOf, vehicleName } from "@/lib/vehicles"
 import { VehicleMarket, type MarketVehicle } from "@/components/vehicle-market"
+import { fromNight, kindText, listOf, marketProperties, propertyName } from "@/lib/stays"
+import { StayMarket, type MarketProperty } from "@/components/stay-market"
+import { liveProducts, shopGroups, shopRules } from "@/lib/shop"
+import { getSettings } from "@/lib/settings"
+import { ShopMarket } from "@/components/shop-market"
 import { clip, pageMeta } from "@/lib/seo"
 import { CategoryIcon } from "@/components/category-icon"
 import { PageHeader } from "@/components/bits"
@@ -39,6 +44,29 @@ export default async function CategoryPage({ params }: { params: Params }) {
   const t = words(locale)
   const bn = locale === "bn"
   const rental = category.flow === "RENTAL"
+  const stay = category.flow === "STAY"
+  const shopFlow = category.flow === "SHOP"
+  const [products, groups, settings] = shopFlow ? await Promise.all([liveProducts(shop.id), shopGroups(shop.id), getSettings(shop.id)]) : [[], [], null]
+  const stays: MarketProperty[] = stay
+    ? (await marketProperties()).map((p) => {
+        const cover = photosOf(p)[0]
+        return {
+          id: p.id,
+          name: propertyName(p, locale),
+          kind: p.kind,
+          kindText: kindText(p.kind, locale),
+          areaId: p.areaId,
+          area: named(locale, p.area),
+          cover: cover ? photoUrl(cover) : null,
+          fromNight: fromNight(p),
+          amenities: listOf(p.amenities).slice(0, 4),
+          rating: p.worker && p.worker.ratingCount > 0 ? p.worker.rating : null,
+          roomCount: p.rooms.filter((r) => r.active).length,
+          city: p.shopId === shop.id ? null : bn ? p.shop.cityBn : p.shop.city,
+          href: `/stays/${p.id}`,
+        }
+      })
+    : []
   // Every branch's live vehicles in one marketplace; same-type vehicles of other
   // branches book through their own branch (the wizard follows the vehicle).
   const market: MarketVehicle[] = rental
@@ -89,6 +117,43 @@ export default async function CategoryPage({ params }: { params: Params }) {
       {rental ? (
         <p className="mb-4 rounded-2xl bg-teal-50 px-4 py-3 text-sm font-semibold text-teal-900">{pick(locale, `পিকআপ পয়েন্ট (হোটেল বা বাসা) আর সময় দিন, গাড়ি বা বাইক সেখানেই পৌঁছে যাবে। ${shop.cityBn} এলাকার মধ্যে পিকআপ।`, `Give us a pickup point (hotel or home) and a time; the car or bike comes to you. Pickup inside ${shop.city}.`)}</p>
       ) : null}
+      {shopFlow && settings ? (
+        <section className="mb-6">
+          <ShopMarket
+            locale={locale}
+            rules={shopRules(settings)}
+            groups={groups.map((g) => ({ id: g.id, name: named(locale, g) }))}
+            products={products.map((p) => ({
+              id: p.id,
+              slug: p.slug,
+              groupId: p.groupId,
+              name: bn ? p.nameBn || p.name : p.name || p.nameBn,
+              cover: photosOf(p)[0] ? photoUrl(photosOf(p)[0]) : null,
+              badge: p.badge,
+              variants: p.variants.filter((v) => v.active).map((v) => ({ id: v.id, label: v.label, price: v.price, oldPrice: v.oldPrice, stock: v.stock })),
+            }))}
+          />
+        </section>
+      ) : null}
+      {stay ? (
+        <section className="mb-6">
+          <p className="mb-4 rounded-2xl bg-teal-50 px-4 py-3 text-sm font-semibold text-teal-900">{pick(locale, "তারিখ আর রুম বেছে বুক করুন; রিসোর্ট নিশ্চিত করলে নোটিশ পাবেন, চেক-ইনের আগে চ্যাটে সব ঠিক করে নিন। পেমেন্ট চেক-ইনে ক্যাশ / বিকাশ / নগদ।", "Pick dates and a room; you get a notice once the resort confirms, and settle details in chat before check-in. Pay at check-in by cash / bKash / Nagad.")}</p>
+          <h2 className="display text-xl font-extrabold text-ink">{pick(locale, "রিসোর্ট, হোটেল ও কটেজ বেছে নিন", "Pick a resort, hotel or cottage")}</h2>
+          <p className="mt-1 mb-3 text-sm text-muted-foreground">{pick(locale, "ছবি, সুবিধা আর রাতপ্রতি দাম দেখে পছন্দেরটা খুলুন।", "See photos, amenities and nightly prices, then open the one you like.")}</p>
+          {!stays.length ? (
+            <p className="rounded-2xl bg-canvas px-4 py-3 text-sm text-muted-foreground">{pick(locale, "এখনো কোনো রিসোর্ট যোগ হয়নি। রিসোর্ট বা হোটেলের মালিক হলে নিচে পার্টনার হোন।", "No properties listed yet. If you own a resort or hotel, become a partner below.")}</p>
+          ) : (
+            <StayMarket locale={locale} properties={stays} fallback={category.image || null} />
+          )}
+          <Link href="/partner/resort" className="card mt-6 flex items-center justify-between gap-3 bg-brand-soft p-4 transition hover:ring-brand/40">
+            <div>
+              <p className="font-extrabold text-ink">{pick(locale, "আপনার রিসোর্ট বা হোটেল HANDYO-তে লিস্ট করুন", "List your resort or hotel on HANDYO")}</p>
+              <p className="text-sm text-muted-foreground">{pick(locale, "রুম আর দাম আপনি ঠিক করেন; বুকিং, চ্যাট আর কাস্টমার আমরা আনি।", "You set rooms and prices; we bring bookings, chat and customers.")}</p>
+            </div>
+            <span className="shrink-0 font-extrabold text-brand">{pick(locale, "পার্টনার হোন →", "Become a partner →")}</span>
+          </Link>
+        </section>
+      ) : null}
       {rental ? (
         <section className="mb-6">
           <h2 className="display text-xl font-extrabold text-ink">{pick(locale, "বাইক, কার, চান্দের গাড়ি ও বাস বেছে নিন", "Pick a bike, car, chander gari or bus")}</h2>
@@ -106,7 +171,7 @@ export default async function CategoryPage({ params }: { params: Params }) {
         </section>
       ) : null}
       {/* Rentals book a real vehicle from the marketplace above, never a bare type. */}
-      <div className={rental ? "hidden" : "grid gap-3 md:grid-cols-2"}>
+      <div className={rental || stay || shopFlow ? "hidden" : "grid gap-3 md:grid-cols-2"}>
         {category.offerings.map((o) => (
           <Link key={o.id} href={`/book/${category.slug}/${o.slug}`} className="card flex flex-col gap-2 p-4 transition hover:ring-brand/40 md:p-5">
             <div className="flex items-start justify-between gap-3">

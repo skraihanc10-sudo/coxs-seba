@@ -42,6 +42,11 @@ export default async function SettingsPage() {
               <Field k="workerShare" label={pick(locale, "কর্মীর ভাগ (% of job)", "Worker share (% of job)")} type="number" value={s.workerShare} />
               <Field k="partnerShare" label={pick(locale, "পার্টনারের ভাগ (ভাড়ার %)", "Partner share (% of rental)")} type="number" value={s.partnerShare} />
             </div>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <Field k="shopDelivery" label={pick(locale, "শপ ডেলিভারি চার্জ (৳)", "Shop delivery charge (৳)")} type="number" value={s.shopDelivery} />
+              <Field k="shopFreeAbove" label={pick(locale, "এর ওপরে ফ্রি ডেলিভারি (৳, ০ = নেই)", "Free delivery above (৳, 0 = never)")} type="number" value={s.shopFreeAbove} />
+              <Field k="shopMinOrder" label={pick(locale, "শপ ন্যূনতম অর্ডার (৳)", "Shop minimum order (৳)")} type="number" value={s.shopMinOrder} />
+            </div>
             <div>
               <p className="label">{pick(locale, "পেমেন্টের ধরন", "Payment methods")}</p>
               <div className="flex flex-wrap gap-3">

@@ -35,7 +35,7 @@ export default async function BookingsPage() {
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-2">
           <span className="truncate font-extrabold text-ink">{named(locale, b.offering)}</span>
-          <StatusPill status={b.status} locale={locale} />
+          <StatusPill status={b.status} locale={locale} flow={b.category.flow} />
         </span>
         <span className="block truncate text-xs text-muted-foreground">
           {b.code} · {formatDay(b.visitDate, locale)} {b.visitSlot} · {named(locale, b.area)}{manyShops ? ` · ${locale === "bn" ? b.shop.cityBn : b.shop.city}` : ""}{b.worker ? ` · ${b.worker.user.name}` : ""}

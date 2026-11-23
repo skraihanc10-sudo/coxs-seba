@@ -86,7 +86,7 @@ type Offer = {
   name: string
   detailBn: string
   detail: string
-  pricing: "FIXED" | "PER_KG" | "PER_ITEM" | "PER_HOUR" | "PER_DAY" | "PER_ROOM" | "QUOTE"
+  pricing: "FIXED" | "PER_KG" | "PER_ITEM" | "PER_HOUR" | "PER_DAY" | "PER_ROOM" | "PER_NIGHT" | "QUOTE"
   price: number
   minQty?: number
   durationMin: number
@@ -100,11 +100,39 @@ export const CATEGORIES: Array<{
   blurb: string
   icon: string
   image: string
-  flow: "STANDARD" | "LAUNDRY" | "TEAM" | "CUSTOM" | "RENTAL"
+  flow: "STANDARD" | "LAUNDRY" | "TEAM" | "CUSTOM" | "RENTAL" | "STAY" | "SHOP"
   /** Letters in front of this category's booking numbers: CL-10001, CR-10002 … one serial for all. */
   codePrefix: string
   offerings: Offer[]
 }> = [
+  {
+    slug: "cox-shutki",
+    codePrefix: "SH",
+    nameBn: "কক্স শুঁটকি ও আচার",
+    name: "Cox's dried fish & pickles",
+    blurbBn: "কক্সবাজারের আসল শুঁটকি, শুঁটকি আচার, পাহাড়ি হোমমেড আচার, বার্মিজ আচার, চাটনি আর বালাচাও – সরাসরি কক্সবাজার থেকে সারা দেশে ডেলিভারি।",
+    blurb: "Cox's Bazar's own dried fish, dried-fish pickles, hill-made pickles, Burmese pickles, chutneys and balachao, shipped from Cox's Bazar to anywhere in Bangladesh.",
+    icon: "fish",
+    image: "/demo/shop/shutki-22.jpg",
+    flow: "SHOP",
+    offerings: [
+      { slug: "order", nameBn: "শপ অর্ডার", name: "Shop order", detailBn: "শুঁটকি, আচার, চাটনি – কার্টে নিয়ে অর্ডার করুন; কুরিয়ারে বাসায় পৌঁছে যাবে।", detail: "Dried fish, pickles, chutneys: add to cart and order; delivered by courier.", pricing: "FIXED", price: 0, durationMin: 2880 },
+    ],
+  },
+  {
+    slug: "resort-booking",
+    codePrefix: "RS",
+    nameBn: "রিসোর্ট ও হোটেল বুকিং",
+    name: "Resort & hotel booking",
+    blurbBn: "কক্সবাজারের রিসোর্ট, হোটেল আর কটেজ – ছবি, রুম আর রাতপ্রতি দাম দেখে বুক করুন। মালিক নিশ্চিত করলে চ্যাটে সব ঠিক হয়।",
+    blurb: "Cox's Bazar resorts, hotels and cottages: see photos, rooms and nightly prices, then book. The owner confirms and you settle details in chat.",
+    icon: "building",
+    image: "/demo/stays/sea-view-resort.jpg",
+    flow: "STAY",
+    offerings: [
+      { slug: "room-night", nameBn: "রুম (প্রতি রাত)", name: "Room (per night)", detailBn: "রিসোর্ট বা হোটেলের রুম, রাতপ্রতি দাম। চেক-ইন ও চেক-আউট তারিখ দিয়ে বুক করুন।", detail: "A resort or hotel room, priced per night. Book with check-in and check-out dates.", pricing: "PER_NIGHT", price: 0, durationMin: 1440 },
+    ],
+  },
   {
     slug: "laundry",
     codePrefix: "LN",

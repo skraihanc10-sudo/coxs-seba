@@ -19,6 +19,10 @@ export const SETTING_DEFAULTS: Record<string, string> = {
   workerShare: "40",
   /** Share of a rental bill paid to the partner who owns the vehicle, in percent. */
   partnerShare: "85",
+  /** Product shop: flat delivery charge, free-delivery threshold (0 = never), minimum order. */
+  shopDelivery: "130",
+  shopFreeAbove: "0",
+  shopMinOrder: "400",
   payCash: "1",
   payBkash: "1",
   payNagad: "1",

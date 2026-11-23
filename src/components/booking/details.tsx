@@ -13,6 +13,8 @@ export function BookingFacts({ booking, locale, showCustomer = false }: { bookin
   const bill = b.finalPrice ?? billFor(b)
   const pay = paymentProvider(b.paymentMethod)
   const rental = b.category.flow === "RENTAL"
+  const stay = b.category.flow === "STAY"
+  const shopOrder = b.category.flow === "SHOP"
   return (
     <div className="divide-y divide-line">
       {showCustomer ? (
@@ -37,20 +39,59 @@ export function BookingFacts({ booking, locale, showCustomer = false }: { bookin
         </Row>
       ) : null}
       {b.routeName ? <Row label={pick(locale, "রুট প্যাকেজ", "Route package")}>{b.routeName}</Row> : null}
-      {usesQuantity(b.pricing) ? (
+      {b.items.length ? (
+        <div className="py-3">
+          <p className="mb-2 text-sm text-muted-foreground">{pick(locale, "পণ্য", "Items")}</p>
+          <ul className="divide-y divide-line rounded-xl bg-canvas px-3">
+            {b.items.map((it) => (
+              <li key={it.id} className="flex items-center justify-between gap-3 py-2 text-sm">
+                <span className="min-w-0"><span className="font-bold text-ink">{locale === "bn" ? it.nameBn || it.name : it.name || it.nameBn}</span>{it.label ? <span className="text-muted-foreground"> · {it.label}</span> : null}<span className="text-muted-foreground"> × {it.qty}</span></span>
+                <span className="shrink-0 font-bold text-ink">{taka(it.lineTotal, locale)}</span>
+              </li>
+            ))}
+            <li className="flex items-center justify-between gap-3 py-2 text-sm"><span className="text-muted-foreground">{pick(locale, "সাবটোটাল", "Subtotal")}</span><span className="font-bold text-ink">{taka(b.unitPrice, locale)}</span></li>
+            <li className="flex items-center justify-between gap-3 py-2 text-sm"><span className="text-muted-foreground">{pick(locale, "ডেলিভারি চার্জ", "Delivery charge")}</span><span className="font-bold text-ink">{b.visitCharge ? taka(b.visitCharge, locale) : pick(locale, "ফ্রি", "Free")}</span></li>
+          </ul>
+        </div>
+      ) : null}
+      {b.property ? (
+        <Row label={pick(locale, "রিসোর্ট / হোটেল", "Resort / hotel")}>
+          <span className="inline-flex items-center gap-2">
+            {b.property.photos.split(",")[0]?.trim() ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={photoUrl(b.property.photos.split(",")[0].trim())} alt="" className="size-12 rounded-lg object-cover ring-1 ring-line" />
+            ) : null}
+            <span>
+              {locale === "bn" ? b.property.nameBn || b.property.name : b.property.name || b.property.nameBn}
+              <span className="block text-xs font-normal text-muted-foreground">{locale === "bn" ? b.property.addressBn || b.property.address : b.property.address || b.property.addressBn}</span>
+            </span>
+          </span>
+        </Row>
+      ) : null}
+      {stay ? (
+        <>
+          <Row label={pick(locale, "রুম", "Rooms")}>{b.roomType ? `${b.roomType.name} × ${b.rooms}` : b.rooms} <span className="font-normal text-muted-foreground">· {b.guests} {pick(locale, "জন", "guests")}</span></Row>
+          <Row label={pick(locale, "চেক-ইন → চেক-আউট", "Check-in → check-out")}>
+            {formatDay(b.visitDate, locale)} → {b.checkOut ? formatDay(b.checkOut, locale) : "—"}
+            <span className="block text-xs font-normal text-muted-foreground">{b.nights} {pick(locale, "রাত", "nights")}{b.property ? ` · ${pick(locale, "চেক-ইন", "check-in")} ${b.property.checkIn}, ${pick(locale, "চেক-আউট", "check-out")} ${b.property.checkOut}` : ""} · {b.nights} × {taka(b.unitPrice, locale)}</span>
+          </Row>
+        </>
+      ) : null}
+      {usesQuantity(b.pricing) && !stay ? (
         <Row label={pick(locale, "পরিমাণ", "Quantity")}>
           {b.quantity} {unitLabel(b.pricing, locale)}
           {b.category.flow === "TEAM" ? ` × ${b.days} ${pick(locale, "দিন", "days")} · ${b.teamSize} ${pick(locale, "জন", "people")}` : ""}
           {b.pricing === "PER_DAY" || b.pricing === "PER_HOUR" ? <span className="block text-xs font-normal text-muted-foreground">{b.quantity} × {taka(b.unitPrice, locale)}/{unitLabel(b.pricing, locale)}</span> : null}
         </Row>
       ) : null}
-      <Row label={rental ? pick(locale, "পিকআপ এলাকা", "Pickup area") : pick(locale, "এলাকা", "Area")}>{named(locale, b.area)}</Row>
-      <Row label={rental ? pick(locale, "পিকআপ", "Pickup") : pick(locale, "ঠিকানা", "Address")}>
+      {!shopOrder ? <Row label={rental ? pick(locale, "পিকআপ এলাকা", "Pickup area") : pick(locale, "এলাকা", "Area")}>{named(locale, b.area)}</Row> : null}
+      {!stay ? <Row label={rental ? pick(locale, "পিকআপ", "Pickup") : shopOrder ? pick(locale, "ডেলিভারি ঠিকানা", "Delivery address") : pick(locale, "ঠিকানা", "Address")}>
         <span className="block">{b.addressLine}</span>
         {b.landmark ? <span className="block text-xs font-normal text-muted-foreground">{b.landmark}</span> : null}
         <a href={mapsUrl(`${b.addressLine}, ${b.area.name}`)} target="_blank" rel="noreferrer" className="mt-1 inline-flex items-center gap-1 text-xs text-brand"><Navigation className="size-3" /> {pick(locale, "ম্যাপে দেখুন", "Open in Maps")}</a>
-      </Row>
-      <Row label={rental ? pick(locale, "পিকআপ সময়", "Pickup time") : pick(locale, "সময়", "When")}>{formatDay(b.visitDate, locale)} · {b.visitSlot}</Row>
+      </Row> : null}
+      {!stay && !shopOrder ? <Row label={rental ? pick(locale, "পিকআপ সময়", "Pickup time") : pick(locale, "সময়", "When")}>{formatDay(b.visitDate, locale)} · {b.visitSlot}</Row> : null}
+      {shopOrder ? <Row label={pick(locale, "অর্ডারের তারিখ", "Ordered on")}>{formatDay(b.visitDate, locale)}</Row> : null}
       {b.notes ? <Row label={pick(locale, "নোট", "Notes")}><span className="whitespace-pre-wrap font-normal">{b.notes}</span></Row> : null}
       {b.discount > 0 ? (
         <Row label={pick(locale, "ছাড়", "Discount")}>
@@ -64,7 +105,7 @@ export function BookingFacts({ booking, locale, showCustomer = false }: { bookin
         ) : (
           <span className="text-base">{taka(bill, locale)}</span>
         )}
-        {b.visitCharge && b.status !== "COMPLETED" ? <span className="block text-xs font-normal text-muted-foreground">{pick(locale, `ভিজিট চার্জ ${taka(b.visitCharge, locale)} সহ`, `incl. ${taka(b.visitCharge, locale)} visit charge`)}</span> : null}
+        {b.visitCharge && b.status !== "COMPLETED" ? <span className="block text-xs font-normal text-muted-foreground">{shopOrder ? pick(locale, `ডেলিভারি চার্জ ${taka(b.visitCharge, locale)} সহ`, `incl. ${taka(b.visitCharge, locale)} delivery`) : pick(locale, `ভিজিট চার্জ ${taka(b.visitCharge, locale)} সহ`, `incl. ${taka(b.visitCharge, locale)} visit charge`)}</span> : null}
       </Row>
       <Row label={pick(locale, "পেমেন্ট", "Payment")}>
         {pay ? (locale === "bn" ? pay.labelBn : pay.label) : b.paymentMethod} · {b.paymentStatus === "PAID" ? <span className="text-ok">{pick(locale, "পরিশোধিত", "Paid")}</span> : <span className="text-amber-600">{pick(locale, "বাকি", "Due")}</span>}

@@ -2,7 +2,7 @@ import Link from "next/link"
 import { ChevronRight, MapPin, Phone } from "lucide-react"
 import { requireUser, getLocale } from "@/lib/auth"
 import { db } from "@/lib/db"
-import { flowFor, WORKER_BUTTON, workerNext } from "@/lib/booking-flow"
+import { flowFor, workerButton, workerNext } from "@/lib/booking-flow"
 import { formatDay, localToday, telHref } from "@/lib/format"
 import { named, pick } from "@/lib/i18n"
 import { vehicleName } from "@/lib/vehicles"
@@ -34,14 +34,14 @@ export default async function WorkerHome() {
             <p className="text-xs text-muted-foreground">{j.code} · {formatDay(j.visitDate, locale)} · <span className="font-bold text-ink">{j.visitSlot}</span></p>
             {j.vehicle ? <p className="truncate text-xs text-muted-foreground">{pick(locale, "গাড়ি:", "Vehicle:")} <span className="font-bold text-ink">{vehicleName(j.vehicle, locale)}</span></p> : null}
           </div>
-          <StatusPill status={j.status} locale={locale} />
+          <StatusPill status={j.status} locale={locale} flow={j.category.flow} />
           <ChevronRight className="size-4 text-muted-foreground" />
         </div>
         <div className="mt-3 flex items-center justify-between gap-3 text-sm">
           <span className="inline-flex min-w-0 items-center gap-1 text-muted-foreground"><MapPin className="size-3.5 shrink-0 text-brand" /><span className="truncate">{named(locale, j.area)} · {j.addressLine}</span></span>
           <a href={telHref(j.phone)} className="relative z-10 inline-flex shrink-0 items-center gap-1 font-bold text-brand"><Phone className="size-3.5" /> {j.contactName || pick(locale, "কল", "Call")}</a>
         </div>
-        {next ? <p className="mt-3 rounded-xl bg-brand-soft px-3 py-2 text-center text-sm font-extrabold text-brand">{pick(locale, "পরের ধাপ:", "Next:")} {WORKER_BUTTON[next]?.[locale]}</p> : null}
+        {next ? <p className="mt-3 rounded-xl bg-brand-soft px-3 py-2 text-center text-sm font-extrabold text-brand">{pick(locale, "পরের ধাপ:", "Next:")} {workerButton(flowFor(j.category.flow), next, locale)}</p> : null}
       </div>
     )
   }

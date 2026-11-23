@@ -2,7 +2,7 @@ import Link from "next/link"
 import { ChevronLeft } from "lucide-react"
 import type { Locale } from "@/lib/format"
 import { taka } from "@/lib/format"
-import { statusText, statusTone } from "@/lib/booking-flow"
+import { flowFor, statusText, statusTone } from "@/lib/booking-flow"
 
 export function PageHeader({ title, sub, back, action }: { title: string; sub?: string; back?: string; action?: React.ReactNode }) {
   return (
@@ -21,8 +21,9 @@ export function PageHeader({ title, sub, back, action }: { title: string; sub?: 
   )
 }
 
-export function StatusPill({ status, locale, className = "" }: { status: string; locale: Locale; className?: string }) {
-  return <span className={`pill ${statusTone(status)} ${className}`}>{statusText(status, locale)}</span>
+/** `flow` is the category flow ("STAY" reads as resort wording). */
+export function StatusPill({ status, locale, className = "", flow }: { status: string; locale: Locale; className?: string; flow?: string }) {
+  return <span className={`pill ${statusTone(status)} ${className}`}>{statusText(status, locale, flow ? flowFor(flow) : undefined)}</span>
 }
 
 export function Money({ value, locale, className = "" }: { value: number; locale: Locale; className?: string }) {

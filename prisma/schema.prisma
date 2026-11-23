@@ -46,6 +46,9 @@ model Shop {
   settings    Setting[]
   vehicles    Vehicle[]
   coupons     Coupon[]
+  properties  Property[]
+  productGroups ProductGroup[]
+  products     Product[]
 }
 
 /// A discount code of one shop. PERCENT takes `value` % off the work price
@@ -133,6 +136,7 @@ model WorkerProfile {
   bookings ServiceBooking[]
   reviews  BookingReview[]
   vehicles Vehicle[]
+  properties Property[]
 
   @@index([shopId])
 }
@@ -210,6 +214,7 @@ model ServiceArea {
   workers   WorkerArea[]
   bookings  ServiceBooking[]
   addresses Address[]
+  properties  Property[]
 
   @@unique([shopId, slug])
 }
@@ -256,6 +261,146 @@ model VehicleRoute {
   sort      Int     @default(0)
 
   @@index([vehicleId])
+}
+
+/// A resort, hotel, cottage or guest house customers can book by the night.
+model Property {
+  id         String         @id @default(cuid())
+  shopId     String
+  shop       Shop           @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  /// Owner partner (WorkerProfile kind PARTNER); null = HANDYO-managed.
+  workerId   String?
+  worker     WorkerProfile? @relation(fields: [workerId], references: [id], onDelete: SetNull)
+  areaId     String
+  area       ServiceArea    @relation(fields: [areaId], references: [id])
+  /// RESORT, HOTEL, COTTAGE, GUESTHOUSE
+  kind       String         @default("RESORT")
+  name       String
+  nameBn     String
+  address    String         @default("")
+  addressBn  String         @default("")
+  /// Photo names or bundled paths, comma separated; first is the cover.
+  photos     String         @default("")
+  detail     String         @default("")
+  detailBn   String         @default("")
+  /// Amenity tags, comma separated ("Sea view, Pool, Breakfast").
+  amenities  String         @default("")
+  checkIn    String         @default("14:00")
+  checkOut   String         @default("12:00")
+  policy     String         @default("")
+  policyBn   String         @default("")
+  /// PENDING, APPROVED, PAUSED, REJECTED
+  status     String         @default("PENDING")
+  rejectNote String         @default("")
+  sort       Int            @default(0)
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  rooms    RoomType[]
+  bookings ServiceBooking[]
+
+  @@index([shopId, status])
+  @@index([workerId])
+}
+
+/// One bookable room category of a property, with how many of them exist.
+model RoomType {
+  id            String   @id @default(cuid())
+  propertyId    String
+  property      Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  name          String
+  nameBn        String   @default("")
+  sleeps        Int      @default(2)
+  pricePerNight Int
+  totalRooms    Int      @default(1)
+  amenities     String   @default("")
+  photos        String   @default("")
+  sort          Int      @default(0)
+  active        Boolean  @default(true)
+
+  bookings ServiceBooking[]
+
+  @@index([propertyId])
+}
+
+/// A shelf in the product shop ("শুঁটকি", "আচার", "চাটনি"…).
+model ProductGroup {
+  id        String    @id @default(cuid())
+  shopId    String
+  shop      Shop      @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  slug      String
+  name      String
+  nameBn    String
+  sort      Int       @default(0)
+  active    Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  products  Product[]
+
+  @@unique([shopId, slug])
+}
+
+/// A product customers can order, sold in one or more variants (250 g, 500 g, 1 kg…).
+model Product {
+  id        String       @id @default(cuid())
+  shopId    String
+  shop      Shop         @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  groupId   String
+  group     ProductGroup @relation(fields: [groupId], references: [id])
+  slug      String
+  name      String
+  nameBn    String
+  /// Photo names or bundled paths, comma separated; first is the cover.
+  photos    String       @default("")
+  detail    String       @default("")
+  detailBn  String       @default("")
+  /// Small label on the card ("সেরা পছন্দ", "নতুন").
+  badge     String       @default("")
+  sort      Int          @default(0)
+  active    Boolean      @default(true)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  variants ProductVariant[]
+  items    OrderItem[]
+
+  @@unique([shopId, slug])
+  @@index([shopId, active])
+}
+
+model ProductVariant {
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  label     String
+  price     Int
+  oldPrice  Int     @default(0)
+  /// -1 = unlimited
+  stock     Int     @default(-1)
+  sort      Int     @default(0)
+  active    Boolean @default(true)
+
+  items OrderItem[]
+
+  @@index([productId])
+}
+
+/// One line of a shop order (a ServiceBooking of the SHOP category); prices are copied at order time.
+model OrderItem {
+  id        String          @id @default(cuid())
+  bookingId String
+  booking   ServiceBooking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  productId String?
+  product   Product?        @relation(fields: [productId], references: [id], onDelete: SetNull)
+  variantId String?
+  variant   ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  name      String
+  nameBn    String          @default("")
+  label     String          @default("")
+  unitPrice Int
+  qty       Int
+  lineTotal Int
+
+  @@index([bookingId])
 }
 
 model ServiceOffering {
@@ -319,6 +464,13 @@ model ServiceBooking {
   /// Rental booked as a fixed route package: the route id (if it still exists) and its name as booked.
   routeId       String?
   routeName     String          @default("")
+  /// Stays: the property and room type booked; visitDate is check-in, checkOut the last day; rooms × nights.
+  propertyId    String?
+  roomTypeId    String?
+  checkOut      String          @default("")
+  nights        Int             @default(0)
+  rooms         Int             @default(1)
+  guests        Int             @default(1)
   pricing       String
   unitPrice     Int             @default(0)
   quantity      Float           @default(1)
@@ -360,6 +512,9 @@ model ServiceBooking {
   chat     BookingThread?
   payments PaymentRecord[]
   tickets  Ticket[]
+  property      Property?       @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  roomType      RoomType?       @relation(fields: [roomTypeId], references: [id], onDelete: SetNull)
+  items         OrderItem[]
 
   @@index([shopId, status])
   @@index([shopId, createdAt])
