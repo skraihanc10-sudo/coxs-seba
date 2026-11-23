@@ -63,6 +63,9 @@ export default async function CategoryPage({ params }: { params: Params }) {
             rating: v.worker && v.worker.ratingCount > 0 ? v.worker.rating : null,
             city: v.shopId === shop.id ? null : bn ? v.shop.cityBn : v.shop.city,
             href: `/book/${category.slug}/${v.offering.slug}?vehicle=${v.id}`,
+            detailHref: `/vehicles/${v.id}`,
+            routeCount: v.routes.length,
+            fromRoute: v.routes.length ? Math.min(...v.routes.map((r) => r.price)) : 0,
           }
         })
     : []
@@ -88,7 +91,7 @@ export default async function CategoryPage({ params }: { params: Params }) {
       ) : null}
       {rental ? (
         <section className="mb-6">
-          <h2 className="display text-xl font-extrabold text-ink">{pick(locale, "বাইক, কার ও জিপ বেছে নিন", "Pick a bike, car or jeep")}</h2>
+          <h2 className="display text-xl font-extrabold text-ink">{pick(locale, "বাইক, কার, চান্দের গাড়ি ও বাস বেছে নিন", "Pick a bike, car, chander gari or bus")}</h2>
           <p className="mt-1 mb-3 text-sm text-muted-foreground">{pick(locale, "ছবি, স্পেক আর ভাড়া দেখে পছন্দেরটা বুক করুন; বুকিংয়ের পর অফিস গাড়ির মালিকের সাথে মিলিয়ে দেয়।", "See the photo, specs and rate, then book; the office connects you with the owner after booking.")}</p>
           {!market.length ? (
             <p className="rounded-2xl bg-canvas px-4 py-3 text-sm text-muted-foreground">{pick(locale, "এখনো কোনো গাড়ি যোগ হয়নি। শিগগিরই আসছে; আপনার গাড়ি থাকলে নিচে পার্টনার হোন।", "No vehicles are listed yet. Coming soon; if you own one, become a partner below.")}</p>

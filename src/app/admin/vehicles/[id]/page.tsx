@@ -3,7 +3,7 @@ import { requireUser, getLocale } from "@/lib/auth"
 import { ADMINS } from "@/lib/roles"
 import { officeShop } from "@/lib/shops"
 import { db } from "@/lib/db"
-import { rentalCategory, vehicleById, vehicleName, VEHICLE_STATUS_TEXT } from "@/lib/vehicles"
+import { VEHICLE_STATUS_TEXT, rentalCategory, routesText, vehicleById, vehicleName } from "@/lib/vehicles"
 import { pick } from "@/lib/i18n"
 import { EmptyState, PageHeader } from "@/components/bits"
 import { VehicleForm } from "@/components/admin/vehicle-form"
@@ -23,7 +23,7 @@ export default async function VehiclePage({ params }: { params: Promise<{ id: st
     <div>
       <PageHeader back="/admin/vehicles" title={vehicleName(vehicle, locale)} sub={`${status ? pick(locale, status.bn, status.en) : vehicle.status} · ${owner}`} />
       {category && category.offerings.length ? (
-        <VehicleForm locale={locale} vehicle={vehicle} offerings={category.offerings} workers={workers} />
+        <VehicleForm locale={locale} vehicle={{ ...vehicle, routes: routesText(vehicle.routes) }} offerings={category.offerings} workers={workers} />
       ) : (
         <EmptyState
           title={pick(locale, "ভাড়ার ক্যাটাগরি নেই", "No rental category yet")}

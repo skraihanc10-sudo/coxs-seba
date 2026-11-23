@@ -116,7 +116,8 @@ export type NewBooking = {
   days: number
   paymentMethod: string
   vehicleId?: string
-  rentalUnit?: "HOUR" | "HALF" | "DAY"
+  rentalUnit?: "HOUR" | "HALF" | "DAY" | "ROUTE"
+  routeId?: string
   couponCode?: string
 }
 
@@ -146,16 +147,21 @@ export async function createBooking(customer: { id: string; name: string }, inpu
   let unitPrice = offering.price
   let minQty = offering.minQty
   let vehicleId: string | null = null
+  let route: { id: string; name: string } | null = null
   if (input.vehicleId) {
     const vehicle = await db.vehicle.findFirst({
       where: { id: input.vehicleId, shopId, offeringId: offering.id, status: "APPROVED", OR: [{ workerId: null }, { worker: { approved: true, user: { active: true } } }] },
+      include: { routes: true },
     })
     if (!vehicle) throw new AppError("এই গাড়িটা এখন পাওয়া যাচ্ছে না, অন্য একটা বেছে নিন।", "That vehicle is not available right now; pick another.")
-    const unit = input.rentalUnit === "HALF" && vehicle.pricePerHalfDay ? "HALF" : input.rentalUnit === "DAY" || !vehicle.pricePerHour ? "DAY" : "HOUR"
+    const picked = input.rentalUnit === "ROUTE" && input.routeId ? vehicle.routes.find((r) => r.id === input.routeId) : null
+    if (input.rentalUnit === "ROUTE" && !picked) throw new AppError("এই রুট প্যাকেজটা আর নেই, আবার বেছে নিন।", "That route package is gone; pick again.")
+    if (picked) route = { id: picked.id, name: picked.name }
+    const unit = picked ? "ROUTE" : input.rentalUnit === "HALF" && vehicle.pricePerHalfDay ? "HALF" : input.rentalUnit === "DAY" || !vehicle.pricePerHour ? "DAY" : "HOUR"
     if (unit === "DAY" && !vehicle.pricePerDay) throw new AppError("এই গাড়ি দিনের হিসাবে ভাড়া হয় না।", "This vehicle is not rented by the day.")
     // Half-day (6 hours) is a flat price, so it bills like a fixed job.
-    pricing = unit === "HALF" ? "FIXED" : unit === "DAY" ? "PER_DAY" : "PER_HOUR"
-    unitPrice = unit === "HALF" ? vehicle.pricePerHalfDay : unit === "DAY" ? vehicle.pricePerDay : vehicle.pricePerHour
+    pricing = unit === "HALF" || unit === "ROUTE" ? "FIXED" : unit === "DAY" ? "PER_DAY" : "PER_HOUR"
+    unitPrice = picked ? picked.price : unit === "HALF" ? vehicle.pricePerHalfDay : unit === "DAY" ? vehicle.pricePerDay : vehicle.pricePerHour
     minQty = unit === "HOUR" ? vehicle.minHours : 1
     vehicleId = vehicle.id
   }
@@ -187,6 +193,8 @@ export async function createBooking(customer: { id: string; name: string }, inpu
       pricing,
       unitPrice,
       vehicleId,
+      routeId: route?.id ?? null,
+      routeName: route?.name ?? "",
       quantity,
       teamSize,
       days,

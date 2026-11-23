@@ -16,9 +16,10 @@ export const VEHICLE_STATUS_TEXT: Record<string, { bn: string; en: string }> = {
 }
 
 export const vehicleInclude = {
-  offering: { select: { id: true, slug: true, name: true, nameBn: true, categoryId: true, category: { select: { slug: true, name: true, nameBn: true, flow: true } } } },
+  offering: { select: { id: true, slug: true, name: true, nameBn: true, categoryId: true, category: { select: { slug: true, name: true, nameBn: true, flow: true, image: true, icon: true } } } },
   worker: { select: { id: true, kind: true, approved: true, rating: true, ratingCount: true, user: { select: { id: true, name: true, phone: true, active: true } } } },
   shop: { select: { id: true, slug: true, city: true, cityBn: true } },
+  routes: { orderBy: { sort: "asc" as const } },
 } as const
 
 export type VehicleRow = NonNullable<Awaited<ReturnType<typeof vehicleById>>>
@@ -31,6 +32,39 @@ export function photosOf(v: { photos: string }) {
 /** Spec tags ("149cc, ABS") as a list. */
 export function specsOf(v: { specs: string }) {
   return v.specs.split(",").map((s) => s.trim()).filter(Boolean)
+}
+
+export type RouteInput = { name: string; spots: string; hours: string; capacity: string; price: number }
+
+/**
+ * Route packages typed one per line: `name | attractions | duration | capacity | price`.
+ * Only the name and a price are required.
+ */
+export function parseRoutes(text: string): RouteInput[] {
+  const out: RouteInput[] = []
+  for (const raw of text.split(/\r?\n/)) {
+    const line = raw.trim()
+    if (!line) continue
+    const parts = line.split("|").map((p) => p.trim())
+    const name = parts[0] ?? ""
+    const price = Math.round(Number((parts[4] ?? parts[parts.length - 1] ?? "").replace(/[^\d.]/g, "")))
+    if (!name || !Number.isFinite(price) || price <= 0) throw new AppError(`রুট লাইনটা ঠিক নেই: "${line.slice(0, 40)}"। ফরম্যাট: নাম | জায়গা | সময় | কতজন | দাম`, `Bad route line: "${line.slice(0, 40)}". Format: name | spots | hours | capacity | price`)
+    out.push({ name: name.slice(0, 120), spots: (parts[1] ?? "").slice(0, 300), hours: (parts[2] ?? "").slice(0, 40), capacity: (parts[3] ?? "").slice(0, 40), price })
+    if (out.length >= 12) break
+  }
+  return out
+}
+
+/** The text form of a vehicle's routes, for the edit textarea. */
+export function routesText(routes: Array<{ name: string; spots: string; hours: string; capacity: string; price: number }>) {
+  return routes.map((r) => `${r.name} | ${r.spots} | ${r.hours} | ${r.capacity} | ${r.price}`).join("\n")
+}
+
+async function replaceRoutes(vehicleId: string, routes: RouteInput[]) {
+  await db.$transaction([
+    db.vehicleRoute.deleteMany({ where: { vehicleId } }),
+    ...(routes.length ? [db.vehicleRoute.createMany({ data: routes.map((r, i) => ({ ...r, vehicleId, sort: i })) })] : []),
+  ])
 }
 
 /** Browser URL of a stored photo name; bundled demo photos are kept as site paths. */
@@ -95,6 +129,7 @@ export type VehicleInput = {
   pricePerDay: number
   pricePerHalfDay: number
   specs: string
+  routes: string
   minHours: number
 }
 
@@ -105,7 +140,9 @@ async function rentalOffering(shopId: string, offeringId: string) {
 }
 
 function checkPrices(input: VehicleInput) {
-  if (!input.pricePerHour && !input.pricePerDay && !input.pricePerHalfDay) throw new AppError("ঘণ্টা বা দিনের অন্তত একটা ভাড়া দিন।", "Give an hourly or a daily rate (or both).")
+  if (!input.pricePerHour && !input.pricePerDay && !input.pricePerHalfDay && !parseRoutes(input.routes).length) {
+    throw new AppError("ঘণ্টা, হাফ-ডে, দিনের ভাড়া বা অন্তত একটা রুট প্যাকেজ দিন।", "Give an hourly, half-day or daily rate, or at least one route package.")
+  }
 }
 
 function vehicleData(offeringId: string, input: VehicleInput) {
@@ -146,7 +183,7 @@ export async function applyAsPartner(shopId: string, person: { name: string; pho
   const vehicle = await db.$transaction(async (tx) => {
     const user = await tx.user.create({ data: { name: person.name, phone, email, passwordHash, role: "WORKER", shopId, active: false } })
     const worker = await tx.workerProfile.create({ data: { userId: user.id, shopId, kind: "PARTNER", approved: false, skills: { create: { categoryId: offering.categoryId } } } })
-    return tx.vehicle.create({ data: { ...vehicleData(offering.id, input), shopId, workerId: worker.id, photos: photos.join(","), status: "PENDING" } })
+    return tx.vehicle.create({ data: { ...vehicleData(offering.id, input), shopId, workerId: worker.id, photos: photos.join(","), status: "PENDING", routes: { create: parseRoutes(input.routes).map((r, i) => ({ ...r, sort: i })) } } })
   })
   await notify(await officeIds(shopId), {
     kind: "SYSTEM",
@@ -165,13 +202,15 @@ export async function savePartnerVehicle(worker: { id: string; shopId: string },
   if (id) {
     const own = await db.vehicle.findFirst({ where: { id, workerId: worker.id } })
     if (!own) throw new AppError("গাড়িটা পাওয়া যায়নি।", "Vehicle not found.")
-    return db.vehicle.update({
+    const saved = await db.vehicle.update({
       where: { id },
       data: { ...data, ...(photos.length ? { photos: photos.join(",") } : {}), ...(own.status === "REJECTED" ? { status: "PENDING", rejectNote: "" } : {}) },
     })
+    await replaceRoutes(id, parseRoutes(input.routes))
+    return saved
   }
   await db.workerSkill.upsert({ where: { workerId_categoryId: { workerId: worker.id, categoryId: offering.categoryId } }, update: {}, create: { workerId: worker.id, categoryId: offering.categoryId } })
-  const vehicle = await db.vehicle.create({ data: { ...data, shopId: worker.shopId, workerId: worker.id, photos: photos.join(","), status: "PENDING" } })
+  const vehicle = await db.vehicle.create({ data: { ...data, shopId: worker.shopId, workerId: worker.id, photos: photos.join(","), status: "PENDING", routes: { create: parseRoutes(input.routes).map((r, i) => ({ ...r, sort: i })) } } })
   await notify(await officeIds(worker.shopId), { kind: "SYSTEM", title: "নতুন গাড়ি যোগ হয়েছে", body: `${vehicle.titleBn} অনুমোদনের অপেক্ষায়।`, link: "/admin/vehicles" })
   return vehicle
 }
@@ -199,9 +238,11 @@ export async function saveShopVehicle(shopId: string, id: string | undefined, in
   if (id) {
     const own = await db.vehicle.findFirst({ where: { id, shopId } })
     if (!own) throw new AppError("গাড়িটা পাওয়া যায়নি।", "Vehicle not found.")
-    return db.vehicle.update({ where: { id }, data: { ...data, ...(photos.length ? { photos: photos.join(",") } : {}) } })
+    const saved = await db.vehicle.update({ where: { id }, data: { ...data, ...(photos.length ? { photos: photos.join(",") } : {}) } })
+    await replaceRoutes(id, parseRoutes(input.routes))
+    return saved
   }
-  return db.vehicle.create({ data: { ...data, shopId, photos: photos.join(","), status: "APPROVED" } })
+  return db.vehicle.create({ data: { ...data, shopId, photos: photos.join(","), status: "APPROVED", routes: { create: parseRoutes(input.routes).map((r, i) => ({ ...r, sort: i })) } } })
 }
 
 /**

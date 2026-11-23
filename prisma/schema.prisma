@@ -170,6 +170,7 @@ model Vehicle {
   updatedAt     DateTime        @updatedAt
 
   bookings ServiceBooking[]
+  routes   VehicleRoute[]
 
   @@index([shopId, status])
   @@index([workerId])
@@ -239,6 +240,24 @@ model ServiceCategory {
   @@unique([shopId, slug])
 }
 
+/// A fixed-price trip package a vehicle offers ("Cox's Bazar to Patuartek", 6–7 h, 7–13 people, ৳4,000).
+model VehicleRoute {
+  id        String  @id @default(cuid())
+  vehicleId String
+  vehicle   Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  name      String
+  /// Main attractions on the way, free text.
+  spots     String  @default("")
+  /// Approximate duration, free text ("6–7 hours").
+  hours     String  @default("")
+  /// Capacity, free text ("7–13 people").
+  capacity  String  @default("")
+  price     Int
+  sort      Int     @default(0)
+
+  @@index([vehicleId])
+}
+
 model ServiceOffering {
   id          String          @id @default(cuid())
   categoryId  String
@@ -297,6 +316,9 @@ model ServiceBooking {
   visitDate     String
   visitSlot     String
   notes         String          @default("")
+  /// Rental booked as a fixed route package: the route id (if it still exists) and its name as booked.
+  routeId       String?
+  routeName     String          @default("")
   pricing       String
   unitPrice     Int             @default(0)
   quantity      Float           @default(1)

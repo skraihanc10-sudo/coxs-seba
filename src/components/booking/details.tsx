@@ -36,6 +36,7 @@ export function BookingFacts({ booking, locale, showCustomer = false }: { bookin
           </span>
         </Row>
       ) : null}
+      {b.routeName ? <Row label={pick(locale, "রুট প্যাকেজ", "Route package")}>{b.routeName}</Row> : null}
       {usesQuantity(b.pricing) ? (
         <Row label={pick(locale, "পরিমাণ", "Quantity")}>
           {b.quantity} {unitLabel(b.pricing, locale)}

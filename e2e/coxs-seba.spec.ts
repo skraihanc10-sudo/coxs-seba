@@ -278,7 +278,7 @@ test("8. customer can switch branch and sees that branch's areas; rent-a-car is 
   await loginWithPassword(customer, CUSTOMER)
   await customer.goto("/branches")
   await expect(customer.getByRole("heading", { name: "HANDYO ঢাকা" })).toBeVisible()
-  await customer.goto("/book/rent-a-car/open-roof-jeep")
+  await customer.goto("/book/rent-a-car/chander-gari")
   await ready(customer)
   await customer.getByRole("button", { name: "পরের ধাপ" }).click()
   const options = await customer.locator("#area option").allTextContents()

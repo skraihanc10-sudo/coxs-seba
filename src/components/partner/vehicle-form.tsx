@@ -16,6 +16,7 @@ type Vehicle = {
   pricePerDay: number
   pricePerHalfDay: number
   specs: string
+  routes: string
   minHours: number
 } | null
 
@@ -46,6 +47,11 @@ export function VehicleFields({ locale, vehicle, offerings }: { locale: Locale; 
       </div>
       <p className="-mt-1 text-xs text-muted-foreground">{pick(locale, "ঘণ্টা, হাফ-ডে বা দিনের অন্তত একটা ভাড়া দিন (০ = ওই হিসাবে ভাড়া হবে না)।", "Give at least one of hourly, half-day or daily rate (0 = not offered).")}</p>
       <div><label className="label">{pick(locale, "স্পেক ট্যাগ (কমা দিয়ে, সর্বোচ্চ ৬টা)", "Spec tags (comma separated, up to 6)")}</label><input name="specs" defaultValue={vehicle?.specs} className="field" maxLength={200} placeholder={pick(locale, "150cc, ABS, হেলমেট সহ", "150cc, ABS, helmets included")} /></div>
+      <div>
+        <label className="label">{pick(locale, "রুট প্যাকেজ (ঐচ্ছিক, প্রতি লাইনে একটা)", "Route packages (optional, one per line)")}</label>
+        <textarea name="routes" defaultValue={vehicle?.routes} className="field font-mono text-xs" rows={4} maxLength={4000} placeholder={"Cox's Bazar to Patuartek | Himchari, Inani, Patuartek | 6–7 hours | 7–13 people | 4000"} />
+        <p className="mt-1 text-xs text-muted-foreground">{pick(locale, "ফরম্যাট: রুটের নাম | দর্শনীয় জায়গা | সময় | কতজন | দাম (টাকা)। চান্দের গাড়ি/বাসের জন্য এভাবে ফিক্সড দামে ট্রিপ দিন।", "Format: route name | attractions | duration | capacity | price (taka). Fixed-price trips for jeeps and buses.")}</p>
+      </div>
       <div><label className="label">{pick(locale, "বিবরণ (বাংলা)", "Details (Bangla)")}</label><textarea name="detailBn" defaultValue={vehicle?.detailBn} className="field" rows={2} maxLength={500} placeholder={pick(locale, "এসি, ড্রাইভারসহ, লাগেজ জায়গা…", "AC, with driver, luggage space…")} /></div>
       <div><label className="label">{pick(locale, "বিবরণ (ইংরেজি, ঐচ্ছিক)", "Details (English, optional)")}</label><textarea name="detail" defaultValue={vehicle?.detail} className="field" rows={2} maxLength={500} /></div>
       <div>

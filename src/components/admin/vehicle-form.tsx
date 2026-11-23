@@ -19,6 +19,7 @@ type Vehicle = {
   pricePerDay: number
   pricePerHalfDay: number
   specs: string
+  routes: string
   minHours: number
   sort: number
 } | null
@@ -74,6 +75,11 @@ export function VehicleForm({
                 </option>
               ))}
             </select>
+          </div>
+          <div>
+            <label className="label" htmlFor="routes">{pick(locale, "রুট প্যাকেজ (প্রতি লাইনে একটা)", "Route packages (one per line)")}</label>
+            <textarea id="routes" name="routes" defaultValue={vehicle?.routes} className="field min-h-24 font-mono text-xs" maxLength={4000} placeholder={"Cox's Bazar to Patuartek | Himchari, Inani, Patuartek | 6–7 hours | 7–13 people | 4000"} />
+            <p className="mt-1 text-xs text-muted-foreground">{pick(locale, "ফরম্যাট: নাম | দর্শনীয় জায়গা | সময় | কতজন | দাম। কাস্টমার গাড়ির পেজে টেবিলে দেখে রুট বেছে বুক করে।", "Format: name | attractions | duration | capacity | price. Customers pick a route from the table on the vehicle page.")}</p>
           </div>
           <div><label className="label" htmlFor="detailBn">{pick(locale, "বিবরণ (বাংলা)", "Details (Bangla)")}</label><textarea id="detailBn" name="detailBn" defaultValue={vehicle?.detailBn} className="field min-h-20" maxLength={500} placeholder={pick(locale, "এসি, চালকসহ, জ্বালানি আলাদা…", "AC, with driver, fuel extra…")} /></div>
           <div><label className="label" htmlFor="detail">{pick(locale, "বিবরণ (ইংরেজি)", "Details (English)")}</label><textarea id="detail" name="detail" defaultValue={vehicle?.detail} className="field min-h-20" maxLength={500} /></div>

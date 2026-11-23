@@ -18,7 +18,7 @@ import { breadcrumbs, JsonLd } from "@/components/seo/json-ld"
 import { photosOf, vehicleById } from "@/lib/vehicles"
 
 type Params = Promise<{ category: string; offering: string }>
-type Search = Promise<{ vehicle?: string }>
+type Search = Promise<{ vehicle?: string; route?: string }>
 
 async function load(shopId: string, catSlug: string, offerSlug: string) {
   const category = await db.serviceCategory.findFirst({ where: { shopId, slug: catSlug, active: true } })
@@ -41,7 +41,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 }
 
 export default async function BookPage({ params, searchParams }: { params: Params; searchParams: Search }) {
-  const [{ category: catSlug, offering: offerSlug }, { vehicle: vehicleId = "" }, locale, user, browsing] = await Promise.all([params, searchParams, getLocale(), getUser(), currentShop()])
+  const [{ category: catSlug, offering: offerSlug }, { vehicle: vehicleId = "", route: routeId = "" }, locale, user, browsing] = await Promise.all([params, searchParams, getLocale(), getUser(), currentShop()])
   if (user && user.role !== "CUSTOMER") redirect(homeFor(user.role))
   // Rentals: the marketplace lists every branch's vehicles together, so a picked
   // vehicle decides which branch (areas, payments) this booking belongs to.
@@ -51,6 +51,7 @@ export default async function BookPage({ params, searchParams }: { params: Param
   const [areas, settings, { category, offering }] = await Promise.all([activeAreas(shop.id), getSettings(shop.id), load(shop.id, catSlug, offerSlug)])
   if (!category || !offering) notFound()
   const vehicle = live && live.shopId === shop.id && live.offeringId === offering.id ? live : null
+  const route = vehicle && routeId ? (vehicle.routes.find((r) => r.id === routeId) ?? null) : null
   const addresses = user ? await db.address.findMany({ where: { userId: user.id, area: { shopId: shop.id } }, orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }] }) : []
 
   return (
@@ -74,6 +75,7 @@ export default async function BookPage({ params, searchParams }: { params: Param
         days={upcomingDays(BOOKING_DAYS)}
         payments={enabledProviders(settings).map((p) => ({ id: p.id, label: p.label, labelBn: p.labelBn, hint: p.hint, hintBn: p.hintBn }))}
         user={user ? { name: user.name, phone: user.phone ?? "", addresses: addresses.map((a) => ({ id: a.id, label: a.label, areaId: a.areaId, line: a.line, landmark: a.landmark, phone: a.phone })) } : null}
+        route={route ? { id: route.id, name: route.name, spots: route.spots, hours: route.hours, capacity: route.capacity, price: route.price } : null}
         vehicle={vehicle ? { id: vehicle.id, title: vehicle.title, titleBn: vehicle.titleBn, seats: vehicle.seats, plate: vehicle.plate, photo: photosOf(vehicle)[0] ?? "", pricePerHour: vehicle.pricePerHour, pricePerDay: vehicle.pricePerDay, pricePerHalfDay: vehicle.pricePerHalfDay, minHours: vehicle.minHours, owner: vehicle.worker ? pick(locale, `পার্টনার: ${vehicle.worker.user.name}`, `Partner: ${vehicle.worker.user.name}`) : pick(locale, "HANDYO-র নিজের গাড়ি", "HANDYO fleet") } : null}
       />
     </div>

@@ -67,7 +67,8 @@ export const bookingSchema = z.object({
   name: optionalText(80),
   /** Rentals: the vehicle picked and whether it is billed by the hour or by the day. */
   vehicleId: optionalText(40),
-  rentalUnit: z.enum(["HOUR", "HALF", "DAY"]).default("HOUR"),
+  rentalUnit: z.enum(["HOUR", "HALF", "DAY", "ROUTE"]).default("HOUR"),
+  routeId: optionalText(40),
   couponCode: optionalText(20),
 })
 
@@ -99,6 +100,7 @@ const vehicleFields = {
   pricePerDay: int(0, 500000, "দিনের ভাড়া ০–৫,০০,০০০।", "Daily rate must be 0–500,000.").default(0),
   pricePerHalfDay: int(0, 500000, "হাফ-ডে ভাড়া ০–৫,০০,০০০।", "Half-day rate must be 0–500,000.").default(0),
   specs: optionalText(200),
+  routes: optionalText(4000),
   minHours: int(1, 24, "সর্বনিম্ন ঘণ্টা ১–২৪।", "Minimum hours must be 1–24.").default(2),
 }
 

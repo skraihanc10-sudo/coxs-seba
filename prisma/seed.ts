@@ -114,11 +114,11 @@ async function demo(coxs: { id: string }) {
   // Vehicles customers can pick on the rent-a-car page: two of HANDYO's own, two from the partner, one waiting for approval.
   const rentalOfferings = Object.fromEntries((await db.serviceOffering.findMany({ where: { categoryId: categories["rent-a-car"].id } })).map((o) => [o.slug, o]))
   const vehicles: Array<{ key: string; type: string; owner: string | null; title: string; titleBn: string; plate: string; seats: number; hour: number; day: number; half?: number; specs?: string; minHours: number; detail: string; detailBn: string; status: string }> = [
-    { key: "noah", type: "car-daily", owner: null, title: "Toyota Noah 2018 (AC)", titleBn: "টয়োটা নোয়া ২০১৮ (এসি)", plate: "Cox-Ga-11-2233", seats: 7, hour: 600, day: 4000, half: 2500, specs: "7 seats, AC, Driver included", minHours: 2, detail: "Driver and fuel included inside town; Inani/Himchari day trips.", detailBn: "ড্রাইভার ও তেলসহ, শহরের মধ্যে; ইনানী-হিমছড়ি ডে ট্রিপ।", status: "APPROVED" },
-    { key: "jeep", type: "open-roof-jeep", owner: null, title: "Open-roof Marine Drive jeep", titleBn: "ছাদখোলা মেরিন ড্রাইভ জিপ", plate: "Cox-Tha-12-4455", seats: 8, hour: 0, day: 4500, half: 2800, specs: "Open roof, 8 seats, Driver included", minHours: 1, detail: "Open-roof jeep for the Marine Drive run to Inani, with driver.", detailBn: "মেরিন ড্রাইভ ধরে ইনানী পর্যন্ত ছাদখোলা জিপ, ড্রাইভারসহ।", status: "APPROVED" },
-    { key: "scooter", type: "scooter-bike", owner: "partner.rony@needcoxs.test", title: "Yamaha Ray ZR scooter", titleBn: "ইয়ামাহা রে ZR স্কুটার", plate: "Cox-Ha-21-7788", seats: 2, hour: 150, day: 800, half: 500, specs: "125cc, Automatic, 2 helmets", minHours: 2, detail: "Self-drive, two helmets, licence required. Fuel extra.", detailBn: "নিজে চালাবেন, দুইটা হেলমেট, লাইসেন্স লাগবে। তেল আলাদা।", status: "APPROVED" },
-    { key: "premio", type: "car-hourly", owner: "partner.rony@needcoxs.test", title: "Toyota Premio 2016 (AC)", titleBn: "টয়োটা প্রিমিও ২০১৬ (এসি)", plate: "Cox-Ga-14-9911", seats: 4, hour: 500, day: 3500, half: 2000, specs: "AC, 4 seats, Driver included", minHours: 2, detail: "AC sedan with driver and fuel, inside town.", detailBn: "এসি সেডান, ড্রাইভার ও তেলসহ, শহরের মধ্যে।", status: "APPROVED" },
-    { key: "hiace", type: "microbus", owner: "partner.rony@needcoxs.test", title: "Toyota Hiace microbus (11 seats)", titleBn: "টয়োটা হাইয়েস মাইক্রোবাস (১১ সিট)", plate: "Cox-Cha-11-3344", seats: 11, hour: 900, day: 6500, minHours: 3, detail: "For groups: Teknaf, Inani, Ramu day tours.", detailBn: "গ্রুপের জন্য: টেকনাফ, ইনানী, রামু ডে ট্যুর।", status: "PENDING" },
+    { key: "noah", type: "car", owner: null, title: "Toyota Noah 2018 (AC)", titleBn: "টয়োটা নোয়া ২০১৮ (এসি)", plate: "Cox-Ga-11-2233", seats: 7, hour: 600, day: 4000, half: 2500, specs: "7 seats, AC, Driver included", minHours: 2, detail: "Driver and fuel included inside town; Inani/Himchari day trips.", detailBn: "ড্রাইভার ও তেলসহ, শহরের মধ্যে; ইনানী-হিমছড়ি ডে ট্রিপ।", status: "APPROVED" },
+    { key: "jeep", type: "chander-gari", owner: null, title: "Open-roof Marine Drive jeep", titleBn: "ছাদখোলা মেরিন ড্রাইভ জিপ", plate: "Cox-Tha-12-4455", seats: 8, hour: 0, day: 4500, half: 2800, specs: "Open roof, 8 seats, Driver included", minHours: 1, detail: "Open-roof jeep for the Marine Drive run to Inani, with driver.", detailBn: "মেরিন ড্রাইভ ধরে ইনানী পর্যন্ত ছাদখোলা জিপ, ড্রাইভারসহ।", status: "APPROVED" },
+    { key: "scooter", type: "bike", owner: "partner.rony@needcoxs.test", title: "Yamaha Ray ZR scooter", titleBn: "ইয়ামাহা রে ZR স্কুটার", plate: "Cox-Ha-21-7788", seats: 2, hour: 150, day: 800, half: 500, specs: "125cc, Automatic, 2 helmets", minHours: 2, detail: "Self-drive, two helmets, licence required. Fuel extra.", detailBn: "নিজে চালাবেন, দুইটা হেলমেট, লাইসেন্স লাগবে। তেল আলাদা।", status: "APPROVED" },
+    { key: "premio", type: "car", owner: "partner.rony@needcoxs.test", title: "Toyota Premio 2016 (AC)", titleBn: "টয়োটা প্রিমিও ২০১৬ (এসি)", plate: "Cox-Ga-14-9911", seats: 4, hour: 500, day: 3500, half: 2000, specs: "AC, 4 seats, Driver included", minHours: 2, detail: "AC sedan with driver and fuel, inside town.", detailBn: "এসি সেডান, ড্রাইভার ও তেলসহ, শহরের মধ্যে।", status: "APPROVED" },
+    { key: "hiace", type: "bus", owner: "partner.rony@needcoxs.test", title: "Toyota Hiace microbus (11 seats)", titleBn: "টয়োটা হাইয়েস মাইক্রোবাস (১১ সিট)", plate: "Cox-Cha-11-3344", seats: 11, hour: 900, day: 6500, minHours: 3, detail: "For groups: Teknaf, Inani, Ramu day tours.", detailBn: "গ্রুপের জন্য: টেকনাফ, ইনানী, রামু ডে ট্যুর।", status: "PENDING" },
   ]
   for (const [i, v] of vehicles.entries()) {
     const offering = rentalOfferings[v.type]
@@ -423,31 +423,68 @@ async function ensureDemoVehicles(shop: { id: string }) {
   const category = await db.serviceCategory.findFirst({ where: { shopId: shop.id, flow: "RENTAL" }, include: { offerings: true } })
   if (!category || (await db.vehicle.count({ where: { shopId: shop.id } }))) return
   const byType = Object.fromEntries(category.offerings.map((o) => [o.slug, o.id]))
-  const fleet = [
-    { type: "scooter-bike", photo: "bike-fz", title: "Yamaha FZS V3", titleBn: "ইয়ামাহা FZS V3", seats: 2, hour: 300, half: 1000, day: 2200, minHours: 2, specs: "149cc, Fuel injection, Dual-channel ABS", detail: "Premium handling for long-distance highway cruises. Two helmets included.", detailBn: "হাইওয়ে আর মেরিন ড্রাইভের জন্য আরামের বাইক। দুইটা হেলমেট সহ।" },
-    { type: "scooter-bike", photo: "bike-gixxer", title: "Suzuki Gixxer SF", titleBn: "সুজুকি Gixxer SF", seats: 2, hour: 350, half: 1000, day: 2300, minHours: 2, specs: "155cc, Full fairing, Rear disc brake", detail: "Sporty ride for the Marine Drive run to Inani and Teknaf.", detailBn: "স্পোর্টি রাইড, মেরিন ড্রাইভ ধরে ইনানী-টেকনাফ।" },
-    { type: "scooter-bike", photo: "bike-r15", title: "Yamaha R15 V4", titleBn: "ইয়ামাহা R15 V4", seats: 2, hour: 400, half: 1200, day: 2800, minHours: 2, specs: "155cc, Liquid cooled, ABS", detail: "The fast one. Licence required, self-drive only.", detailBn: "সবচেয়ে ফাস্ট। লাইসেন্স লাগবে, নিজে চালাবেন।" },
-    { type: "car-hourly", photo: "car-allion", title: "Toyota Allion (AC)", titleBn: "টয়োটা অ্যালিয়ন (এসি)", seats: 4, hour: 500, half: 2200, day: 3800, minHours: 2, specs: "AC, 4 seats, Driver included", detail: "AC sedan with driver and fuel, inside town and to the airport.", detailBn: "এসি সেডান, ড্রাইভার ও তেলসহ, শহরের মধ্যে ও এয়ারপোর্ট।" },
-    { type: "car-daily", photo: "car-swift", title: "Suzuki Swift (AC)", titleBn: "সুজুকি সুইফট (এসি)", seats: 4, hour: 450, half: 2000, day: 3200, minHours: 2, specs: "AC, Compact, Driver included", detail: "Small and easy in beach-road traffic. Driver and fuel included.", detailBn: "ছোট গাড়ি, বিচ রোডের জ্যামে সুবিধা। ড্রাইভার ও তেলসহ।" },
-    { type: "car-daily", photo: "car-fortuner", title: "Toyota Fortuner (AC)", titleBn: "টয়োটা ফরচুনার (এসি)", seats: 7, hour: 900, half: 4000, day: 7000, minHours: 3, specs: "AC, 7 seats, 4x4, Driver included", detail: "Big SUV for families: Inani, Himchari, Teknaf day trips.", detailBn: "পরিবারের জন্য বড় SUV: ইনানী, হিমছড়ি, টেকনাফ ডে ট্রিপ।" },
-    { type: "open-roof-jeep", photo: "jeep-crv", title: "Marine Drive jeep (open roof)", titleBn: "মেরিন ড্রাইভ জিপ (ছাদখোলা)", seats: 8, hour: 0, half: 2800, day: 4500, minHours: 1, specs: "Open roof, 8 seats, Driver included", detail: "Open-roof jeep from Kolatoli along Marine Drive to Inani, with driver.", detailBn: "কলাতলী থেকে মেরিন ড্রাইভ ধরে ইনানী, ড্রাইভারসহ ছাদখোলা জিপ।" },
-    { type: "microbus", photo: "micro-hiace", title: "Toyota Hiace microbus (11 seats)", titleBn: "টয়োটা হাইয়েস মাইক্রোবাস (১১ সিট)", seats: 11, hour: 900, half: 4000, day: 6500, minHours: 3, specs: "AC, 11 seats, Driver included", detail: "For groups: Teknaf, Inani, Ramu day tours with driver and fuel.", detailBn: "গ্রুপের জন্য: টেকনাফ, ইনানী, রামু ডে ট্যুর, ড্রাইভার ও তেলসহ।" },
+  type Route = { name: string; spots: string; hours: string; capacity: string; price: number }
+  const jeepRoutes: Route[] = [
+    { name: "Cox's Bazar to Patuartek", spots: "Daria Nagar, Himchari, Goalia (Mini Bandarban), Lal Kakra, Inani & Patuartek", hours: "6–7 hours", capacity: "7–13 people", price: 4000 },
+    { name: "Cox's Bazar to Shah Porir Dwip", spots: "Daria Nagar, Himchari, Goalia, Lal Kakra, Inani, Patuartek, Teknaf Zero Point, Sabrang Tourism Park & Shah Porir Dwip", hours: "8–10 hours", capacity: "7–13 people", price: 7000 },
+    { name: "Cox's Bazar to Sonaichari", spots: "Ramu Rubber Garden, Buddhist Temple & Sonaichari", hours: "7–8 hours", capacity: "7–13 people", price: 7000 },
+  ]
+  const carRoutes: Route[] = [
+    { name: "Airport pickup or drop", spots: "Cox's Bazar airport to your hotel, or back", hours: "~1 hour", capacity: "up to 4 people", price: 700 },
+    { name: "Marine Drive to Inani", spots: "Kolatoli, Himchari, Inani beach", hours: "4–5 hours", capacity: "up to 4 people", price: 2500 },
+  ]
+  const busRoutes: Route[] = [
+    { name: "Cox's Bazar to Teknaf day tour", spots: "Himchari, Inani, Patuartek, Teknaf Zero Point", hours: "9–10 hours", capacity: "10–11 people", price: 9500 },
+    { name: "Ramu & Sonaichari tour", spots: "Ramu Rubber Garden, Buddhist Temple, Sonaichari", hours: "7–8 hours", capacity: "10–11 people", price: 8500 },
+  ]
+  const fleet: Array<{ type: string; photo: string; title: string; titleBn: string; seats: number; hour: number; half: number; day: number; minHours: number; specs: string; detail: string; detailBn: string; routes?: Route[] }> = [
+    { type: "bike", photo: "bike-fz", title: "Yamaha FZS V3", titleBn: "ইয়ামাহা FZS V3", seats: 2, hour: 300, half: 1000, day: 2200, minHours: 2, specs: "149cc, Fuel injection, Dual-channel ABS", detail: "Premium handling for long-distance highway cruises. Two helmets included.", detailBn: "হাইওয়ে আর মেরিন ড্রাইভের জন্য আরামের বাইক। দুইটা হেলমেট সহ।" },
+    { type: "bike", photo: "bike-gixxer", title: "Suzuki Gixxer SF", titleBn: "সুজুকি Gixxer SF", seats: 2, hour: 350, half: 1000, day: 2300, minHours: 2, specs: "155cc, Full fairing, Rear disc brake", detail: "Sporty ride for the Marine Drive run to Inani and Teknaf.", detailBn: "স্পোর্টি রাইড, মেরিন ড্রাইভ ধরে ইনানী-টেকনাফ।" },
+    { type: "bike", photo: "bike-r15", title: "Yamaha R15 V4", titleBn: "ইয়ামাহা R15 V4", seats: 2, hour: 400, half: 1200, day: 2800, minHours: 2, specs: "155cc, Liquid cooled, ABS", detail: "The fast one. Licence required, self-drive only.", detailBn: "সবচেয়ে ফাস্ট। লাইসেন্স লাগবে, নিজে চালাবেন।" },
+    { type: "car", photo: "car-allion", routes: carRoutes, title: "Toyota Allion (AC)", titleBn: "টয়োটা অ্যালিয়ন (এসি)", seats: 4, hour: 500, half: 2200, day: 3800, minHours: 2, specs: "AC, 4 seats, Driver included", detail: "AC sedan with driver and fuel, inside town and to the airport.", detailBn: "এসি সেডান, ড্রাইভার ও তেলসহ, শহরের মধ্যে ও এয়ারপোর্ট।" },
+    { type: "car", photo: "car-swift", routes: carRoutes, title: "Suzuki Swift (AC)", titleBn: "সুজুকি সুইফট (এসি)", seats: 4, hour: 450, half: 2000, day: 3200, minHours: 2, specs: "AC, Compact, Driver included", detail: "Small and easy in beach-road traffic. Driver and fuel included.", detailBn: "ছোট গাড়ি, বিচ রোডের জ্যামে সুবিধা। ড্রাইভার ও তেলসহ।" },
+    { type: "car", photo: "car-fortuner", title: "Toyota Fortuner (AC)", titleBn: "টয়োটা ফরচুনার (এসি)", seats: 7, hour: 900, half: 4000, day: 7000, minHours: 3, specs: "AC, 7 seats, 4x4, Driver included", detail: "Big SUV for families: Inani, Himchari, Teknaf day trips.", detailBn: "পরিবারের জন্য বড় SUV: ইনানী, হিমছড়ি, টেকনাফ ডে ট্রিপ।" },
+    { type: "chander-gari", photo: "jeep-crv", title: "Chander gari (Toyota open-roof jeep)", titleBn: "চান্দের গাড়ি (টয়োটা ছাদখোলা জিপ)", seats: 13, hour: 0, half: 0, day: 0, minHours: 1, specs: "Open roof, 7–13 people, Driver included, Route packages", detail: "The classic Cox's Bazar chander gari: open roof, Marine Drive wind, with driver. Pick a route package below.", detailBn: "কক্সবাজারের আসল চান্দের গাড়ি: ছাদখোলা, মেরিন ড্রাইভের বাতাস, ড্রাইভারসহ। নিচে রুট প্যাকেজ বেছে নিন।", routes: jeepRoutes },
+    { type: "bus", photo: "micro-hiace", routes: busRoutes, title: "Toyota Hiace microbus (11 seats)", titleBn: "টয়োটা হাইয়েস মাইক্রোবাস (১১ সিট)", seats: 11, hour: 900, half: 4000, day: 6500, minHours: 3, specs: "AC, 11 seats, Driver included", detail: "For groups: Teknaf, Inani, Ramu day tours with driver and fuel.", detailBn: "গ্রুপের জন্য: টেকনাফ, ইনানী, রামু ডে ট্যুর, ড্রাইভার ও তেলসহ।" },
   ]
   let n = 0
   for (const [i, v] of fleet.entries()) {
     const offeringId = byType[v.type] ?? category.offerings[0]?.id
     if (!offeringId) continue
     await db.vehicle.create({
-      data: { shopId: shop.id, offeringId, title: v.title, titleBn: v.titleBn, seats: v.seats, photos: `/demo/vehicles/${v.photo}.jpg`, pricePerHour: v.hour, pricePerHalfDay: v.half, pricePerDay: v.day, minHours: v.minHours, specs: v.specs, detail: v.detail, detailBn: v.detailBn, status: "APPROVED", sort: i },
+      data: {
+        shopId: shop.id, offeringId, title: v.title, titleBn: v.titleBn, seats: v.seats, photos: `/demo/vehicles/${v.photo}.jpg`, pricePerHour: v.hour, pricePerHalfDay: v.half, pricePerDay: v.day, minHours: v.minHours, specs: v.specs, detail: v.detail, detailBn: v.detailBn, status: "APPROVED", sort: i,
+        routes: v.routes ? { create: v.routes.map((r, j) => ({ ...r, sort: j })) } : undefined,
+      },
     })
     n++
   }
   console.log(`Demo fleet added: ${n} vehicles with stock photos`)
 }
 
+/**
+ * The rental category now has four vehicle types (bike, car, chander-gari, bus).
+ * Older databases had six price-based ones; move their vehicles over and hide
+ * the old offerings (bookings keep pointing at them).
+ */
+async function syncRentalTypes() {
+  const moves: Record<string, string> = { "scooter-bike": "bike", "car-hourly": "car", "car-daily": "car", "open-roof-jeep": "chander-gari", microbus: "bus" }
+  const categories = await db.serviceCategory.findMany({ where: { flow: "RENTAL" }, include: { offerings: true } })
+  for (const c of categories) {
+    const target = (slug: string) => c.offerings.find((o) => o.slug === slug)
+    for (const o of c.offerings) {
+      const to = moves[o.slug] ? target(moves[o.slug]) : o.slug === "airport-pickup" ? null : undefined
+      if (to === undefined) continue
+      if (to) await db.vehicle.updateMany({ where: { offeringId: o.id }, data: { offeringId: to.id } })
+      if (o.active) await db.serviceOffering.update({ where: { id: o.id }, data: { active: false } })
+    }
+  }
+}
+
 async function main() {
   const coxs = await catalog()
   await ensureOwner()
+  await syncRentalTypes()
   await ensureDemoVehicles(coxs)
   if (catalogOnly) return
   await demo(coxs)

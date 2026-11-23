@@ -267,12 +267,10 @@ export const CATEGORIES: Array<{
     image: "/services/rent-a-car.svg",
     flow: "RENTAL",
     offerings: [
-      { slug: "scooter-bike", nameBn: "স্কুটার / বাইক (সারা দিন)", name: "Scooter or bike (full day)", detailBn: "হেলমেটসহ, নিজে চালাবেন। সকাল ৮টা থেকে রাত ৮টা। তেল আলাদা।", detail: "Self-drive with helmet, 8 am to 8 pm. Fuel extra.", pricing: "PER_DAY", price: 800, durationMin: 720 },
-      { slug: "car-hourly", nameBn: "কার ড্রাইভারসহ (প্রতি ঘণ্টা)", name: "Car with driver (hourly)", detailBn: "এসি সেডান বা প্রাইভেট কার, ড্রাইভার ও তেলসহ, শহরের মধ্যে। সর্বনিম্ন ২ ঘণ্টা।", detail: "AC sedan with driver and fuel, inside town. Minimum 2 hours.", pricing: "PER_HOUR", price: 500, minQty: 2, durationMin: 120 },
-      { slug: "car-daily", nameBn: "কার ড্রাইভারসহ (সারা দিন)", name: "Car with driver (full day)", detailBn: "৮ ঘণ্টা / ৮০ কিমি, ড্রাইভার ও তেলসহ। ইনানী-হিমছড়ি ট্রিপের জন্য পারফেক্ট।", detail: "8 hours / 80 km with driver and fuel. Perfect for Inani and Himchari trips.", pricing: "PER_DAY", price: 3500, durationMin: 480 },
-      { slug: "open-roof-jeep", nameBn: "ছাদখোলা জিপ – মেরিন ড্রাইভ ট্যুর", name: "Open-roof jeep – Marine Drive tour", detailBn: "ছাদখোলা জিপে কলাতলী থেকে মেরিন ড্রাইভ হয়ে ইনানী, ড্রাইভারসহ। ৪ ঘণ্টার ট্রিপ, ৬ জন পর্যন্ত।", detail: "Open-roof jeep from Kolatoli along Marine Drive to Inani with driver. 4-hour trip, up to 6 people.", pricing: "FIXED", price: 4500, durationMin: 240 },
-      { slug: "microbus", nameBn: "মাইক্রোবাস (সারা দিন)", name: "Microbus (full day)", detailBn: "১০–১২ সিটের এসি মাইক্রো, ড্রাইভার ও তেলসহ, ৮ ঘণ্টা। পরিবার বা গ্রুপের জন্য।", detail: "10–12 seat AC microbus with driver and fuel, 8 hours. For families and groups.", pricing: "PER_DAY", price: 6500, durationMin: 480 },
-      { slug: "airport-pickup", nameBn: "এয়ারপোর্ট পিকআপ / ড্রপ", name: "Airport pickup or drop", detailBn: "কক্সবাজার এয়ারপোর্ট থেকে হোটেল বা হোটেল থেকে এয়ারপোর্ট, এসি কারে।", detail: "Cox's Bazar airport to your hotel or back, in an AC car.", pricing: "FIXED", price: 700, durationMin: 60 },
+      { slug: "bike", nameBn: "বাইক / স্কুটার", name: "Bike / scooter", detailBn: "নিজে চালাবেন, হেলমেটসহ। ঘণ্টা, হাফ-ডে বা সারা দিন। তেল আলাদা।", detail: "Self-drive with helmet, by the hour, half-day or full day. Fuel extra.", pricing: "PER_DAY", price: 800, durationMin: 720 },
+      { slug: "car", nameBn: "কার (ড্রাইভারসহ)", name: "Car (with driver)", detailBn: "এসি কার বা সেডান, ড্রাইভার ও তেলসহ। শহরের কাজ, এয়ারপোর্ট বা ডে ট্রিপ।", detail: "AC car or sedan with driver and fuel. Town runs, airport or day trips.", pricing: "PER_HOUR", price: 500, minQty: 2, durationMin: 120 },
+      { slug: "chander-gari", nameBn: "চান্দের গাড়ি (ছাদখোলা জিপ)", name: "Chander gari (open-roof jeep)", detailBn: "মেরিন ড্রাইভ, ইনানী, পাটুয়ারটেক, টেকনাফ, শাহপরীর দ্বীপ – রুট প্যাকেজে, ড্রাইভারসহ। ৭–১৩ জন।", detail: "Marine Drive, Inani, Patuartek, Teknaf, Shah Porir Dwip as route packages, with driver. 7–13 people.", pricing: "FIXED", price: 4000, durationMin: 420 },
+      { slug: "bus", nameBn: "বাস / মাইক্রোবাস", name: "Bus / microbus", detailBn: "১০–৩০ সিটের এসি বাস বা মাইক্রো, ড্রাইভার ও তেলসহ। গ্রুপ, অফিস ট্যুর, পিকনিক।", detail: "10–30 seat AC bus or microbus with driver and fuel. Groups, office tours, picnics.", pricing: "PER_DAY", price: 6500, durationMin: 480 },
     ],
   },
   {

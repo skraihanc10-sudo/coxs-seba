@@ -69,6 +69,7 @@ export function OfficeBooking({
               ) : null}
               <div className="min-w-0 flex-1 text-sm">
                 <p className="truncate font-extrabold text-ink">{locale === "bn" ? vehicle.titleBn || vehicle.title : vehicle.title || vehicle.titleBn}</p>
+                {b.routeName ? <p className="text-xs font-bold text-brand">{pick(locale, "রুট:", "Route:")} {b.routeName}</p> : null}
                 <p className="text-xs text-muted-foreground">{vehicle.plate ? `${vehicle.plate} · ` : ""}{vehicle.seats} {pick(locale, "সিট", "seats")}{owner ? ` · ${pick(locale, "মালিক:", "Owner:")} ${owner.name}` : ` · ${pick(locale, "HANDYO-র নিজের", "HANDYO's own")}`}</p>
               </div>
               {isAdmin ? <Link href={`/admin/vehicles/${vehicle.id}`} className="text-xs font-bold text-brand">{pick(locale, "গাড়ি", "Vehicle")} →</Link> : null}
