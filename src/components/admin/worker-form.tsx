@@ -6,6 +6,8 @@ import { ActionForm, SubmitButton } from "@/components/forms"
 type Worker = {
   id: string
   isRider: boolean
+  autoAssign: boolean
+  kind: string
   nid: string
   user: { name: string; phone: string | null; email: string | null }
   skills: Array<{ categoryId: string }>
@@ -37,6 +39,12 @@ export function WorkerForm({
         <div><label className="label">{worker ? pick(locale, "নতুন পাসওয়ার্ড (ফাঁকা = আগেরটা)", "New password (blank keeps old)") : pick(locale, "পাসওয়ার্ড", "Password")}</label><input name="password" type="password" className="field" autoComplete="new-password" required={!worker} minLength={6} /></div>
         <div><label className="label">{pick(locale, "NID নম্বর", "NID number")}</label><input name="nid" defaultValue={worker?.nid} className="field" inputMode="numeric" placeholder="10 / 13 / 17 digits" /></div>
         <label className="flex items-center gap-2 text-sm font-bold text-ink"><input type="checkbox" name="isRider" defaultChecked={worker?.isRider} className="size-4 accent-[var(--brand)]" /> {pick(locale, "লন্ড্রি রাইডার (পিকআপ-ডেলিভারি করেন)", "Laundry rider (does pickup & delivery)")}</label>
+        {worker?.kind === "PARTNER" ? (
+          <label className="flex items-start gap-2 rounded-xl bg-brand-soft px-3 py-2 text-sm font-bold text-ink">
+            <input type="checkbox" name="autoAssign" defaultChecked={worker.autoAssign} className="mt-0.5 size-4 accent-[var(--brand)]" />
+            <span>{pick(locale, "বুকিং সরাসরি এই পার্টনারের কাছে পাঠাও", "Send bookings straight to this partner")}<span className="block text-xs font-normal text-muted-foreground">{pick(locale, "অন থাকলে তার গাড়ি/রিসোর্ট/দোকানের নতুন বুকিং অফিসের ট্রান্সফার ছাড়াই তার প্যানেলে যাবে; অফিস কপি দেখবে।", "When on, new bookings for their vehicle/resort/store reach their panel without an office transfer; the office still sees them.")}</span></span>
+          </label>
+        ) : null}
         <div className="grid grid-cols-2 gap-2">
           <label className="text-sm"><span className="label">{pick(locale, "ছবি", "Photo")}</span><input type="file" name="photoFile" accept="image/*" className="text-xs" /></label>
           <label className="text-sm"><span className="label">{pick(locale, "NID-র ছবি", "NID photo")}</span><input type="file" name="nidFile" accept="image/*" className="text-xs" /></label>

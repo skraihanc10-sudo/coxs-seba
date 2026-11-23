@@ -175,7 +175,7 @@ test("4. a booking outside the shop's areas is rejected by the server", async ({
   await customer.getByRole("button", { name: "পরের ধাপ" }).click()
   // Nothing chosen: the wizard explains the Sadar rule before even submitting.
   await customer.getByRole("button", { name: "পরের ধাপ" }).click()
-  await expect(customer.getByText(/শুধু কক্সবাজার সদর/).first()).toBeVisible()
+  await expect(customer.getByText(/শুধু কক্সবাজার/).first()).toBeVisible()
   // Now force an area that is not ours and let the server decide.
   await customer.selectOption("#area", { index: 1 })
   await customer.fill("#addressLine", "চকরিয়া বাজার")
@@ -186,7 +186,7 @@ test("4. a booking outside the shop's areas is rejected by the server", async ({
     if (input) input.value = "teknaf-not-sadar"
   })
   await customer.getByRole("button", { name: "বুকিং নিশ্চিত করুন" }).click()
-  await expect(customer.getByText("এই মুহূর্তে আমরা শুধু কক্সবাজার সদর এলাকায় সেবা দিচ্ছি").first()).toBeVisible()
+  await expect(customer.getByText("এই মুহূর্তে আমরা শুধু কক্সবাজার এলাকায় সেবা দিচ্ছি").first()).toBeVisible()
   expect(customer.url()).toContain("/book/")
 })
 
@@ -467,7 +467,7 @@ test("11. resorts: an owner applies, the admin approves, a customer books two ni
 test("12. shop: a customer adds dried fish to the cart, checks out with cash on delivery, and the office confirms the order", async ({ browser }) => {
   const customer = await freshPage(browser)
   await loginWithPassword(customer, CUSTOMER)
-  await customer.goto("/services/cox-shutki")
+  await customer.goto("/services/shutki")
   const card = customer.locator("article", { hasText: /শুঁটকি|Shutki|shutki/i }).first()
   await expect(card).toBeVisible()
   await card.getByRole("button", { name: "কার্টে যোগ করুন" }).click()
@@ -491,7 +491,7 @@ test("12. shop: a customer adds dried fish to the cart, checks out with cash on 
   await loginWithPassword(admin, ADMIN)
   await admin.goto(`/admin/bookings/${code}`)
   await ready(admin)
-  await expect(admin.getByText("পণ্য").first()).toBeVisible()
+  await expect(admin.getByText("দোকান (পার্সেল)").first()).toBeVisible()
   await admin.getByRole("button", { name: "অর্ডার কনফার্ম করুন" }).click()
   await expect(admin.getByText("অর্ডার কনফার্ম").first()).toBeVisible()
 })

@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import Link from "next/link"
 import { notFound } from "next/navigation"
 import { CalendarClock, MessageCircle, XCircle } from "lucide-react"
 import { requireUser, getLocale } from "@/lib/auth"
@@ -23,8 +24,8 @@ export async function generateMetadata({ params }: { params: Promise<{ code: str
   return privateMeta(pick(locale, `বুকিং ${code}`, `Booking ${code}`))
 }
 
-export default async function BookingPage({ params, searchParams }: { params: Promise<{ code: string }>; searchParams: Promise<{ new?: string }> }) {
-  const [{ code }, { new: fresh }, locale] = await Promise.all([params, searchParams, getLocale()])
+export default async function BookingPage({ params, searchParams }: { params: Promise<{ code: string }>; searchParams: Promise<{ new?: string; more?: string }> }) {
+  const [{ code }, { new: fresh, more = "" }, locale] = await Promise.all([params, searchParams, getLocale()])
   const user = await requireUser(["CUSTOMER"], `/bookings/${code}`)
   let data
   try {
@@ -40,6 +41,12 @@ export default async function BookingPage({ params, searchParams }: { params: Pr
   return (
     <div className="mx-auto max-w-2xl">
       {b.category.flow === "SHOP" ? <ClearCart /> : null}
+      {more ? (
+        <p className="mb-4 rounded-2xl bg-teal-50 px-4 py-3 text-sm font-semibold text-teal-900">
+          {pick(locale, "আলাদা দোকান থেকে নেওয়ায় আরও পার্সেল আছে: ", "Items from other stores ship separately: ")}
+          {more.split(",").filter(Boolean).map((c) => <Link key={c} href={`/bookings/${c}`} className="mr-2 underline">{c}</Link>)}
+        </p>
+      ) : null}
       <PageHeader back="/bookings" title={named(locale, b.offering)} sub={`${b.code} · ${named(locale, b.category)} · ${named(locale, b.shop)}`} action={<StatusPill status={b.status} locale={locale} flow={b.category.flow} className="mt-1" />} />
 
       {fresh ? (

@@ -34,6 +34,7 @@ export const bookingInclude = {
   property: { select: { id: true, name: true, nameBn: true, kind: true, photos: true, addressBn: true, address: true, checkIn: true, checkOut: true, workerId: true } },
   roomType: { select: { id: true, name: true, sleeps: true, pricePerNight: true } },
   items: { orderBy: { id: "asc" } },
+  store: { select: { id: true, name: true, nameBn: true, photos: true, workerId: true } },
   events: { orderBy: { createdAt: "asc" }, include: { actor: { select: { name: true, role: true } } } },
   photos: { orderBy: { createdAt: "asc" } },
   review: true,
@@ -124,6 +125,19 @@ export type NewBooking = {
   couponCode?: string
 }
 
+/**
+ * Booking rows for a partner with the "direct" privilege: assigned at creation,
+ * with the REQUESTED→ASSIGNED trail the office would otherwise write.
+ */
+export function directAssignData(direct: { id: string; name: string } | null, customerId: string) {
+  if (!direct) return { events: { create: { toStatus: "REQUESTED", note: "Booked", actorId: customerId, actorRole: "CUSTOMER" } } }
+  return {
+    workerId: direct.id,
+    status: "ASSIGNED",
+    events: { create: [{ toStatus: "REQUESTED", note: "Booked", actorId: customerId, actorRole: "CUSTOMER" }, { fromStatus: "REQUESTED", toStatus: "ASSIGNED", note: `Sent straight to partner ${direct.name}`, actorId: customerId, actorRole: "SYSTEM" }] },
+  }
+}
+
 export async function createBooking(customer: { id: string; name: string }, input: NewBooking) {
   const offering = await db.serviceOffering.findUnique({ where: { id: input.offeringId }, include: { category: true } })
   if (!offering || !offering.active || !offering.category.active) {
@@ -151,10 +165,12 @@ export async function createBooking(customer: { id: string; name: string }, inpu
   let minQty = offering.minQty
   let vehicleId: string | null = null
   let route: { id: string; name: string } | null = null
+  // A partner with the "direct" privilege gets the booking at once, skipping the office transfer.
+  let direct: { id: string; userId: string; name: string } | null = null
   if (input.vehicleId) {
     const vehicle = await db.vehicle.findFirst({
       where: { id: input.vehicleId, shopId, offeringId: offering.id, status: "APPROVED", OR: [{ workerId: null }, { worker: { approved: true, user: { active: true } } }] },
-      include: { routes: true },
+      include: { routes: true, worker: { select: { id: true, autoAssign: true, userId: true, user: { select: { name: true } } } } },
     })
     if (!vehicle) throw new AppError("এই গাড়িটা এখন পাওয়া যাচ্ছে না, অন্য একটা বেছে নিন।", "That vehicle is not available right now; pick another.")
     const picked = input.rentalUnit === "ROUTE" && input.routeId ? vehicle.routes.find((r) => r.id === input.routeId) : null
@@ -167,6 +183,7 @@ export async function createBooking(customer: { id: string; name: string }, inpu
     unitPrice = picked ? picked.price : unit === "HALF" ? vehicle.pricePerHalfDay : unit === "DAY" ? vehicle.pricePerDay : vehicle.pricePerHour
     minQty = unit === "HOUR" ? vehicle.minHours : 1
     vehicleId = vehicle.id
+    if (vehicle.worker?.autoAssign) direct = { id: vehicle.worker.id, userId: vehicle.worker.userId, name: vehicle.worker.user.name }
   }
   const quantity = usesQuantity(pricing) ? Math.max(minQty, input.quantity) : 1
   const team = offering.category.flow === "TEAM"
@@ -207,12 +224,13 @@ export async function createBooking(customer: { id: string; name: string }, inpu
       couponCode: coupon?.coupon.code ?? "",
       discount,
       paymentMethod: method.id,
-      events: { create: { toStatus: "REQUESTED", note: "Booked", actorId: customer.id, actorRole: "CUSTOMER" } },
+      ...directAssignData(direct, customer.id),
       chat: { create: {} },
     },
     include: bookingInclude,
   })
   if (coupon) await db.coupon.update({ where: { id: coupon.coupon.id }, data: { usedCount: { increment: 1 } } })
+  if (direct) await notify([direct.userId], { kind: "BOOKING", title: "নতুন বুকিং এসেছে", body: `${booking.code} · ${offering.nameBn} · ${area.nameBn} · সরাসরি আপনার কাছে।`, link: `/worker/jobs/${booking.code}` })
   await notify([customer.id], {
     kind: "BOOKING",
     title: "বুকিং হয়েছে",

@@ -24,7 +24,7 @@ export default async function CheckoutPage() {
   const address = user ? await db.address.findFirst({ where: { userId: user.id }, orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }] }) : null
   return (
     <div className="mx-auto max-w-5xl">
-      <PageHeader back="/services/cox-shutki" title={pick(locale, "অর্ডার নিশ্চিত করুন", "Checkout")} sub={pick(locale, "কার্ট দেখুন, ডেলিভারি তথ্য দিন, অর্ডার করুন।", "Review your cart, add delivery details, order.")} />
+      <PageHeader back="/services/shutki" title={pick(locale, "অর্ডার নিশ্চিত করুন", "Checkout")} sub={pick(locale, "কার্ট দেখুন, ডেলিভারি তথ্য দিন, অর্ডার করুন।", "Review your cart, add delivery details, order.")} />
       {!category ? (
         <EmptyState title={pick(locale, "এই শাখায় শপ চালু নেই", "This branch has no shop")} />
       ) : (
@@ -34,7 +34,7 @@ export default async function CheckoutPage() {
           rules={shopRules(settings)}
           payments={enabledProviders(settings).map((x) => ({ id: x.id, label: x.label, labelBn: x.labelBn, hint: x.hint, hintBn: x.hintBn }))}
           user={user ? { name: user.name, phone: user.phone ?? "", address: address ? `${address.line}${address.landmark ? `, ${address.landmark}` : ""}` : "" } : null}
-          shopHref="/services/cox-shutki"
+          shopHref="/services/shutki"
         />
       )}
     </div>

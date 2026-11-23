@@ -12,10 +12,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const [user, locale] = await Promise.all([requireUser(ADMINS, "/admin"), getLocale()])
   const shop = await officeShop(user)
   const owner = user.role === "OWNER"
-  const [waiting, pendingVehicles, pendingStays, unread, shops] = await Promise.all([
+  const [waiting, pendingVehicles, pendingStays, pendingStores, unread, shops] = await Promise.all([
     db.serviceBooking.count({ where: { shopId: shop.id, status: "REQUESTED" } }),
     db.vehicle.count({ where: { shopId: shop.id, status: "PENDING" } }),
     db.property.count({ where: { shopId: shop.id, status: "PENDING" } }),
+    db.store.count({ where: { shopId: shop.id, status: "PENDING" } }),
     unreadForOffice(user, shop.id),
     owner ? allShops() : Promise.resolve([]),
   ])
@@ -25,6 +26,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     { href: "/admin/workers", label: pick(locale, "কর্মী", "Workers"), icon: "workers" },
     { href: "/admin/vehicles", label: pick(locale, "গাড়ি", "Vehicles"), icon: "car", badge: pendingVehicles },
     { href: "/admin/stays", label: pick(locale, "রিসোর্ট", "Resorts"), icon: "building", badge: pendingStays },
+    { href: "/admin/stores", label: pick(locale, "দোকান", "Stores"), icon: "store", badge: pendingStores },
     { href: "/admin/products", label: pick(locale, "প্রোডাক্ট", "Products"), icon: "package" },
     { href: "/admin/customers", label: pick(locale, "কাস্টমার", "Customers"), icon: "users" },
     { href: "/admin/services", label: pick(locale, "সেবা ও দাম", "Services & prices"), icon: "services" },

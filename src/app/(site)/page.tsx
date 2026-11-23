@@ -24,7 +24,7 @@ export async function generateMetadata(): Promise<Metadata> {
     description: clip(
       pick(
         locale,
-        `${shop.cityBn} এলাকায় লন্ড্রি, ইলেকট্রিশিয়ান, প্লাম্বার, ক্লিনিং, এসি, শিফটিং আর গাড়ি-বাইক ভাড়া: যাচাই করা নিজের টিম, দাম আগেই লেখা। ${settings.bannerBn}`,
+        `${shop.cityBn}: ঘরের সেবা, গাড়ি-বাইক-চান্দের গাড়ি ভাড়া, রিসোর্ট ও হোটেল বুকিং আর শুঁটকি-আচারের দোকান – যাচাই করা টিম ও পার্টনার, দাম আগেই লেখা। ${settings.bannerBn}`,
         `Laundry, electricians, plumbers, cleaning, AC, moving and car & bike rental in ${shop.city}: our own verified team, prices listed up front. ${settings.bannerEn}`,
       ),
     ),
@@ -57,11 +57,11 @@ export default async function HomePage() {
         <p className="mt-3 max-w-xl text-[15px] text-white/80 md:text-lg">{bn ? settings.bannerBn : settings.bannerEn}</p>
         <form action="/services" role="search" className="mt-6 flex max-w-xl items-center gap-2 rounded-2xl bg-white p-1.5 shadow-xl">
           <Search className="ml-3 size-5 shrink-0 text-muted-foreground" aria-hidden />
-          <input name="q" aria-label={pick(locale, "সেবা খুঁজুন", "Search services")} placeholder={pick(locale, "কী সেবা লাগবে? যেমন: ফ্যান, লন্ড্রি, এসি", "What do you need? e.g. fan, laundry, AC")} className="h-11 min-w-0 flex-1 bg-transparent text-ink outline-none placeholder:text-muted-foreground" />
+          <input name="q" aria-label={pick(locale, "সেবা খুঁজুন", "Search services")} placeholder={pick(locale, "কী লাগবে? যেমন: চান্দের গাড়ি, রিসোর্ট, শুঁটকি, এসি", "What do you need? e.g. chander gari, resort, dried fish, AC")} className="h-11 min-w-0 flex-1 bg-transparent text-ink outline-none placeholder:text-muted-foreground" />
           <button className="btn-primary h-11 px-4 text-sm">{t.search}</button>
         </form>
         <ul className="mt-5 flex flex-wrap gap-2 text-xs font-bold" aria-label={pick(locale, "আমাদের প্রতিশ্রুতি", "Our promises")}>
-          <li className="rounded-full bg-white/15 px-3 py-1.5">✓ {pick(locale, "যাচাই করা কর্মী", "Verified workers")}</li>
+          <li className="rounded-full bg-white/15 px-3 py-1.5">✓ {pick(locale, "যাচাই করা কর্মী ও পার্টনার", "Verified workers & partners")}</li>
           <li className="rounded-full bg-white/15 px-3 py-1.5">✓ {pick(locale, "দাম আগেই জানুন", "Price up front")}</li>
           <li className="rounded-full bg-white/15 px-3 py-1.5">✓ {pick(locale, "ক্যাশ / বিকাশ / নগদ", "Cash / bKash / Nagad")}</li>
         </ul>

@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { getLocale } from "@/lib/auth"
+import { db } from "@/lib/db"
 import { currentShop } from "@/lib/shops"
 import { getSettings } from "@/lib/settings"
 import { named, pick } from "@/lib/i18n"
@@ -33,6 +34,7 @@ export default async function ProductPage({ params }: { params: Params }) {
   const p = await productBySlug(shop.id, slug)
   if (!p) notFound()
   const settings = await getSettings(shop.id)
+  const backSlug = (p.group.categoryId ? (await db.serviceCategory.findUnique({ where: { id: p.group.categoryId }, select: { slug: true } }))?.slug : null) ?? "shutki"
   const rules = shopRules(settings)
   const bn = locale === "bn"
   const name = productName(p, locale)
@@ -40,8 +42,8 @@ export default async function ProductPage({ params }: { params: Params }) {
   const detail = bn ? p.detailBn || p.detail : p.detail || p.detailBn
   return (
     <div className="mx-auto max-w-4xl">
-      <JsonLd data={breadcrumbs([{ name: "HANDYO", path: "/" }, { name: pick(locale, "কক্স শুঁটকি ও আচার", "Cox's dried fish & pickles"), path: "/services/cox-shutki" }, { name, path: `/shop/${p.slug}` }])} />
-      <PageHeader back="/services/cox-shutki" title={name} sub={named(locale, p.group)} />
+      <JsonLd data={breadcrumbs([{ name: "HANDYO", path: "/" }, { name: pick(locale, "শুঁটকি ও আচার", "Dried fish & pickles"), path: "/services/shutki" }, { name, path: `/shop/${p.slug}` }])} />
+      <PageHeader back={`/services/${backSlug}`} title={name} sub={`${named(locale, p.group)}${p.store ? ` · ${named(locale, p.store)}` : ""}`} />
       <div className="grid gap-5 md:grid-cols-2">
         <div>
           <div className="relative overflow-hidden rounded-3xl bg-canvas">

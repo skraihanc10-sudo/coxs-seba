@@ -43,7 +43,8 @@ export function OfficeBooking({
   const eligible = workers.filter((w) => w.skilled).sort((a, c) => Number(c.inArea) - Number(a.inArea) || a.busy - c.busy || c.rating - a.rating)
   const vehicle = b.vehicle
   const property = b.property
-  const ownerId = vehicle?.workerId ?? property?.workerId ?? null
+  const store = b.store
+  const ownerId = vehicle?.workerId ?? property?.workerId ?? store?.workerId ?? null
   const owner = ownerId ? workers.find((w) => w.id === ownerId) : undefined
   const sendToOwner = Boolean(ownerId && owner && ["REQUESTED", "CONFIRMED"].includes(b.status) && b.workerId !== ownerId)
   const vehiclePhoto = vehicle ? vehicle.photos.split(",").map((p) => p.trim()).filter(Boolean)[0] : undefined
@@ -61,6 +62,24 @@ export function OfficeBooking({
           <Link href={`/admin/customers/${b.customerId}`} className="text-xs font-bold text-brand">{pick(locale, "প্রোফাইল", "Profile")}</Link>
         </div>
 
+        {store ? (
+          <Section title={pick(locale, "দোকান (পার্সেল)", "Store (parcel)")}>
+            <div className="flex items-center gap-3">
+              <div className="min-w-0 flex-1 text-sm">
+                <p className="truncate font-extrabold text-ink">{locale === "bn" ? store.nameBn || store.name : store.name || store.nameBn}</p>
+                <p className="text-xs text-muted-foreground">{b.items.length} {pick(locale, "ধরনের পণ্য", "item types")} · {owner ? `${pick(locale, "মালিক:", "Owner:")} ${owner.name}` : pick(locale, "HANDYO-র নিজের দোকান", "HANDYO's own store")}</p>
+              </div>
+              {isAdmin ? <Link href={`/admin/stores/${store.id}`} className="text-xs font-bold text-brand">{pick(locale, "দোকান", "Store")} →</Link> : null}
+            </div>
+            {sendToOwner && ownerId ? (
+              <ActionForm action={assignWorkerAction} resetOnSuccess={false} className="mt-3">
+                <input type="hidden" name="code" value={b.code} />
+                <input type="hidden" name="workerId" value={ownerId} />
+                <SubmitButton className="btn-primary h-10 w-full text-sm">{pick(locale, "দোকানের মালিকের কাছে পাঠান", "Send to the store owner")}</SubmitButton>
+              </ActionForm>
+            ) : null}
+          </Section>
+        ) : null}
         {property ? (
           <Section title={pick(locale, "রিসোর্ট / হোটেল", "Resort / hotel")}>
             <div className="flex items-center gap-3">

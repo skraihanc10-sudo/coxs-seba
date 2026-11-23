@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { BarChart3, Bell, BriefcaseBusiness, Building2, Car, ClipboardList, HardHat, HelpCircle, Home, Inbox, LayoutDashboard, LayoutGrid, LogOut, MapPin, MessageSquareText, Package, Settings, Sparkles, Tag, UserRound, Users, Wallet, type LucideIcon } from "lucide-react"
+import { BarChart3, Bell, BriefcaseBusiness, Building2, Car, ClipboardList, HardHat, HelpCircle, Home, Inbox, LayoutDashboard, LayoutGrid, LogOut, MapPin, MessageSquareText, Package, Settings, Sparkles, Store, Tag, UserRound, Users, Wallet, type LucideIcon } from "lucide-react"
 import { logoutAction } from "@/actions/auth"
 import { Logo } from "@/components/logo"
 import { LocaleSwitch } from "@/components/locale-switch"
@@ -30,6 +30,7 @@ const ICONS: Record<string, LucideIcon> = {
   tag: Tag,
   building: Building2,
   package: Package,
+  store: Store,
 }
 
 export type NavItem = { href: string; label: string; icon: keyof typeof ICONS; badge?: number; exact?: boolean }

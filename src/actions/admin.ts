@@ -289,6 +289,7 @@ export async function saveWorkerAction(_prev: ActionState, form: FormData): Prom
       : await db.user.create({ data: { ...userData, role: "WORKER" } })
     const profileData = {
       isRider: input.isRider,
+      autoAssign: input.autoAssign,
       nid: input.nid,
       ...(photo ? { photo: `/api/uploads/${photo}` } : {}),
       ...(nidPhoto ? { nidPhoto: `/api/uploads/${nidPhoto}` } : {}),

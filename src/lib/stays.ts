@@ -6,7 +6,7 @@ import { notify, officeIds } from "./notify"
 import { localToday, normalisePhone, shiftDays } from "./format"
 import type { Locale } from "./format"
 import { quoteCoupon } from "./coupons"
-import { newCode } from "./bookings"
+import { directAssignData, newCode } from "./bookings"
 import { paymentProvider } from "./payments"
 import { getSettings } from "./settings"
 import { VEHICLE_STATUS_TEXT } from "./vehicles"
@@ -38,7 +38,7 @@ export const STAY_BOOKING_DAYS = 180
 export const propertyInclude = {
   shop: { select: { id: true, slug: true, city: true, cityBn: true } },
   area: { select: { id: true, name: true, nameBn: true } },
-  worker: { select: { id: true, kind: true, approved: true, rating: true, ratingCount: true, user: { select: { id: true, name: true, phone: true, active: true } } } },
+  worker: { select: { id: true, kind: true, approved: true, autoAssign: true, userId: true, rating: true, ratingCount: true, user: { select: { id: true, name: true, phone: true, active: true } } } },
   rooms: { orderBy: [{ sort: "asc" }, { pricePerNight: "asc" }] },
 } satisfies Prisma.PropertyInclude
 
@@ -374,6 +374,7 @@ export async function createStayBooking(customer: { id: string; name: string }, 
   const q = await quoteStay(room, input.checkIn, input.checkOut, input.rooms, guests)
   const coupon = input.couponCode?.trim() ? await quoteCoupon(property.shopId, input.couponCode, { categoryId: category.id, work: q.total, customerId: customer.id }) : null
   const discount = coupon?.discount ?? 0
+  const direct = property.worker?.autoAssign ? { id: property.worker.id, userId: property.worker.userId, name: property.worker.user.name } : null
   const code = await newCode(category)
   const booking = await db.serviceBooking.create({
     data: {
@@ -405,11 +406,12 @@ export async function createStayBooking(customer: { id: string; name: string }, 
       couponCode: coupon?.coupon.code ?? "",
       discount,
       paymentMethod: method.id,
-      events: { create: { toStatus: "REQUESTED", note: "Booked", actorId: customer.id, actorRole: "CUSTOMER" } },
+      ...directAssignData(direct, customer.id),
       chat: { create: {} },
     },
   })
   if (coupon) await db.coupon.update({ where: { id: coupon.coupon.id }, data: { usedCount: { increment: 1 } } })
+  if (direct) await notify([direct.userId], { kind: "BOOKING", title: "নতুন রুম বুকিং", body: `${booking.code} · ${room.name} × ${q.rooms} · ${q.nights} রাত · সরাসরি আপনার কাছে।`, link: `/worker/jobs/${booking.code}` })
   await notify([customer.id], { kind: "BOOKING", title: "বুকিং হয়েছে", body: `${booking.code} · ${property.nameBn} · ${q.nights} রাত। রিসোর্ট নিশ্চিত করলেই জানাব।`, link: `/bookings/${booking.code}` })
   await notify(await officeIds(property.shopId), { kind: "BOOKING", title: "নতুন রিসোর্ট বুকিং", body: `${booking.code} · ${property.nameBn} · ${room.name} × ${q.rooms} · ${q.nights} রাত`, link: `/admin/bookings/${booking.code}` })
   return booking

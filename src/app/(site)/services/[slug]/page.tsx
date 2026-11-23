@@ -12,7 +12,7 @@ import { marketVehicles, photoUrl, photosOf, specsOf, vehicleName } from "@/lib/
 import { VehicleMarket, type MarketVehicle } from "@/components/vehicle-market"
 import { fromNight, kindText, listOf, marketProperties, propertyName } from "@/lib/stays"
 import { StayMarket, type MarketProperty } from "@/components/stay-market"
-import { liveProducts, shopGroups, shopRules } from "@/lib/shop"
+import { liveProducts, liveStores, shopGroups, shopRules } from "@/lib/shop"
 import { getSettings } from "@/lib/settings"
 import { ShopMarket } from "@/components/shop-market"
 import { clip, pageMeta } from "@/lib/seo"
@@ -46,7 +46,7 @@ export default async function CategoryPage({ params }: { params: Params }) {
   const rental = category.flow === "RENTAL"
   const stay = category.flow === "STAY"
   const shopFlow = category.flow === "SHOP"
-  const [products, groups, settings] = shopFlow ? await Promise.all([liveProducts(shop.id), shopGroups(shop.id), getSettings(shop.id)]) : [[], [], null]
+  const [products, groups, settings, stores] = shopFlow ? await Promise.all([liveProducts(shop.id, category.id), shopGroups(shop.id, true, category.id), getSettings(shop.id), liveStores(shop.id)]) : [[], [], null, []]
   const stays: MarketProperty[] = stay
     ? (await marketProperties()).map((p) => {
         const cover = photosOf(p)[0]
@@ -123,10 +123,14 @@ export default async function CategoryPage({ params }: { params: Params }) {
             locale={locale}
             rules={shopRules(settings)}
             groups={groups.map((g) => ({ id: g.id, name: named(locale, g) }))}
+            stores={stores.filter((st) => products.some((p) => p.storeId === st.id)).map((st) => ({ id: st.id, slug: st.slug, name: named(locale, st), cover: photosOf(st)[0] ? photoUrl(photosOf(st)[0]) : null }))}
+            partnerHref="/partner/store"
             products={products.map((p) => ({
               id: p.id,
               slug: p.slug,
               groupId: p.groupId,
+              storeId: p.storeId,
+              storeName: p.store ? named(locale, p.store) : "",
               name: bn ? p.nameBn || p.name : p.name || p.nameBn,
               cover: photosOf(p)[0] ? photoUrl(photosOf(p)[0]) : null,
               badge: p.badge,

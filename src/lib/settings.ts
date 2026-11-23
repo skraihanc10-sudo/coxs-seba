@@ -11,14 +11,14 @@ export const SETTING_DEFAULTS: Record<string, string> = {
   officeHoursEn: "Every day, 8 am – 10 pm",
   address: brand.addressBn,
   addressEn: brand.address,
-  heroBn: "আপনি নিশ্চিন্তে থাকুন, কাজটা আমরা করে দিই।",
-  heroEn: "You relax. We get it done.",
-  bannerBn: "ঘরে বসেই সব সেবা: লন্ড্রি, ইলেকট্রিশিয়ান, প্লাম্বার, ক্লিনিং আর আরও অনেক কিছু।",
-  bannerEn: "Every home service at your door: laundry, electricians, plumbers, cleaning and more.",
+  heroBn: "কক্সবাজারে যা দরকার, সব HANDYO-তে।",
+  heroEn: "Everything you need in Cox's Bazar, on HANDYO.",
+  bannerBn: "ঘরের সেবা, গাড়ি-বাইক ভাড়া, রিসোর্ট বুকিং আর কক্সবাজারের শুঁটকি-আচার – এক অ্যাপে, দাম আগেই জানা।",
+  bannerEn: "Home services, car & bike rental, resort booking and Cox's Bazar dried fish & pickles: one app, prices up front.",
   /** Share of the final bill paid to the worker who did the job, in percent. */
   workerShare: "40",
-  /** Share of a rental bill paid to the partner who owns the vehicle, in percent. */
-  partnerShare: "85",
+  /** Share of a partner's bill (vehicle, resort, store) paid to the partner; HANDYO keeps the rest (10 %). */
+  partnerShare: "90",
   /** Product shop: flat delivery charge, free-delivery threshold (0 = never), minimum order. */
   shopDelivery: "130",
   shopFreeAbove: "0",

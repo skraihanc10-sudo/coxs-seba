@@ -10,7 +10,7 @@ export default async function WorkerLayout({ children }: { children: React.React
   const partner = user.worker?.kind === "PARTNER"
   const items: NavItem[] = [
     { href: "/worker", label: partner ? pick(locale, "অর্ডার", "Orders") : pick(locale, "আজকের জব", "Jobs"), icon: "list", exact: true, badge: messages },
-    ...(partner ? [{ href: "/worker/vehicles", label: pick(locale, "আমার গাড়ি", "My vehicles"), icon: "car" } satisfies NavItem, { href: "/worker/stays", label: pick(locale, "আমার রিসোর্ট", "My resorts"), icon: "building" } satisfies NavItem] : []),
+    ...(partner ? [{ href: "/worker/vehicles", label: pick(locale, "আমার গাড়ি", "My vehicles"), icon: "car" } satisfies NavItem, { href: "/worker/stays", label: pick(locale, "আমার রিসোর্ট", "My resorts"), icon: "building" } satisfies NavItem, { href: "/worker/store", label: pick(locale, "আমার দোকান", "My store"), icon: "store" } satisfies NavItem] : []),
     { href: "/worker/earnings", label: pick(locale, "আয়", "Earnings"), icon: "wallet" },
     { href: "/worker/notifications", label: pick(locale, "নোটিশ", "Alerts"), icon: "bell", badge: notices },
     { href: "/worker/account", label: pick(locale, "অ্যাকাউন্ট", "Account"), icon: "user" },

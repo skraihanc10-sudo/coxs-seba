@@ -158,9 +158,35 @@ export const stayBookingSchema = z.object({
   couponCode: optionalText(20),
 })
 
+const storeFields = {
+  name: z.string().trim().min(2, msg("দোকানের নাম দিন।", "Name the store.")).max(80),
+  nameBn: optionalText(80),
+  address: optionalText(200),
+  addressBn: optionalText(200),
+  detail: optionalText(600),
+  detailBn: optionalText(600),
+}
+
+/** A store owner signing up from the public page. */
+export const storePartnerApplySchema = z.object({
+  ...storeFields,
+  ownerName: z.string().trim().min(2, msg("আপনার নাম দিন।", "Add your name.")).max(80),
+  phone: phoneInput,
+  email: z.union([z.literal(""), z.string().trim().email(msg("সঠিক ইমেইল দিন।", "Enter a valid email."))]).default(""),
+  password: z.string().min(6, msg("পাসওয়ার্ড অন্তত ৬ অক্ষরের দিন।", "Password must be at least 6 characters.")).max(100),
+})
+
+export const storeSchema = z.object({
+  id: optionalText(40),
+  workerId: optionalText(40),
+  sort: int(0, 999, "ক্রম ০–৯৯৯।", "Sort must be 0–999.").default(0),
+  ...storeFields,
+})
+
 export const productSchema = z.object({
   id: optionalText(40),
   groupId: id,
+  storeId: optionalText(40),
   name: z.string().trim().min(2, msg("প্রোডাক্টের নাম দিন।", "Name the product.")).max(100),
   nameBn: optionalText(100),
   slug: optionalText(80),
@@ -287,6 +313,7 @@ export const workerSchema = z.object({
   password: optionalText(100),
   nid: z.string().trim().regex(/^(\d{10}|\d{13}|\d{17})?$/, msg("NID ১০, ১৩ বা ১৭ সংখ্যার হয়।", "NID must be 10, 13 or 17 digits.")).default(""),
   isRider: z.preprocess((v) => v === "on" || v === "1" || v === true, z.boolean()),
+  autoAssign: z.preprocess((v) => v === "on" || v === "1" || v === true, z.boolean()),
   skills: z.array(z.string()).min(1, msg("অন্তত একটা দক্ষতা বেছে নিন।", "Pick at least one skill.")),
   areas: z.array(z.string()).default([]),
 })

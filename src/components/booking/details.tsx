@@ -41,7 +41,7 @@ export function BookingFacts({ booking, locale, showCustomer = false }: { bookin
       {b.routeName ? <Row label={pick(locale, "রুট প্যাকেজ", "Route package")}>{b.routeName}</Row> : null}
       {b.items.length ? (
         <div className="py-3">
-          <p className="mb-2 text-sm text-muted-foreground">{pick(locale, "পণ্য", "Items")}</p>
+          <p className="mb-2 text-sm text-muted-foreground">{pick(locale, "পণ্য", "Items")}{b.store ? <span className="ml-1 font-bold text-ink">· {locale === "bn" ? b.store.nameBn || b.store.name : b.store.name || b.store.nameBn}</span> : null}</p>
           <ul className="divide-y divide-line rounded-xl bg-canvas px-3">
             {b.items.map((it) => (
               <li key={it.id} className="flex items-center justify-between gap-3 py-2 text-sm">

@@ -49,6 +49,7 @@ model Shop {
   properties  Property[]
   productGroups ProductGroup[]
   products     Product[]
+  stores       Store[]
 }
 
 /// A discount code of one shop. PERCENT takes `value` % off the work price
@@ -126,6 +127,8 @@ model WorkerProfile {
   kind        String   @default("STAFF")
   /// Partners start unapproved; the admin approves them (and their vehicle) before they can log in.
   approved    Boolean  @default(true)
+  /// Partner privilege: new bookings for their vehicle/resort/store go straight to them, skipping the office transfer.
+  autoAssign  Boolean  @default(false)
   available   Boolean  @default(true)
   rating      Float    @default(0)
   ratingCount Int      @default(0)
@@ -137,6 +140,7 @@ model WorkerProfile {
   reviews  BookingReview[]
   vehicles Vehicle[]
   properties Property[]
+  stores     Store[]
 
   @@index([shopId])
 }
@@ -323,12 +327,44 @@ model RoomType {
   @@index([propertyId])
 }
 
-/// A shelf in the product shop ("শুঁটকি", "আচার", "চাটনি"…).
+/// A partner's store in the product shop ("বিসমিল্লাহ শুঁটকি শপ"); null owner = HANDYO's own store.
+model Store {
+  id         String         @id @default(cuid())
+  shopId     String
+  shop       Shop           @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  workerId   String?
+  worker     WorkerProfile? @relation(fields: [workerId], references: [id], onDelete: SetNull)
+  slug       String
+  name       String
+  nameBn     String
+  /// Logo / cover photo names or bundled paths.
+  photos     String         @default("")
+  detail     String         @default("")
+  detailBn   String         @default("")
+  address    String         @default("")
+  addressBn  String         @default("")
+  /// PENDING, APPROVED, PAUSED, REJECTED
+  status     String         @default("PENDING")
+  rejectNote String         @default("")
+  sort       Int            @default(0)
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  products Product[]
+  orders   ServiceBooking[]
+
+  @@unique([shopId, slug])
+  @@index([shopId, status])
+}
+
+/// A shelf in the product shop ("শুঁটকি", "বালাচাও", "চাটনি"…), belonging to one shop category (শুঁটকি / আচার).
 model ProductGroup {
-  id        String    @id @default(cuid())
-  shopId    String
-  shop      Shop      @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  slug      String
+  id         String    @id @default(cuid())
+  shopId     String
+  shop       Shop      @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  /// The SHOP-flow ServiceCategory this shelf is listed under; null = shown everywhere.
+  categoryId String?
+  slug       String
   name      String
   nameBn    String
   sort      Int       @default(0)
@@ -346,6 +382,9 @@ model Product {
   shop      Shop         @relation(fields: [shopId], references: [id], onDelete: Cascade)
   groupId   String
   group     ProductGroup @relation(fields: [groupId], references: [id])
+  /// The partner store selling it; null = HANDYO's own.
+  storeId   String?
+  store     Store?       @relation(fields: [storeId], references: [id], onDelete: SetNull)
   slug      String
   name      String
   nameBn    String
@@ -467,6 +506,8 @@ model ServiceBooking {
   /// Stays: the property and room type booked; visitDate is check-in, checkOut the last day; rooms × nights.
   propertyId    String?
   roomTypeId    String?
+  /// Shop orders: the partner store this parcel comes from.
+  storeId       String?
   checkOut      String          @default("")
   nights        Int             @default(0)
   rooms         Int             @default(1)
@@ -515,6 +556,7 @@ model ServiceBooking {
   property      Property?       @relation(fields: [propertyId], references: [id], onDelete: SetNull)
   roomType      RoomType?       @relation(fields: [roomTypeId], references: [id], onDelete: SetNull)
   items         OrderItem[]
+  store         Store?          @relation(fields: [storeId], references: [id], onDelete: SetNull)
 
   @@index([shopId, status])
   @@index([shopId, createdAt])

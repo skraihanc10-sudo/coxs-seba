@@ -16,14 +16,15 @@ type Product = {
   photos: string
   sort: number
   active: boolean
+  storeId?: string | null
   /** Variants as lines: label | price | old price | stock */
   variants: string
 } | null
 
-export function ProductForm({ locale, product, groups }: { locale: Locale; product: Product; groups: Array<{ id: string; name: string; nameBn: string }> }) {
+export function ProductForm({ locale, product, groups, stores, action = saveProductAction }: { locale: Locale; product: Product; groups: Array<{ id: string; name: string; nameBn: string }>; stores?: Array<{ id: string; name: string; nameBn: string }>; action?: typeof saveProductAction }) {
   const photos = product ? product.photos.split(",").map((p) => p.trim()).filter(Boolean) : []
   return (
-    <ActionForm action={saveProductAction} resetOnSuccess={false} className="grid gap-4 lg:grid-cols-[1fr_340px]">
+    <ActionForm action={action} resetOnSuccess={false} className="grid gap-4 lg:grid-cols-[1fr_340px]">
       {product ? <input type="hidden" name="id" value={product.id} /> : null}
       <div className="card space-y-3 p-4">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -32,6 +33,14 @@ export function ProductForm({ locale, product, groups }: { locale: Locale; produ
               {groups.map((g) => <option key={g.id} value={g.id}>{named(locale, g)}</option>)}
             </select>
           </div>
+          {stores ? (
+            <div><label className="label" htmlFor="storeId">{pick(locale, "দোকান", "Store")}</label>
+              <select id="storeId" name="storeId" defaultValue={product?.storeId ?? ""} className="field">
+                <option value="">{pick(locale, "HANDYO-র নিজের", "HANDYO's own")}</option>
+                {stores.map((st) => <option key={st.id} value={st.id}>{named(locale, st)}</option>)}
+              </select>
+            </div>
+          ) : null}
           <div><label className="label" htmlFor="badge">{pick(locale, "ব্যাজ (ঐচ্ছিক)", "Badge (optional)")}</label><input id="badge" name="badge" defaultValue={product?.badge} className="field" maxLength={30} placeholder={pick(locale, "সেরা পছন্দ / নতুন", "Best seller / New")} /></div>
         </div>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">

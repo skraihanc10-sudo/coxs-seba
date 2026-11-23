@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { useEffect, useMemo, useState, useTransition } from "react"
-import { Minus, Plus, Trash2 } from "lucide-react"
+import { Minus, Package, Plus, Trash2 } from "lucide-react"
 import { createShopOrderAction, priceCartAction } from "@/actions/shop"
 import { checkCouponAction } from "@/actions/booking"
 import { sendOtpAction } from "@/actions/auth"
@@ -13,16 +13,18 @@ import { useCart } from "@/lib/cart"
 import type { ShopRules } from "./shop-market"
 
 type Line = { variantId: string; productId: string; name: string; nameBn: string; label: string; unitPrice: number; qty: number; lineTotal: number; photo: string }
+type Parcel = { storeId: string; storeName: string; storeNameBn: string; subtotal: number; items: Line[] }
 
 /**
- * Checkout: the cart (re-priced by the server), delivery details, coupon,
- * payment and OTP for guests. Submits the cart as JSON; the server prices it again.
+ * Checkout: the cart grouped into parcels per store (re-priced by the server),
+ * delivery details, coupon, payment and OTP for guests. The cart is sent as
+ * JSON; the server prices it again and creates one order per parcel.
  */
 export function ShopCheckout({ locale, categoryId, rules, payments, user, shopHref }: { locale: Locale; categoryId: string; rules: ShopRules; payments: Array<{ id: string; label: string; labelBn: string; hint: string; hintBn: string }>; user: { name: string; phone: string; address: string } | null; shopHref: string }) {
   const bn = locale === "bn"
   const T = (b: string, e: string) => (bn ? b : e)
   const { cart, setQty, clear } = useCart()
-  const [lines, setLines] = useState<Line[] | null>(null)
+  const [parcels, setParcels] = useState<Parcel[] | null>(null)
   const [pricing, startPricing] = useTransition()
   const [phone, setPhone] = useState(user?.phone ?? "")
   const [contactName, setContactName] = useState(user?.name ?? "")
@@ -40,13 +42,12 @@ export function ShopCheckout({ locale, categoryId, rules, payments, user, shopHr
 
   const cartJson = useMemo(() => JSON.stringify(cart.map((c) => ({ variantId: c.variantId, qty: c.qty }))), [cart])
 
-  // Re-price whenever the cart changes (server is the source of truth for prices and stock).
   useEffect(() => {
-    if (!cart.length) { startPricing(async () => setLines([])); return }
+    if (!cart.length) { startPricing(async () => setParcels([])); return }
     const t = window.setTimeout(() => {
       startPricing(async () => {
         const r = await priceCartAction(cartJson)
-        setLines(r.lines)
+        setParcels(r.parcels)
         setCoupon(null)
       })
     }, 150)
@@ -54,9 +55,10 @@ export function ShopCheckout({ locale, categoryId, rules, payments, user, shopHr
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cartJson])
 
-  const subtotal = (lines ?? []).reduce((n, l) => n + l.lineTotal, 0)
-  const delivery = rules.freeAbove && subtotal >= rules.freeAbove ? 0 : rules.delivery
-  const discount = coupon ? Math.min(coupon.discount, subtotal) : 0
+  const list = parcels ?? []
+  const subtotal = list.reduce((n, p) => n + p.subtotal, 0)
+  const delivery = list.reduce((n, p) => n + (rules.freeAbove && p.subtotal >= rules.freeAbove ? 0 : rules.delivery), 0)
+  const discount = coupon ? Math.min(coupon.discount, list[0]?.subtotal ?? 0) : 0
   const total = Math.max(0, subtotal + delivery - discount)
   const belowMin = subtotal > 0 && subtotal < rules.minOrder
 
@@ -74,7 +76,7 @@ export function ShopCheckout({ locale, categoryId, rules, payments, user, shopHr
     const fd = new FormData()
     fd.set("code", couponCode)
     fd.set("categoryId", categoryId)
-    fd.set("work", String(subtotal))
+    fd.set("work", String(list[0]?.subtotal ?? 0))
     startCheckingCoupon(async () => {
       const r = await checkCouponAction(fd)
       if (r.ok && r.discount != null) { setCoupon({ code: couponCode.trim().toUpperCase(), discount: r.discount, label: r.label ?? "" }); setCouponNote("") }
@@ -82,7 +84,7 @@ export function ShopCheckout({ locale, categoryId, rules, payments, user, shopHr
     })
   }
 
-  if (lines && !lines.length) {
+  if (parcels && !parcels.length) {
     return (
       <div className="card px-6 py-12 text-center">
         <p className="font-extrabold text-ink">{T("কার্ট খালি", "Your cart is empty")}</p>
@@ -99,30 +101,34 @@ export function ShopCheckout({ locale, categoryId, rules, payments, user, shopHr
       <input type="hidden" name="couponCode" value={coupon?.code ?? ""} />
 
       <div className="space-y-4">
-        <section className="card divide-y divide-line p-2">
-          {(lines ?? []).map((l) => (
-            <div key={l.variantId} className="flex items-center gap-3 p-2">
-              {l.photo ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={photoUrl(l.photo)} alt="" className="size-16 shrink-0 rounded-xl object-cover ring-1 ring-line" />
-              ) : <span className="size-16 shrink-0 rounded-xl bg-canvas" aria-hidden />}
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-extrabold text-ink">{bn ? l.nameBn || l.name : l.name || l.nameBn}</p>
-                <p className="text-xs text-muted-foreground">{l.label} · {taka(l.unitPrice, locale)}</p>
-                <div className="mt-1 inline-flex items-center gap-1 rounded-full bg-canvas p-0.5">
-                  <button type="button" onClick={() => setQty(l.variantId, l.qty - 1)} className="grid size-7 place-items-center rounded-full bg-white text-ink ring-1 ring-line" aria-label="−"><Minus className="size-3" /></button>
-                  <span className="w-6 text-center text-sm font-extrabold">{l.qty}</span>
-                  <button type="button" onClick={() => setQty(l.variantId, l.qty + 1)} className="grid size-7 place-items-center rounded-full bg-white text-ink ring-1 ring-line" aria-label="+"><Plus className="size-3" /></button>
+        {list.length > 1 ? <p className="rounded-xl bg-teal-50 px-3 py-2 text-sm font-semibold text-teal-900">{T(`${list.length}টা আলাদা দোকান থেকে নিয়েছেন, তাই ${list.length}টা আলাদা পার্সেল আসবে (প্রতিটার আলাদা ডেলিভারি চার্জ)।`, `Your items come from ${list.length} stores, so they ship as ${list.length} parcels (delivery charged per parcel).`)}</p> : null}
+        {list.map((parcel, i) => (
+          <section key={parcel.storeId || "handyo"} className="card divide-y divide-line p-2">
+            <p className="flex items-center gap-2 px-2 py-2 text-sm font-extrabold text-ink"><Package className="size-4 text-brand" aria-hidden /> {list.length > 1 ? T(`পার্সেল ${i + 1} · `, `Parcel ${i + 1} · `) : ""}{bn ? parcel.storeNameBn : parcel.storeName}<span className="ml-auto text-xs font-semibold text-muted-foreground">{taka(parcel.subtotal, locale)}</span></p>
+            {parcel.items.map((l) => (
+              <div key={l.variantId} className="flex items-center gap-3 p-2">
+                {l.photo ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={photoUrl(l.photo)} alt="" className="size-16 shrink-0 rounded-xl object-cover ring-1 ring-line" />
+                ) : <span className="size-16 shrink-0 rounded-xl bg-canvas" aria-hidden />}
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-extrabold text-ink">{bn ? l.nameBn || l.name : l.name || l.nameBn}</p>
+                  <p className="text-xs text-muted-foreground">{l.label} · {taka(l.unitPrice, locale)}</p>
+                  <div className="mt-1 inline-flex items-center gap-1 rounded-full bg-canvas p-0.5">
+                    <button type="button" onClick={() => setQty(l.variantId, l.qty - 1)} className="grid size-7 place-items-center rounded-full bg-white text-ink ring-1 ring-line" aria-label="−"><Minus className="size-3" /></button>
+                    <span className="w-6 text-center text-sm font-extrabold">{l.qty}</span>
+                    <button type="button" onClick={() => setQty(l.variantId, l.qty + 1)} className="grid size-7 place-items-center rounded-full bg-white text-ink ring-1 ring-line" aria-label="+"><Plus className="size-3" /></button>
+                  </div>
+                </div>
+                <div className="flex shrink-0 flex-col items-end gap-1">
+                  <span className="font-extrabold text-ink">{taka(l.lineTotal, locale)}</span>
+                  <button type="button" onClick={() => setQty(l.variantId, 0)} className="text-muted-foreground hover:text-danger" aria-label={T("বাদ দিন", "Remove")}><Trash2 className="size-4" /></button>
                 </div>
               </div>
-              <div className="flex shrink-0 flex-col items-end gap-1">
-                <span className="font-extrabold text-ink">{taka(l.lineTotal, locale)}</span>
-                <button type="button" onClick={() => setQty(l.variantId, 0)} className="text-muted-foreground hover:text-danger" aria-label={T("বাদ দিন", "Remove")}><Trash2 className="size-4" /></button>
-              </div>
-            </div>
-          ))}
-          {!lines ? <p className="p-3 text-sm text-muted-foreground">{T("কার্ট লোড হচ্ছে…", "Loading cart…")}</p> : null}
-        </section>
+            ))}
+          </section>
+        ))}
+        {!parcels ? <p className="card p-3 text-sm text-muted-foreground">{T("কার্ট লোড হচ্ছে…", "Loading cart…")}</p> : null}
         {belowMin ? <p className="rounded-xl bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-900">{T(`ন্যূনতম অর্ডার ${taka(rules.minOrder, locale)}; আরও ${taka(rules.minOrder - subtotal, locale)} যোগ করুন।`, `Minimum order is ${taka(rules.minOrder, locale)}; add ${taka(rules.minOrder - subtotal, locale)} more.`)} <Link href={shopHref} className="font-bold text-brand">{T("শপে ফিরুন →", "Back to shop →")}</Link></p> : null}
 
         <section className="card space-y-4 p-4">
@@ -173,7 +179,7 @@ export function ShopCheckout({ locale, categoryId, rules, payments, user, shopHr
           <h2 className="font-extrabold text-ink">{T("অর্ডার সামারি", "Order summary")}</h2>
           <dl className="mt-2 divide-y divide-line text-sm">
             <div className="flex justify-between py-2"><dt className="text-muted-foreground">{T("সাবটোটাল", "Subtotal")}</dt><dd className="font-bold text-ink">{taka(subtotal, locale)}</dd></div>
-            <div className="flex justify-between py-2"><dt className="text-muted-foreground">{T("ডেলিভারি চার্জ", "Delivery")}</dt><dd className="font-bold text-ink">{delivery ? taka(delivery, locale) : T("ফ্রি", "Free")}</dd></div>
+            <div className="flex justify-between py-2"><dt className="text-muted-foreground">{list.length > 1 ? T(`ডেলিভারি (${list.length} পার্সেল)`, `Delivery (${list.length} parcels)`) : T("ডেলিভারি চার্জ", "Delivery")}</dt><dd className="font-bold text-ink">{delivery ? taka(delivery, locale) : T("ফ্রি", "Free")}</dd></div>
             {discount ? <div className="flex justify-between py-2"><dt className="text-muted-foreground">{T("ছাড়", "Discount")} ({coupon?.code})</dt><dd className="font-bold text-ok">−{taka(discount, locale)}</dd></div> : null}
             <div className="flex justify-between py-2 text-base"><dt className="font-extrabold text-ink">{T("মোট", "Total")}</dt><dd className="font-extrabold text-ink">{taka(total, locale)}</dd></div>
           </dl>
@@ -204,7 +210,7 @@ export function ShopCheckout({ locale, categoryId, rules, payments, user, shopHr
             ))}
           </div>
         </section>
-        <p className="text-xs text-muted-foreground">{T("অর্ডার কনফার্ম হলে নোটিশ পাবেন; কুরিয়ারে পাঠালে আবার জানাব। পণ্য পছন্দ না হলে ফেরত দেওয়া যাবে।", "You get a notice when the order is confirmed and again when it ships. Returns accepted if you don't like the product.")}</p>
+        <p className="text-xs text-muted-foreground">{T("প্রতিটা দোকান নিজের পার্সেল কনফার্ম করলে নোটিশ পাবেন; কুরিয়ারে পাঠালে আবার জানাব। পণ্য পছন্দ না হলে ফেরত দেওয়া যাবে।", "You get a notice when each store confirms its parcel and again when it ships. Returns accepted if you don't like the product.")}</p>
       </div>
 
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-paper/95 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur md:bottom-0">
@@ -213,7 +219,7 @@ export function ShopCheckout({ locale, categoryId, rules, payments, user, shopHr
             <p className="text-[11px] font-bold text-muted-foreground uppercase">{T("মোট পরিশোধ", "Total to pay")}</p>
             <p className="text-lg font-extrabold text-ink">{taka(total, locale)}</p>
           </div>
-          <SubmitButton className="btn-primary h-12 px-6" disabled={!lines?.length || belowMin || pricing} pendingText={T("অর্ডার হচ্ছে…", "Ordering…")}>{T("অর্ডার নিশ্চিত করুন", "Confirm order")}</SubmitButton>
+          <SubmitButton className="btn-primary h-12 px-6" disabled={!list.length || belowMin || pricing} pendingText={T("অর্ডার হচ্ছে…", "Ordering…")}>{T("অর্ডার নিশ্চিত করুন", "Confirm order")}</SubmitButton>
         </div>
       </div>
     </ActionForm>

@@ -9,7 +9,7 @@ import bcrypt from "bcryptjs"
 import { AREAS, CATEGORIES, DHAKA_AREAS, FAQS, REPLY_TEMPLATES, SHOPS } from "./catalog"
 import { demoAccounts, demoShopStaff, demoWorkers, WORKER_PASSWORD } from "../src/theme/demo-accounts"
 import { SETTING_DEFAULTS } from "../src/lib/settings"
-import { SHOP_GROUPS, SHOP_PRODUCTS } from "./shop-demo"
+import { GROUP_CATEGORY, SHOP_GROUPS, SHOP_PRODUCTS, SHOP_STORES } from "./shop-demo"
 
 const db = new PrismaClient()
 const catalogOnly = process.argv.includes("--catalog")
@@ -29,7 +29,13 @@ function at(offsetDays: number, hour: number) {
 
 async function ensureShop(shop: (typeof SHOPS)[number], id?: string) {
   const existing = await db.shop.findUnique({ where: { slug: shop.slug } })
-  if (existing) return existing
+  if (existing) {
+    // "Cox's Bazar Sadar" became plain "Cox's Bazar" (the company serves the whole district).
+    if (existing.cityBn === "কক্সবাজার সদর") {
+      return db.shop.update({ where: { id: existing.id }, data: { city: shop.city, cityBn: shop.cityBn, address: shop.address, addressBn: shop.addressBn, blurb: shop.blurb, blurbBn: shop.blurbBn } })
+    }
+    return existing
+  }
   return db.shop.create({ data: { ...(id ? { id } : {}), ...shop } })
 }
 
@@ -44,7 +50,7 @@ async function catalogFor(shopId: string, areas: typeof AREAS, categories: typeo
     const current = await db.serviceCategory.findUnique({ where: { shopId_slug: { shopId, slug: c.slug } }, select: { image: true } })
     const refreshImage = current && (!current.image || current.image.startsWith("/services/")) && current.image !== cat.image
     // Car & bike rental is the lead category: pinned first on every seed.
-    const pin = c.slug === "rent-a-car" ? { sort: -3 } : c.slug === "resort-booking" ? { sort: -2 } : c.slug === "cox-shutki" ? { sort: -1 } : {}
+    const pin = c.slug === "rent-a-car" ? { sort: -4 } : c.slug === "resort-booking" ? { sort: -3 } : c.slug === "shutki" ? { sort: -2 } : c.slug === "achar" ? { sort: -1 } : {}
     const row = await db.serviceCategory.upsert({ where: { shopId_slug: { shopId, slug: c.slug } }, update: { ...(refreshImage ? { image: cat.image } : {}), ...pin }, create: { ...cat, shopId, sort: i, ...pin } })
     for (const [j, o] of offerings.entries()) {
       await db.serviceOffering.upsert({
@@ -60,6 +66,13 @@ async function catalogFor(shopId: string, areas: typeof AREAS, categories: typeo
   for (const [key, value] of Object.entries(SETTING_DEFAULTS)) {
     await db.setting.upsert({ where: { shopId_key: { shopId, key } }, update: {}, create: { shopId, key, value } })
   }
+  // Company rule since 2026-11-24: HANDYO keeps 10 % of every partner business, so partners get 90 %.
+  await db.setting.updateMany({ where: { shopId, key: "partnerShare", value: "85" }, data: { value: "90" } })
+  // Hero text rewritten 2026-11-24 for the wider company; only rows still holding the old default move.
+  await db.setting.updateMany({ where: { shopId, key: "heroBn", value: "আপনি নিশ্চিন্তে থাকুন, কাজটা আমরা করে দিই।" }, data: { value: SETTING_DEFAULTS.heroBn } })
+  await db.setting.updateMany({ where: { shopId, key: "heroEn", value: "You relax. We get it done." }, data: { value: SETTING_DEFAULTS.heroEn } })
+  await db.setting.updateMany({ where: { shopId, key: "bannerBn", value: "ঘরে বসেই সব সেবা: লন্ড্রি, ইলেকট্রিশিয়ান, প্লাম্বার, ক্লিনিং আর আরও অনেক কিছু।" }, data: { value: SETTING_DEFAULTS.bannerBn } })
+  await db.setting.updateMany({ where: { shopId, key: "bannerEn", value: "Every home service at your door: laundry, electricians, plumbers, cleaning and more." }, data: { value: SETTING_DEFAULTS.bannerEn } })
 }
 
 async function catalog() {
@@ -545,11 +558,27 @@ async function ensureDemoProperties(shop: { id: string }) {
  */
 async function ensureProductShop(shop: { id: string }) {
   await db.serviceArea.upsert({ where: { shopId_slug: { shopId: shop.id, slug: "nationwide" } }, update: {}, create: { shopId: shop.id, slug: "nationwide", name: "Nationwide courier", nameBn: "সারা দেশে কুরিয়ার", charge: 0, sort: 999, active: false } })
-  if (await db.product.count({ where: { shopId: shop.id } })) return
+  // The single "cox-shutki" category was split into শুঁটকি + আচার; hide the old one.
+  await db.serviceCategory.updateMany({ where: { shopId: shop.id, slug: "cox-shutki", active: true }, data: { active: false } })
+  const cats = Object.fromEntries((await db.serviceCategory.findMany({ where: { shopId: shop.id, flow: "SHOP" } })).map((c) => [c.slug, c.id]))
+  // Every shelf is listed under its category (also backfills shelves created before categories existed).
   const groups: Record<string, string> = {}
   for (const [i, g] of SHOP_GROUPS.entries()) {
-    const row = await db.productGroup.upsert({ where: { shopId_slug: { shopId: shop.id, slug: g.slug } }, update: {}, create: { shopId: shop.id, slug: g.slug, name: g.name, nameBn: g.nameBn, sort: i } })
+    const categoryId = cats[GROUP_CATEGORY[g.slug]] ?? null
+    const row = await db.productGroup.upsert({ where: { shopId_slug: { shopId: shop.id, slug: g.slug } }, update: { categoryId }, create: { shopId: shop.id, slug: g.slug, name: g.name, nameBn: g.nameBn, sort: i, categoryId } })
     groups[g.slug] = row.id
+  }
+  // Demo partner stores (HANDYO-managed until a real owner is attached); products without a store are spread across them.
+  const stores: string[] = []
+  for (const [i, st] of SHOP_STORES.entries()) {
+    const row = await db.store.upsert({ where: { shopId_slug: { shopId: shop.id, slug: st.slug } }, update: {}, create: { shopId: shop.id, ...st, status: "APPROVED", sort: i } })
+    stores.push(row.id)
+  }
+  if (await db.product.count({ where: { shopId: shop.id } })) {
+    const orphans = await db.product.findMany({ where: { shopId: shop.id, storeId: null }, orderBy: { sort: "asc" } })
+    for (const [i, p] of orphans.entries()) await db.product.update({ where: { id: p.id }, data: { storeId: stores[i % stores.length] } })
+    if (orphans.length) console.log(`Demo shop: ${orphans.length} products attached to stores`)
+    return
   }
   let n = 0
   for (const [i, p] of SHOP_PRODUCTS.entries()) {
@@ -557,11 +586,11 @@ async function ensureProductShop(shop: { id: string }) {
     if (!groupId) continue
     const slug = p.photo.replace(/\.jpg$/, "")
     await db.product.create({
-      data: { shopId: shop.id, groupId, slug, name: p.name, nameBn: p.nameBn, photos: `/demo/shop/${p.photo}`, badge: p.badge, sort: i, variants: { create: p.variants.map((v, j) => ({ ...v, sort: j })) } },
+      data: { shopId: shop.id, groupId, storeId: stores[i % stores.length], slug, name: p.name, nameBn: p.nameBn, photos: `/demo/shop/${p.photo}`, badge: p.badge, sort: i, variants: { create: p.variants.map((v, j) => ({ ...v, sort: j })) } },
     })
     n++
   }
-  console.log(`Demo shop added: ${n} products in ${SHOP_GROUPS.length} groups`)
+  console.log(`Demo shop added: ${n} products in ${SHOP_GROUPS.length} groups across ${stores.length} stores`)
 }
 
 async function main() {

@@ -3,6 +3,16 @@
  * owner's existing Cox Shutki & Acher store. Photos live in public/demo/shop.
  * Only used by the seed when a shop has no products yet.
  */
+/** Which shop category (slug) each shelf is listed under. */
+export const GROUP_CATEGORY: Record<string, "shutki" | "achar"> = { shutki: "shutki", balachao: "shutki", mosla: "shutki", "shutki-achar": "achar", "pahari-achar": "achar", "burmese-achar": "achar", chatni: "achar", "dry-food": "achar", combo: "achar", chocolate: "achar" }
+
+/** Demo partner stores; products are spread across them. */
+export const SHOP_STORES: Array<{ slug: string; nameBn: string; name: string; addressBn: string; address: string; detailBn: string; detail: string }> = [
+  { slug: "bismillah-shutki", nameBn: "বিসমিল্লাহ শুঁটকি শপ", name: "Bismillah Shutki Shop", addressBn: "বার্মিজ মার্কেট, কক্সবাজার", address: "Burmese Market, Cox's Bazar", detailBn: "৩০ বছরের পুরোনো দোকান, নাজিরারটেকের রোদে শুকানো শুঁটকি।", detail: "A 30-year-old shop, sun-dried fish from Nazirartek." },
+  { slug: "moheshkhali-shutki", nameBn: "মহেশখালীর শুঁটকি", name: "Moheshkhali Shutki", addressBn: "মহেশখালী ঘাট, কক্সবাজার", address: "Moheshkhali Ghat, Cox's Bazar", detailBn: "মহেশখালীর জেলে পরিবারের নিজের শুকানো শুঁটকি আর বালাচাও।", detail: "Dried fish and balachao from Moheshkhali fishing families." },
+  { slug: "organic-shutki-cox", nameBn: "অর্গানিক শুঁটকি কক্স", name: "Organic Shutki Cox", addressBn: "কলাতলী, কক্সবাজার", address: "Kolatoli, Cox's Bazar", detailBn: "কেমিক্যাল ছাড়া শুঁটকি আর হোমমেড আচার, ছোট ব্যাচে বানানো।", detail: "Chemical-free dried fish and homemade pickles in small batches." },
+]
+
 export const SHOP_GROUPS: Array<{ slug: string; nameBn: string; name: string }> = [
   { slug: "shutki", nameBn: "শুঁটকি", name: "Dried fish" },
   { slug: "shutki-achar", nameBn: "শুঁটকি আচার", name: "Dried-fish pickle" },
