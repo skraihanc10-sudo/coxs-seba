@@ -17,6 +17,8 @@ type Vehicle = {
   detailBn: string
   pricePerHour: number
   pricePerDay: number
+  pricePerHalfDay: number
+  specs: string
   minHours: number
   sort: number
 } | null
@@ -48,6 +50,10 @@ export function VehicleForm({
         <div className="grid grid-cols-2 gap-2">
           <div><label className="label" htmlFor="plate">{pick(locale, "নম্বর প্লেট", "Plate")}</label><input id="plate" name="plate" defaultValue={vehicle?.plate} className="field" maxLength={30} /></div>
           <div><label className="label" htmlFor="seats">{pick(locale, "সিট", "Seats")}</label><input id="seats" name="seats" type="number" min={1} max={60} defaultValue={vehicle?.seats ?? 4} className="field" required /></div>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div><label className="label" htmlFor="pricePerHalfDay">{pick(locale, "হাফ-ডে, ৬ ঘণ্টা (৳)", "Half-day, 6 h (৳)")}</label><input id="pricePerHalfDay" name="pricePerHalfDay" type="number" min={0} max={500000} defaultValue={vehicle?.pricePerHalfDay ?? 0} className="field" /></div>
+          <div><label className="label" htmlFor="specs">{pick(locale, "স্পেক ট্যাগ (কমা দিয়ে)", "Spec tags (comma separated)")}</label><input id="specs" name="specs" defaultValue={vehicle?.specs} className="field" maxLength={200} placeholder="150cc, ABS, AC" /></div>
         </div>
         <div className="grid grid-cols-3 gap-2">
           <div><label className="label" htmlFor="pricePerHour">{pick(locale, "ঘণ্টায় (৳)", "Per hour (৳)")}</label><input id="pricePerHour" name="pricePerHour" type="number" min={0} max={100000} defaultValue={vehicle?.pricePerHour ?? 0} className="field" /></div>

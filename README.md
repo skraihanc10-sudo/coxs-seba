@@ -58,7 +58,7 @@ npx tsx scripts/screenshots.ts       # phone + desktop screenshots into ./screen
 - Fonts: **Nikosh** (Bangladesh Government standard) for Bangla headings, Noto Sans Bengali for body, Plus Jakarta Sans for English.
 
 ## Rent-a-car and vehicle partners
-The rental category (`flow: RENTAL`) lists real vehicles, not just price types. `/services/rent-a-car` shows every live vehicle with photo, seats and hourly/daily rate; the customer books one, the order gets a `CR-` number and the exact vehicle is kept on the booking. Vehicles come from two places:
+The rental category (`flow: RENTAL`) is a marketplace, not just a price list. `/services/rent-a-car` shows every live vehicle of **every branch** in one grid (type chips: scooter/bike, car, jeep…), each card with photo, type badge, day/hour/half-day rate, seats, spec tags and a Book button. Booking follows the vehicle: a vehicle from another branch books through that branch's areas and payments. The order gets a `CR-` number and the exact vehicle is kept on it. Rates: hourly (with a minimum), half-day (6 hours, flat) and daily. Vehicles come from two places:
 
 - **Shop fleet** — admin → **Vehicles → New vehicle** (owner left blank = HANDYO's own).
 - **Partners** — a vehicle owner fills `/partner` (name, mobile, password, first vehicle, photos). That creates an inactive WORKER with `kind: PARTNER` and a PENDING vehicle. Admin → **Vehicles** shows it first; **Approve** switches the login on and puts the vehicle on the site, **Reject** needs a reason. Partners can add more vehicles (each needs approval), pause one, and edit rates.

@@ -18,6 +18,7 @@ export const VEHICLE_STATUS_TEXT: Record<string, { bn: string; en: string }> = {
 export const vehicleInclude = {
   offering: { select: { id: true, slug: true, name: true, nameBn: true, categoryId: true, category: { select: { slug: true, name: true, nameBn: true, flow: true } } } },
   worker: { select: { id: true, kind: true, approved: true, rating: true, ratingCount: true, user: { select: { id: true, name: true, phone: true, active: true } } } },
+  shop: { select: { id: true, slug: true, city: true, cityBn: true } },
 } as const
 
 export type VehicleRow = NonNullable<Awaited<ReturnType<typeof vehicleById>>>
@@ -25,6 +26,11 @@ export type VehicleRow = NonNullable<Awaited<ReturnType<typeof vehicleById>>>
 /** Photo names stored comma separated; the first one is the cover. */
 export function photosOf(v: { photos: string }) {
   return v.photos.split(",").map((p) => p.trim()).filter(Boolean)
+}
+
+/** Spec tags ("149cc, ABS") as a list. */
+export function specsOf(v: { specs: string }) {
+  return v.specs.split(",").map((s) => s.trim()).filter(Boolean)
 }
 
 export function vehicleName(v: { title: string; titleBn: string }, locale: Locale) {
@@ -35,6 +41,18 @@ export function vehicleName(v: { title: string; titleBn: string }, locale: Local
 export async function bookableVehicles(shopId: string, offeringId?: string) {
   return db.vehicle.findMany({
     where: { shopId, status: "APPROVED", ...(offeringId ? { offeringId } : {}), OR: [{ workerId: null }, { worker: { approved: true, user: { active: true } } }] },
+    include: vehicleInclude,
+    orderBy: [{ sort: "asc" }, { pricePerDay: "asc" }, { createdAt: "asc" }],
+  })
+}
+
+/**
+ * The public marketplace: every live vehicle of every branch in one list
+ * (vehicles are not split by shop on the customer side).
+ */
+export async function marketVehicles() {
+  return db.vehicle.findMany({
+    where: { status: "APPROVED", shop: { active: true }, offering: { active: true, category: { active: true } }, OR: [{ workerId: null }, { worker: { approved: true, user: { active: true } } }] },
     include: vehicleInclude,
     orderBy: [{ sort: "asc" }, { pricePerDay: "asc" }, { createdAt: "asc" }],
   })
@@ -70,6 +88,8 @@ export type VehicleInput = {
   detailBn: string
   pricePerHour: number
   pricePerDay: number
+  pricePerHalfDay: number
+  specs: string
   minHours: number
 }
 
@@ -80,7 +100,7 @@ async function rentalOffering(shopId: string, offeringId: string) {
 }
 
 function checkPrices(input: VehicleInput) {
-  if (!input.pricePerHour && !input.pricePerDay) throw new AppError("ঘণ্টা বা দিনের অন্তত একটা ভাড়া দিন।", "Give an hourly or a daily rate (or both).")
+  if (!input.pricePerHour && !input.pricePerDay && !input.pricePerHalfDay) throw new AppError("ঘণ্টা বা দিনের অন্তত একটা ভাড়া দিন।", "Give an hourly or a daily rate (or both).")
 }
 
 function vehicleData(offeringId: string, input: VehicleInput) {
@@ -94,6 +114,8 @@ function vehicleData(offeringId: string, input: VehicleInput) {
     detailBn: input.detailBn,
     pricePerHour: input.pricePerHour,
     pricePerDay: input.pricePerDay,
+    pricePerHalfDay: input.pricePerHalfDay,
+    specs: specsOf({ specs: input.specs }).slice(0, 6).join(", "),
     minHours: input.minHours,
   }
 }

@@ -330,7 +330,7 @@ test("9. rent-a-car: a partner applies, the admin approves, a customer books tha
   await customer.goto("/services/rent-a-car")
   const vehicleCard = customer.locator(".card", { hasText: carBn }).first()
   await expect(vehicleCard).toBeVisible()
-  await vehicleCard.getByRole("link", { name: "এই গাড়িটা বুক করুন" }).click()
+  await vehicleCard.getByRole("link", { name: /বুক করুন/ }).click()
   await expect(customer).toHaveURL(/vehicle=/)
   await expect(customer.getByText(carBn).first()).toBeVisible()
   const code = await book(customer, customer.url(), { quantity: 3 })

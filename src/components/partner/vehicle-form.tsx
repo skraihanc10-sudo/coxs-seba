@@ -14,6 +14,8 @@ type Vehicle = {
   detailBn: string
   pricePerHour: number
   pricePerDay: number
+  pricePerHalfDay: number
+  specs: string
   minHours: number
 } | null
 
@@ -36,12 +38,14 @@ export function VehicleFields({ locale, vehicle, offerings }: { locale: Locale; 
         <div><label className="label">{pick(locale, "নম্বর প্লেট (ঐচ্ছিক)", "Plate (optional)")}</label><input name="plate" defaultValue={vehicle?.plate} className="field" maxLength={30} placeholder="চট্ট মেট্রো-গ ১২-৩৪৫৬" /></div>
         <div><label className="label">{pick(locale, "সিট", "Seats")}</label><input name="seats" type="number" inputMode="numeric" min={1} max={60} defaultValue={vehicle?.seats ?? 2} className="field" required /></div>
       </div>
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <div><label className="label">{pick(locale, "৳/ঘণ্টা", "৳/hour")}</label><input name="pricePerHour" type="number" inputMode="numeric" min={0} max={100000} defaultValue={vehicle?.pricePerHour ?? 0} className="field" /></div>
+        <div><label className="label">{pick(locale, "৳/হাফ-ডে (৬ ঘণ্টা)", "৳/half-day (6 h)")}</label><input name="pricePerHalfDay" type="number" inputMode="numeric" min={0} max={500000} defaultValue={vehicle?.pricePerHalfDay ?? 0} className="field" /></div>
         <div><label className="label">{pick(locale, "৳/দিন", "৳/day")}</label><input name="pricePerDay" type="number" inputMode="numeric" min={0} max={500000} defaultValue={vehicle?.pricePerDay ?? 0} className="field" /></div>
         <div><label className="label">{pick(locale, "কমপক্ষে ঘণ্টা", "Min hours")}</label><input name="minHours" type="number" inputMode="numeric" min={1} max={24} defaultValue={vehicle?.minHours ?? 2} className="field" /></div>
       </div>
-      <p className="-mt-1 text-xs text-muted-foreground">{pick(locale, "ঘণ্টা বা দিনের অন্তত একটা ভাড়া দিন। ড্রাইভার আর তেল ধরে দাম লিখুন।", "Give an hourly or a daily rate (or both), including driver and fuel.")}</p>
+      <p className="-mt-1 text-xs text-muted-foreground">{pick(locale, "ঘণ্টা, হাফ-ডে বা দিনের অন্তত একটা ভাড়া দিন (০ = ওই হিসাবে ভাড়া হবে না)।", "Give at least one of hourly, half-day or daily rate (0 = not offered).")}</p>
+      <div><label className="label">{pick(locale, "স্পেক ট্যাগ (কমা দিয়ে, সর্বোচ্চ ৬টা)", "Spec tags (comma separated, up to 6)")}</label><input name="specs" defaultValue={vehicle?.specs} className="field" maxLength={200} placeholder={pick(locale, "150cc, ABS, হেলমেট সহ", "150cc, ABS, helmets included")} /></div>
       <div><label className="label">{pick(locale, "বিবরণ (বাংলা)", "Details (Bangla)")}</label><textarea name="detailBn" defaultValue={vehicle?.detailBn} className="field" rows={2} maxLength={500} placeholder={pick(locale, "এসি, ড্রাইভারসহ, লাগেজ জায়গা…", "AC, with driver, luggage space…")} /></div>
       <div><label className="label">{pick(locale, "বিবরণ (ইংরেজি, ঐচ্ছিক)", "Details (English, optional)")}</label><textarea name="detail" defaultValue={vehicle?.detail} className="field" rows={2} maxLength={500} /></div>
       <div>

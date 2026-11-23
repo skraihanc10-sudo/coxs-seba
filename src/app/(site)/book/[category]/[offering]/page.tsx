@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation"
 import { getLocale, getUser } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { activeAreas } from "@/lib/catalog"
-import { currentShop } from "@/lib/shops"
+import { currentShop, shopById } from "@/lib/shops"
 import { getSettings } from "@/lib/settings"
 import { enabledProviders } from "@/lib/payments"
 import { BOOKING_DAYS, SLOTS } from "@/lib/bookings"
@@ -41,13 +41,16 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 }
 
 export default async function BookPage({ params, searchParams }: { params: Params; searchParams: Search }) {
-  const [{ category: catSlug, offering: offerSlug }, { vehicle: vehicleId = "" }, locale, user, shop] = await Promise.all([params, searchParams, getLocale(), getUser(), currentShop()])
+  const [{ category: catSlug, offering: offerSlug }, { vehicle: vehicleId = "" }, locale, user, browsing] = await Promise.all([params, searchParams, getLocale(), getUser(), currentShop()])
   if (user && user.role !== "CUSTOMER") redirect(homeFor(user.role))
+  // Rentals: the marketplace lists every branch's vehicles together, so a picked
+  // vehicle decides which branch (areas, payments) this booking belongs to.
+  const picked = vehicleId ? await vehicleById(vehicleId) : null
+  const live = picked && picked.status === "APPROVED" && picked.offering.category.flow === "RENTAL" && picked.offering.category.slug === catSlug && picked.offering.slug === offerSlug ? picked : null
+  const shop = live && live.shopId !== browsing.id ? ((await shopById(live.shopId)) ?? browsing) : browsing
   const [areas, settings, { category, offering }] = await Promise.all([activeAreas(shop.id), getSettings(shop.id), load(shop.id, catSlug, offerSlug)])
   if (!category || !offering) notFound()
-  // Rentals: a vehicle picked on the category page. A stale or foreign id falls back to the plain offering.
-  const picked = category.flow === "RENTAL" && vehicleId ? await vehicleById(vehicleId) : null
-  const vehicle = picked && picked.shopId === shop.id && picked.offeringId === offering.id && picked.status === "APPROVED" ? picked : null
+  const vehicle = live && live.shopId === shop.id && live.offeringId === offering.id ? live : null
   const addresses = user ? await db.address.findMany({ where: { userId: user.id, area: { shopId: shop.id } }, orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }] }) : []
 
   return (
@@ -71,7 +74,7 @@ export default async function BookPage({ params, searchParams }: { params: Param
         days={upcomingDays(BOOKING_DAYS)}
         payments={enabledProviders(settings).map((p) => ({ id: p.id, label: p.label, labelBn: p.labelBn, hint: p.hint, hintBn: p.hintBn }))}
         user={user ? { name: user.name, phone: user.phone ?? "", addresses: addresses.map((a) => ({ id: a.id, label: a.label, areaId: a.areaId, line: a.line, landmark: a.landmark, phone: a.phone })) } : null}
-        vehicle={vehicle ? { id: vehicle.id, title: vehicle.title, titleBn: vehicle.titleBn, seats: vehicle.seats, plate: vehicle.plate, photo: photosOf(vehicle)[0] ?? "", pricePerHour: vehicle.pricePerHour, pricePerDay: vehicle.pricePerDay, minHours: vehicle.minHours, owner: vehicle.worker ? pick(locale, `পার্টনার: ${vehicle.worker.user.name}`, `Partner: ${vehicle.worker.user.name}`) : pick(locale, "HANDYO-র নিজের গাড়ি", "HANDYO fleet") } : null}
+        vehicle={vehicle ? { id: vehicle.id, title: vehicle.title, titleBn: vehicle.titleBn, seats: vehicle.seats, plate: vehicle.plate, photo: photosOf(vehicle)[0] ?? "", pricePerHour: vehicle.pricePerHour, pricePerDay: vehicle.pricePerDay, pricePerHalfDay: vehicle.pricePerHalfDay, minHours: vehicle.minHours, owner: vehicle.worker ? pick(locale, `পার্টনার: ${vehicle.worker.user.name}`, `Partner: ${vehicle.worker.user.name}`) : pick(locale, "HANDYO-র নিজের গাড়ি", "HANDYO fleet") } : null}
       />
     </div>
   )

@@ -116,7 +116,7 @@ export type NewBooking = {
   days: number
   paymentMethod: string
   vehicleId?: string
-  rentalUnit?: "HOUR" | "DAY"
+  rentalUnit?: "HOUR" | "HALF" | "DAY"
   couponCode?: string
 }
 
@@ -151,11 +151,12 @@ export async function createBooking(customer: { id: string; name: string }, inpu
       where: { id: input.vehicleId, shopId, offeringId: offering.id, status: "APPROVED", OR: [{ workerId: null }, { worker: { approved: true, user: { active: true } } }] },
     })
     if (!vehicle) throw new AppError("এই গাড়িটা এখন পাওয়া যাচ্ছে না, অন্য একটা বেছে নিন।", "That vehicle is not available right now; pick another.")
-    const byDay = input.rentalUnit === "DAY" ? true : !vehicle.pricePerHour
-    if (byDay && !vehicle.pricePerDay) throw new AppError("এই গাড়ি শুধু ঘণ্টায় ভাড়া হয়।", "This vehicle is rented by the hour only.")
-    pricing = byDay ? "PER_DAY" : "PER_HOUR"
-    unitPrice = byDay ? vehicle.pricePerDay : vehicle.pricePerHour
-    minQty = byDay ? 1 : vehicle.minHours
+    const unit = input.rentalUnit === "HALF" && vehicle.pricePerHalfDay ? "HALF" : input.rentalUnit === "DAY" || !vehicle.pricePerHour ? "DAY" : "HOUR"
+    if (unit === "DAY" && !vehicle.pricePerDay) throw new AppError("এই গাড়ি দিনের হিসাবে ভাড়া হয় না।", "This vehicle is not rented by the day.")
+    // Half-day (6 hours) is a flat price, so it bills like a fixed job.
+    pricing = unit === "HALF" ? "FIXED" : unit === "DAY" ? "PER_DAY" : "PER_HOUR"
+    unitPrice = unit === "HALF" ? vehicle.pricePerHalfDay : unit === "DAY" ? vehicle.pricePerDay : vehicle.pricePerHour
+    minQty = unit === "HOUR" ? vehicle.minHours : 1
     vehicleId = vehicle.id
   }
   const quantity = usesQuantity(pricing) ? Math.max(minQty, input.quantity) : 1

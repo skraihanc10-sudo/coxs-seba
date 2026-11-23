@@ -157,7 +157,11 @@ model Vehicle {
   detailBn      String          @default("")
   pricePerHour  Int             @default(0)
   pricePerDay   Int             @default(0)
+  /// Half-day (6 hours) rate; 0 = not offered.
+  pricePerHalfDay Int           @default(0)
   minHours      Int             @default(2)
+  /// Short spec tags, comma separated ("149cc, ABS, Fuel injection").
+  specs         String          @default("")
   /// PENDING (waiting for admin), APPROVED (bookable), PAUSED (owner hid it), REJECTED
   status        String          @default("PENDING")
   rejectNote    String          @default("")
