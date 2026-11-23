@@ -42,7 +42,9 @@ async function catalogFor(shopId: string, areas: typeof AREAS, categories: typeo
     // Existing rows keep their own edits; only a missing/bundled illustration is refreshed to the current bundled one.
     const current = await db.serviceCategory.findUnique({ where: { shopId_slug: { shopId, slug: c.slug } }, select: { image: true } })
     const refreshImage = current && (!current.image || current.image.startsWith("/services/")) && current.image !== cat.image
-    const row = await db.serviceCategory.upsert({ where: { shopId_slug: { shopId, slug: c.slug } }, update: refreshImage ? { image: cat.image } : {}, create: { ...cat, shopId, sort: i } })
+    // Car & bike rental is the lead category: pinned first on every seed.
+    const pin = c.slug === "rent-a-car" ? { sort: -1 } : {}
+    const row = await db.serviceCategory.upsert({ where: { shopId_slug: { shopId, slug: c.slug } }, update: { ...(refreshImage ? { image: cat.image } : {}), ...pin }, create: { ...cat, shopId, sort: i, ...pin } })
     for (const [j, o] of offerings.entries()) {
       await db.serviceOffering.upsert({
         where: { categoryId_slug: { categoryId: row.id, slug: o.slug } },
