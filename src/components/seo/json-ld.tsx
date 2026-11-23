@@ -38,9 +38,9 @@ export function organization(): Json {
     "@type": "Organization",
     name: SITE_NAME,
     url: SITE_URL,
-    logo: absoluteUrl("/pwa-icon?size=512"),
+    logo: absoluteUrl("/brand/icon-512.png"),
     image: absoluteUrl("/opengraph-image"),
-    description: "Every home service, done by our own team. Laundry, electricians, plumbers, cleaning, AC, moving and car & bike rental in Bangladesh.",
+    description: "Everything you need in Cox's Bazar: home services, car & bike & chander gari rental, resort booking and dried fish & pickle stores, delivered across Bangladesh.",
     areaServed: { "@type": "Country", name: "Bangladesh" },
   }
 }

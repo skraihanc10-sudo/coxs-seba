@@ -38,6 +38,21 @@ export async function activeFaqs() {
 }
 
 /** Lowest "from" price in a category, for the grid cards. */
+/**
+ * The one-line price hint on a category card. Marketplace flows have no
+ * price on the category itself (rooms, vehicles and products carry their own).
+ */
+export function categoryPriceLine(c: { flow: string; offerings: Array<{ price: number; pricing: string }> }, locale: "bn" | "en", taka: (n: number, l: "bn" | "en") => string, unit: (p: string, l: "bn" | "en") => string) {
+  const bn = locale === "bn"
+  if (c.flow === "STAY") return bn ? "রাতপ্রতি দাম, রুম অনুযায়ী" : "Per night, by room"
+  if (c.flow === "SHOP") return bn ? "পণ্য অনুযায়ী দাম, সারা দেশে ডেলিভারি" : "Priced per product, delivered nationwide"
+  const from = fromPrice(c.offerings)
+  const cheapest = from ? c.offerings.find((o) => o.price === from) : undefined
+  if (c.flow === "RENTAL") return from && cheapest ? (bn ? `${taka(from, locale)}/${unit(cheapest.pricing, locale)} থেকে` : `From ${taka(from, locale)}/${unit(cheapest.pricing, locale)}`) : bn ? "গাড়ি অনুযায়ী ভাড়া" : "Rates per vehicle"
+  if (from && cheapest) return bn ? `শুরু ${taka(from, locale)}/${unit(cheapest.pricing, locale)}` : `From ${taka(from, locale)}/${unit(cheapest.pricing, locale)}`
+  return bn ? "দেখে দাম" : "Quote after visit"
+}
+
 export function fromPrice(offerings: Array<{ price: number; pricing: string }>) {
   const priced = offerings.filter((o) => o.pricing !== "QUOTE" && o.price > 0)
   if (!priced.length) return null

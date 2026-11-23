@@ -3,7 +3,7 @@ import Link from "next/link"
 import { ArrowRight, BadgeCheck, Car, Clock3, MapPin, MapPinned, MessageCircle, Phone, Search, ShieldCheck, Star } from "lucide-react"
 import { getLocale } from "@/lib/auth"
 import { getSettings } from "@/lib/settings"
-import { activeAreas, activeCategories, activeFaqs, fromPrice, publishedReviews } from "@/lib/catalog"
+import { activeAreas, activeCategories, activeFaqs, categoryPriceLine, fromPrice, publishedReviews } from "@/lib/catalog"
 import { activeShops, coverageText, currentShop } from "@/lib/shops"
 import { named, pick, words } from "@/lib/i18n"
 import { taka, telHref, whatsappHref } from "@/lib/format"
@@ -20,7 +20,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSettings(shop.id)
   return pageMeta({
     locale,
-    title: pick(locale, "HANDYO · ঘরের সব সেবা, আপনার দরজায়", "HANDYO · Home services at your door"),
+    title: pick(locale, "HANDYO · কক্সবাজারে যা দরকার, সব এক অ্যাপে", "HANDYO · Everything you need in Cox's Bazar"),
     description: clip(
       pick(
         locale,
@@ -73,15 +73,13 @@ export default async function HomePage() {
             items={categories
               .filter((c) => c.image)
               .map((c) => {
-                const from = fromPrice(c.offerings)
-                const cheapest = c.offerings.find((o) => o.price === from)
                 return {
                   slug: c.slug,
                   name: c.name,
                   nameBn: c.nameBn,
                   image: c.image,
                   blurb: bn ? c.blurbBn : c.blurb,
-                  priceLine: from && cheapest ? `${t.from} ${taka(from, locale)}/${unitLabel(cheapest.pricing, locale)}` : null,
+                  priceLine: categoryPriceLine(c, locale, taka, unitLabel),
                 }
               })}
           />
@@ -96,8 +94,6 @@ export default async function HomePage() {
         </div>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           {categories.map((c) => {
-            const from = fromPrice(c.offerings)
-            const cheapest = c.offerings.find((o) => o.price === from)
             return (
               <Link key={c.id} href={`/services/${c.slug}`} className="card group flex flex-col overflow-hidden transition hover:-translate-y-0.5 hover:ring-brand/40">
                 {c.image ? (
@@ -114,7 +110,7 @@ export default async function HomePage() {
                     <span className="text-[15px] font-extrabold leading-snug text-ink">{named(locale, c)}</span>
                   </span>
                   <span className="mt-auto text-xs text-muted-foreground">
-                    {from && cheapest ? `${t.from} ${taka(from, locale)}/${unitLabel(cheapest.pricing, locale)}` : pick(locale, "দেখে দাম", "Quote after visit")}
+                    {categoryPriceLine(c, locale, taka, unitLabel)}
                   </span>
                 </span>
               </Link>

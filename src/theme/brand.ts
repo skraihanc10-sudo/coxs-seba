@@ -2,8 +2,8 @@
 export const brand = {
   name: "HANDYO",
   nameBn: "HANDYO",
-  tagline: "Every home service, done by our own team",
-  taglineBn: "ঘরের সব সেবা, আমাদের নিজের টিম দিয়ে",
+  tagline: "Everything you need in Cox's Bazar",
+  taglineBn: "কক্সবাজারে যা দরকার, সব HANDYO-তে",
   supportEmail: "hello@handyo.bd",
   supportPhone: "09610-000000",
   whatsapp: "01700-000000",
