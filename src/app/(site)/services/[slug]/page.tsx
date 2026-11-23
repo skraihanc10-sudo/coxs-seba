@@ -8,7 +8,7 @@ import { currentShop } from "@/lib/shops"
 import { named, pick, words } from "@/lib/i18n"
 import { taka } from "@/lib/format"
 import { PRICING_TEXT, unitLabel } from "@/lib/pricing"
-import { marketVehicles, photosOf, specsOf, vehicleName } from "@/lib/vehicles"
+import { marketVehicles, photoUrl, photosOf, specsOf, vehicleName } from "@/lib/vehicles"
 import { VehicleMarket, type MarketVehicle } from "@/components/vehicle-market"
 import { clip, pageMeta } from "@/lib/seo"
 import { CategoryIcon } from "@/components/category-icon"
@@ -51,7 +51,7 @@ export default async function CategoryPage({ params }: { params: Params }) {
             name: vehicleName(v, locale),
             typeId: category.offerings.find((o) => o.slug === v.offering.slug)?.id ?? v.offeringId,
             type: named(locale, v.offering),
-            cover: cover ? `/api/uploads/${cover}` : null,
+            cover: cover ? photoUrl(cover) : null,
             seats: v.seats,
             detail: bn ? v.detailBn || v.detail : v.detail || v.detailBn,
             specs: specsOf(v),
@@ -91,7 +91,7 @@ export default async function CategoryPage({ params }: { params: Params }) {
           <h2 className="display text-xl font-extrabold text-ink">{pick(locale, "বাইক, কার ও জিপ বেছে নিন", "Pick a bike, car or jeep")}</h2>
           <p className="mt-1 mb-3 text-sm text-muted-foreground">{pick(locale, "ছবি, স্পেক আর ভাড়া দেখে পছন্দেরটা বুক করুন; বুকিংয়ের পর অফিস গাড়ির মালিকের সাথে মিলিয়ে দেয়।", "See the photo, specs and rate, then book; the office connects you with the owner after booking.")}</p>
           {!market.length ? (
-            <p className="rounded-2xl bg-canvas px-4 py-3 text-sm text-muted-foreground">{pick(locale, "এখন নির্দিষ্ট কোনো গাড়ি দেখানো নেই। নিচে ধরন বেছে বুক করুন, সেই ধরনের যেকোনো গাড়ি পাঠানো হবে।", "No specific vehicles are listed right now. Book by type below and any vehicle of that type will be sent.")}</p>
+            <p className="rounded-2xl bg-canvas px-4 py-3 text-sm text-muted-foreground">{pick(locale, "এখনো কোনো গাড়ি যোগ হয়নি। শিগগিরই আসছে; আপনার গাড়ি থাকলে নিচে পার্টনার হোন।", "No vehicles are listed yet. Coming soon; if you own one, become a partner below.")}</p>
           ) : (
             <VehicleMarket
               locale={locale}
@@ -100,11 +100,10 @@ export default async function CategoryPage({ params }: { params: Params }) {
               vehicles={market}
             />
           )}
-          <h2 className="display mt-8 text-xl font-extrabold text-ink">{pick(locale, "ধরন অনুযায়ী বুক করুন (যেকোনো গাড়ি)", "Book by type (any vehicle)")}</h2>
-          <p className="mt-1 text-sm text-muted-foreground">{pick(locale, "নির্দিষ্ট গাড়ি দরকার না হলে ধরন বেছে নিন, আমরা গাড়ি ঠিক করে দেব।", "Don't need a specific vehicle? Pick a type and we'll assign one.")}</p>
         </section>
       ) : null}
-      <div className="grid gap-3 md:grid-cols-2">
+      {/* Rentals book a real vehicle from the marketplace above, never a bare type. */}
+      <div className={rental ? "hidden" : "grid gap-3 md:grid-cols-2"}>
         {category.offerings.map((o) => (
           <Link key={o.id} href={`/book/${category.slug}/${o.slug}`} className="card flex flex-col gap-2 p-4 transition hover:ring-brand/40 md:p-5">
             <div className="flex items-start justify-between gap-3">

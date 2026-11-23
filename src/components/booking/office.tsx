@@ -14,6 +14,7 @@ import { Composer, MessageList, type ChatMessage } from "@/components/chat-pane"
 import { Avatar, Section } from "@/components/bits"
 import { Timeline } from "./timeline"
 import { BookingFacts } from "./details"
+import { photoUrl } from "@/lib/vehicles"
 
 type WorkerOption = { id: string; name: string; rating: number; busy: number; skilled: boolean; inArea: boolean }
 
@@ -64,7 +65,7 @@ export function OfficeBooking({
             <div className="flex items-center gap-3">
               {vehiclePhoto ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={`/api/uploads/${vehiclePhoto}`} alt="" className="size-16 shrink-0 rounded-xl object-cover ring-1 ring-line" />
+                <img src={photoUrl(vehiclePhoto)} alt="" className="size-16 shrink-0 rounded-xl object-cover ring-1 ring-line" />
               ) : null}
               <div className="min-w-0 flex-1 text-sm">
                 <p className="truncate font-extrabold text-ink">{locale === "bn" ? vehicle.titleBn || vehicle.title : vehicle.title || vehicle.titleBn}</p>

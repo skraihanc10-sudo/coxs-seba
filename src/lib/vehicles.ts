@@ -33,6 +33,11 @@ export function specsOf(v: { specs: string }) {
   return v.specs.split(",").map((s) => s.trim()).filter(Boolean)
 }
 
+/** Browser URL of a stored photo name; bundled demo photos are kept as site paths. */
+export function photoUrl(name: string) {
+  return name.startsWith("/") || name.startsWith("http") ? name : `/api/uploads/${name}`
+}
+
 export function vehicleName(v: { title: string; titleBn: string }, locale: Locale) {
   return locale === "bn" ? v.titleBn || v.title : v.title || v.titleBn
 }

@@ -7,6 +7,7 @@ import { sendOtpAction } from "@/actions/auth"
 import { ActionForm, SubmitButton } from "./forms"
 import { estimate, unitLabel, usesQuantity } from "@/lib/pricing"
 import { formatDay, taka, type Locale } from "@/lib/format"
+import { photoUrl } from "@/lib/vehicles"
 
 type Area = { id: string; name: string; nameBn: string; charge: number }
 type Address = { id: string; label: string; areaId: string; line: string; landmark: string; phone: string }
@@ -165,7 +166,7 @@ export function BookingWizard({ locale, shop, category, offering, areas, slots, 
           <div className="card overflow-hidden">
             {vehicle.photo ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={`/api/uploads/${vehicle.photo}`} alt={bn ? vehicle.titleBn : vehicle.title} className="aspect-[16/9] w-full object-cover" />
+              <img src={photoUrl(vehicle.photo)} alt={bn ? vehicle.titleBn : vehicle.title} className="aspect-[16/9] w-full object-cover" />
             ) : null}
             <div className="p-4">
               <p className="text-xs font-bold text-brand">{name(category)} · {name(offering)}</p>

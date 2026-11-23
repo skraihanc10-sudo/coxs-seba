@@ -4,7 +4,7 @@ import { billFor, unitLabel, usesQuantity } from "@/lib/pricing"
 import { formatDay, mapsUrl, taka, telHref, type Locale } from "@/lib/format"
 import { named, pick } from "@/lib/i18n"
 import { paymentProvider } from "@/lib/payments"
-import { photosOf, vehicleName } from "@/lib/vehicles"
+import { photoUrl, photosOf, vehicleName } from "@/lib/vehicles"
 import { Avatar, Photos, Row } from "@/components/bits"
 
 /** The facts of a booking: where, when, what, how much. Shared by every panel. */
@@ -27,7 +27,7 @@ export function BookingFacts({ booking, locale, showCustomer = false }: { bookin
           <span className="inline-flex items-center gap-2">
             {photosOf(b.vehicle)[0] ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={`/api/uploads/${photosOf(b.vehicle)[0]}`} alt={vehicleName(b.vehicle, locale)} className="size-12 rounded-lg object-cover ring-1 ring-line" />
+              <img src={photoUrl(photosOf(b.vehicle)[0])} alt={vehicleName(b.vehicle, locale)} className="size-12 rounded-lg object-cover ring-1 ring-line" />
             ) : null}
             <span>
               {vehicleName(b.vehicle, locale)}

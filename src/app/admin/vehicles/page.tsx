@@ -3,7 +3,7 @@ import { Plus } from "lucide-react"
 import { requireUser, getLocale } from "@/lib/auth"
 import { ADMINS } from "@/lib/roles"
 import { officeShop } from "@/lib/shops"
-import { photosOf, rentalCategory, shopVehicles, vehicleName, VEHICLE_STATUS_TEXT } from "@/lib/vehicles"
+import { VEHICLE_STATUS_TEXT, photoUrl, photosOf, rentalCategory, shopVehicles, vehicleName } from "@/lib/vehicles"
 import { taka, type Locale } from "@/lib/format"
 import { named, pick } from "@/lib/i18n"
 import { reviewVehicleAction } from "@/actions/vehicles"
@@ -77,7 +77,7 @@ function VehicleCard({ v, locale }: { v: Vehicle; locale: Locale }) {
     <div className={`card overflow-hidden ${v.status === "REJECTED" || v.status === "PAUSED" ? "opacity-80" : ""}`}>
       {cover ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={`/api/uploads/${cover}`} alt={vehicleName(v, locale)} className="aspect-[16/9] w-full object-cover" loading="lazy" />
+        <img src={photoUrl(cover)} alt={vehicleName(v, locale)} className="aspect-[16/9] w-full object-cover" loading="lazy" />
       ) : (
         <div className="grid aspect-[16/9] w-full place-items-center bg-canvas text-sm text-muted-foreground">{pick(locale, "ছবি নেই", "No photo")}</div>
       )}

@@ -1,6 +1,6 @@
 import type { Locale } from "@/lib/format"
 import { named, pick } from "@/lib/i18n"
-import { photosOf } from "@/lib/vehicles"
+import { photoUrl, photosOf } from "@/lib/vehicles"
 import { saveVehicleAction } from "@/actions/vehicles"
 import { ActionForm, SubmitButton } from "@/components/forms"
 
@@ -84,7 +84,7 @@ export function VehicleForm({
               <div className="mt-2 flex gap-2">
                 {photos.map((p) => (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img key={p} src={`/api/uploads/${p}`} alt="" className="size-16 rounded-lg object-cover ring-1 ring-line" />
+                  <img key={p} src={photoUrl(p)} alt="" className="size-16 rounded-lg object-cover ring-1 ring-line" />
                 ))}
               </div>
             ) : null}

@@ -414,9 +414,41 @@ async function ensureOwner() {
   console.log(`Owner login ready: ${email}${process.env.OWNER_PASSWORD ? "" : ` / ${password} (change it after logging in)`}`)
 }
 
+/**
+ * Starter fleet so the rent-a-car marketplace is never empty: eight HANDYO
+ * vehicles with bundled stock photos (public/demo/vehicles). Only runs when the
+ * shop's rental category has no vehicle at all, so real listings are untouched.
+ */
+async function ensureDemoVehicles(shop: { id: string }) {
+  const category = await db.serviceCategory.findFirst({ where: { shopId: shop.id, flow: "RENTAL" }, include: { offerings: true } })
+  if (!category || (await db.vehicle.count({ where: { shopId: shop.id } }))) return
+  const byType = Object.fromEntries(category.offerings.map((o) => [o.slug, o.id]))
+  const fleet = [
+    { type: "scooter-bike", photo: "bike-fz", title: "Yamaha FZS V3", titleBn: "ইয়ামাহা FZS V3", seats: 2, hour: 300, half: 1000, day: 2200, minHours: 2, specs: "149cc, Fuel injection, Dual-channel ABS", detail: "Premium handling for long-distance highway cruises. Two helmets included.", detailBn: "হাইওয়ে আর মেরিন ড্রাইভের জন্য আরামের বাইক। দুইটা হেলমেট সহ।" },
+    { type: "scooter-bike", photo: "bike-gixxer", title: "Suzuki Gixxer SF", titleBn: "সুজুকি Gixxer SF", seats: 2, hour: 350, half: 1000, day: 2300, minHours: 2, specs: "155cc, Full fairing, Rear disc brake", detail: "Sporty ride for the Marine Drive run to Inani and Teknaf.", detailBn: "স্পোর্টি রাইড, মেরিন ড্রাইভ ধরে ইনানী-টেকনাফ।" },
+    { type: "scooter-bike", photo: "bike-r15", title: "Yamaha R15 V4", titleBn: "ইয়ামাহা R15 V4", seats: 2, hour: 400, half: 1200, day: 2800, minHours: 2, specs: "155cc, Liquid cooled, ABS", detail: "The fast one. Licence required, self-drive only.", detailBn: "সবচেয়ে ফাস্ট। লাইসেন্স লাগবে, নিজে চালাবেন।" },
+    { type: "car-hourly", photo: "car-allion", title: "Toyota Allion (AC)", titleBn: "টয়োটা অ্যালিয়ন (এসি)", seats: 4, hour: 500, half: 2200, day: 3800, minHours: 2, specs: "AC, 4 seats, Driver included", detail: "AC sedan with driver and fuel, inside town and to the airport.", detailBn: "এসি সেডান, ড্রাইভার ও তেলসহ, শহরের মধ্যে ও এয়ারপোর্ট।" },
+    { type: "car-daily", photo: "car-swift", title: "Suzuki Swift (AC)", titleBn: "সুজুকি সুইফট (এসি)", seats: 4, hour: 450, half: 2000, day: 3200, minHours: 2, specs: "AC, Compact, Driver included", detail: "Small and easy in beach-road traffic. Driver and fuel included.", detailBn: "ছোট গাড়ি, বিচ রোডের জ্যামে সুবিধা। ড্রাইভার ও তেলসহ।" },
+    { type: "car-daily", photo: "car-fortuner", title: "Toyota Fortuner (AC)", titleBn: "টয়োটা ফরচুনার (এসি)", seats: 7, hour: 900, half: 4000, day: 7000, minHours: 3, specs: "AC, 7 seats, 4x4, Driver included", detail: "Big SUV for families: Inani, Himchari, Teknaf day trips.", detailBn: "পরিবারের জন্য বড় SUV: ইনানী, হিমছড়ি, টেকনাফ ডে ট্রিপ।" },
+    { type: "open-roof-jeep", photo: "jeep-crv", title: "Marine Drive jeep (open roof)", titleBn: "মেরিন ড্রাইভ জিপ (ছাদখোলা)", seats: 8, hour: 0, half: 2800, day: 4500, minHours: 1, specs: "Open roof, 8 seats, Driver included", detail: "Open-roof jeep from Kolatoli along Marine Drive to Inani, with driver.", detailBn: "কলাতলী থেকে মেরিন ড্রাইভ ধরে ইনানী, ড্রাইভারসহ ছাদখোলা জিপ।" },
+    { type: "microbus", photo: "micro-hiace", title: "Toyota Hiace microbus (11 seats)", titleBn: "টয়োটা হাইয়েস মাইক্রোবাস (১১ সিট)", seats: 11, hour: 900, half: 4000, day: 6500, minHours: 3, specs: "AC, 11 seats, Driver included", detail: "For groups: Teknaf, Inani, Ramu day tours with driver and fuel.", detailBn: "গ্রুপের জন্য: টেকনাফ, ইনানী, রামু ডে ট্যুর, ড্রাইভার ও তেলসহ।" },
+  ]
+  let n = 0
+  for (const [i, v] of fleet.entries()) {
+    const offeringId = byType[v.type] ?? category.offerings[0]?.id
+    if (!offeringId) continue
+    await db.vehicle.create({
+      data: { shopId: shop.id, offeringId, title: v.title, titleBn: v.titleBn, seats: v.seats, photos: `/demo/vehicles/${v.photo}.jpg`, pricePerHour: v.hour, pricePerHalfDay: v.half, pricePerDay: v.day, minHours: v.minHours, specs: v.specs, detail: v.detail, detailBn: v.detailBn, status: "APPROVED", sort: i },
+    })
+    n++
+  }
+  console.log(`Demo fleet added: ${n} vehicles with stock photos`)
+}
+
 async function main() {
   const coxs = await catalog()
   await ensureOwner()
+  await ensureDemoVehicles(coxs)
   if (catalogOnly) return
   await demo(coxs)
   console.log("Logins:")

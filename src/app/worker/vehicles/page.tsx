@@ -4,7 +4,7 @@ import { requireUser, getLocale } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { taka } from "@/lib/format"
 import { named, pick } from "@/lib/i18n"
-import { photosOf, vehicleName, VEHICLE_STATUS_TEXT } from "@/lib/vehicles"
+import { VEHICLE_STATUS_TEXT, photoUrl, photosOf, vehicleName } from "@/lib/vehicles"
 import { togglePartnerVehicleAction } from "@/actions/vehicles"
 import { EmptyState, PageHeader } from "@/components/bits"
 import { CategoryIcon } from "@/components/category-icon"
@@ -41,7 +41,7 @@ export default async function PartnerVehiclesPage() {
               <article key={v.id} className="card flex gap-3 p-3">
                 {cover ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={`/api/uploads/${cover}`} alt={vehicleName(v, locale)} className="size-24 shrink-0 rounded-xl object-cover ring-1 ring-line" />
+                  <img src={photoUrl(cover)} alt={vehicleName(v, locale)} className="size-24 shrink-0 rounded-xl object-cover ring-1 ring-line" />
                 ) : (
                   <span className="grid size-24 shrink-0 place-items-center rounded-xl bg-brand-soft text-brand" aria-hidden><CategoryIcon name={v.offering.category.icon} className="size-8" /></span>
                 )}
