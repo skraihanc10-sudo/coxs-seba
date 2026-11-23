@@ -1,15 +1,9 @@
 import { brand } from "@/theme/brand"
 
+/** The HANDYO mark: a blue rounded tile with a wave that turns into a checkmark (public/brand/icon.png). */
 export function Mark({ size = 36 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 48 48" aria-hidden>
-      <rect width="48" height="48" rx="14" fill="var(--brand)" />
-      {/* a roof for home services over a wave for the sea */}
-      <path d="M14 23l10-9 10 9" fill="none" stroke="white" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M19 23v-4h10v4" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" />
-      <path d="M10 31c3-3 6-3 9 0s6 3 9 0 6-3 9 0" fill="none" stroke="white" strokeWidth="2.6" strokeLinecap="round" />
-    </svg>
-  )
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src="/brand/icon-192.png" width={size} height={size} alt="" aria-hidden className="shrink-0 select-none" draggable={false} />
 }
 
 export function Logo({ light = false, size = 34, bn = false }: { light?: boolean; size?: number; bn?: boolean }) {

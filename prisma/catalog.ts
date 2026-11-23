@@ -113,7 +113,7 @@ export const CATEGORIES: Array<{
     blurbBn: "কক্সবাজারের পার্টনার দোকানগুলোর আসল শুঁটকি, বালাচাও আর পাহাড়ি মসলা – সরাসরি কক্সবাজার থেকে সারা দেশে ডেলিভারি।",
     blurb: "Genuine dried fish, balachao and hill spices from Cox's Bazar partner stores, shipped from Cox's Bazar to anywhere in Bangladesh.",
     icon: "fish",
-    image: "/demo/shop/shutki-22.jpg",
+    image: "/services/shutki.jpg",
     flow: "SHOP",
     offerings: [
       { slug: "order", nameBn: "শুঁটকি অর্ডার", name: "Dried fish order", detailBn: "কার্টে নিয়ে অর্ডার করুন; কুরিয়ারে বাসায় পৌঁছে যাবে।", detail: "Add to cart and order; delivered by courier.", pricing: "FIXED", price: 0, durationMin: 2880 },
@@ -127,7 +127,7 @@ export const CATEGORIES: Array<{
     blurbBn: "শুঁটকি আচার, পাহাড়ি হোমমেড আচার, বার্মিজ আচার, চাটনি আর ড্রাই ফুড – কক্সবাজারের পার্টনার দোকান থেকে সারা দেশে।",
     blurb: "Dried-fish pickles, hill homemade pickles, Burmese pickles, chutneys and dry food from Cox's Bazar partner stores, delivered nationwide.",
     icon: "spark",
-    image: "/demo/shop/ilish-shutki-acher.jpg",
+    image: "/services/achar.jpg",
     flow: "SHOP",
     offerings: [
       { slug: "order", nameBn: "আচার অর্ডার", name: "Pickle order", detailBn: "কার্টে নিয়ে অর্ডার করুন; কুরিয়ারে বাসায় পৌঁছে যাবে।", detail: "Add to cart and order; delivered by courier.", pricing: "FIXED", price: 0, durationMin: 2880 },
@@ -141,7 +141,7 @@ export const CATEGORIES: Array<{
     blurbBn: "কক্সবাজারের রিসোর্ট, হোটেল আর কটেজ – ছবি, রুম আর রাতপ্রতি দাম দেখে বুক করুন। মালিক নিশ্চিত করলে চ্যাটে সব ঠিক হয়।",
     blurb: "Cox's Bazar resorts, hotels and cottages: see photos, rooms and nightly prices, then book. The owner confirms and you settle details in chat.",
     icon: "building",
-    image: "/demo/stays/sea-view-resort.jpg",
+    image: "/services/resort-booking.jpg",
     flow: "STAY",
     offerings: [
       { slug: "room-night", nameBn: "রুম (প্রতি রাত)", name: "Room (per night)", detailBn: "রিসোর্ট বা হোটেলের রুম, রাতপ্রতি দাম। চেক-ইন ও চেক-আউট তারিখ দিয়ে বুক করুন।", detail: "A resort or hotel room, priced per night. Book with check-in and check-out dates.", pricing: "PER_NIGHT", price: 0, durationMin: 1440 },
@@ -155,7 +155,7 @@ export const CATEGORIES: Array<{
     blurbBn: "আমাদের নিজের লন্ড্রি। রাইডার বাসা থেকে কাপড় নেবে, পরিষ্কার করে ফেরত দেবে।",
     blurb: "Our own laundry. A rider picks up from your door and brings it back clean.",
     icon: "shirt",
-    image: "/services/laundry.svg",
+    image: "/services/laundry.jpg",
     flow: "LAUNDRY",
     offerings: [
       { slug: "wash-iron", nameBn: "ওয়াশ ও আয়রন", name: "Wash & iron", detailBn: "ধোয়া, শুকানো, আয়রন করে ভাঁজ। সর্বনিম্ন ৩ কেজি।", detail: "Washed, dried, ironed and folded. Minimum 3 kg.", pricing: "PER_KG", price: 90, minQty: 3, durationMin: 2880 },
@@ -173,7 +173,7 @@ export const CATEGORIES: Array<{
     blurbBn: "নতুন কানেকশন, রাউটার সেটআপ আর লাইনের সমস্যা।",
     blurb: "New connections, router setup and line problems.",
     icon: "wifi",
-    image: "/services/wifi.svg",
+    image: "/services/wifi.jpg",
     flow: "STANDARD",
     offerings: [
       { slug: "new-connection", nameBn: "নতুন কানেকশন", name: "New connection", detailBn: "ক্যাবল, রাউটার কনফিগার আর প্রথম মাসের সেটআপ।", detail: "Cable, router configuration and first-month setup.", pricing: "FIXED", price: 1000, durationMin: 120 },
@@ -190,7 +190,7 @@ export const CATEGORIES: Array<{
     blurbBn: "ফ্যান, লাইট, ওয়্যারিং, IPS আর মিটারের কাজ।",
     blurb: "Fans, lights, wiring, IPS and meters.",
     icon: "zap",
-    image: "/services/electrician.svg",
+    image: "/services/electrician.jpg",
     flow: "STANDARD",
     offerings: [
       { slug: "fan-light", nameBn: "ফ্যান বা লাইট", name: "Fan or light", detailBn: "ফ্যান, লাইট, সুইচ বা সকেট লাগানো বা মেরামত।", detail: "Fit or repair a fan, light, switch or socket.", pricing: "FIXED", price: 250, durationMin: 60 },
@@ -207,7 +207,7 @@ export const CATEGORIES: Array<{
     blurbBn: "লিকেজ, ট্যাপ, বেসিন আর পানির পাম্প।",
     blurb: "Leaks, taps, basins and water pumps.",
     icon: "droplet",
-    image: "/services/plumber.svg",
+    image: "/services/plumber.jpg",
     flow: "STANDARD",
     offerings: [
       { slug: "leakage", nameBn: "লিকেজ মেরামত", name: "Leak repair", detailBn: "পাইপ বা দেয়ালের লিকেজ। দেখে দাম জানানো হবে।", detail: "Pipe or wall leaks. Priced after a visit.", pricing: "QUOTE", price: 300, durationMin: 120 },
@@ -224,7 +224,7 @@ export const CATEGORIES: Array<{
     blurbBn: "ডিপ ক্লিন, কিচেন আর বাথরুম পরিষ্কার।",
     blurb: "Deep cleans, kitchens and bathrooms.",
     icon: "spark",
-    image: "/services/cleaning.svg",
+    image: "/services/home-cleaning.jpg",
     flow: "STANDARD",
     offerings: [
       { slug: "deep-clean", nameBn: "ডিপ ক্লিন", name: "Deep clean", detailBn: "পুরো বাসা, মেঝে থেকে জানালা – প্রতি রুম।", detail: "The whole home, floor to windows – per room.", pricing: "PER_ROOM", price: 800, minQty: 1, durationMin: 240 },
@@ -241,7 +241,7 @@ export const CATEGORIES: Array<{
     blurbBn: "রুম সংখ্যা, টিম আর কত দিন বলুন। পুরো টিম পাঠাব।",
     blurb: "Tell us rooms, team size and days. We send a full crew.",
     icon: "building",
-    image: "/services/resort-cleaning.svg",
+    image: "/services/resort-cleaning.jpg",
     flow: "TEAM",
     offerings: [
       { slug: "room-turnover", nameBn: "রুম টার্নওভার", name: "Room turnover", detailBn: "চেক-আউটের পর রুম রেডি করা – প্রতি রুম প্রতি দিন।", detail: "Rooms made ready after check-out – per room per day.", pricing: "PER_ROOM", price: 250, minQty: 5, durationMin: 480 },
@@ -257,7 +257,7 @@ export const CATEGORIES: Array<{
     blurbBn: "এসি গ্যাস, ইনস্টল আর ফ্রিজ মেরামত।",
     blurb: "AC gas, installs and fridge repair.",
     icon: "snow",
-    image: "/services/ac.svg",
+    image: "/services/ac-fridge.jpg",
     flow: "STANDARD",
     offerings: [
       { slug: "ac-repair", nameBn: "এসি মেরামত", name: "AC repair", detailBn: "ঠান্ডা হয় না, পানি পড়ে, শব্দ করে। দেখে দাম জানানো হবে।", detail: "Not cooling, leaking or noisy. Priced after a visit.", pricing: "QUOTE", price: 500, durationMin: 120 },
@@ -274,7 +274,7 @@ export const CATEGORIES: Array<{
     blurbBn: "বাসা বা অফিস বদল, ফার্নিচার টানা, পিকআপ ভ্যান।",
     blurb: "Home or office moves, furniture, pickup vans.",
     icon: "truck",
-    image: "/services/movers.svg",
+    image: "/services/shifting.jpg",
     flow: "STANDARD",
     offerings: [
       { slug: "house-shift", nameBn: "বাসা বদল", name: "House move", detailBn: "লোক, প্যাকিং আর গাড়ি। দেখে দাম জানানো হবে।", detail: "Crew, packing and a vehicle. Priced after a visit.", pricing: "QUOTE", price: 300, durationMin: 360 },
@@ -290,7 +290,7 @@ export const CATEGORIES: Array<{
     blurbBn: "যেকোনো ছোট কাজের জন্য বিশ্বস্ত লোক।",
     blurb: "A trusted pair of hands for any small job.",
     icon: "hardhat",
-    image: "/services/labour.svg",
+    image: "/services/labour.jpg",
     flow: "STANDARD",
     offerings: [
       { slug: "hourly-helper", nameBn: "ঘণ্টা চুক্তিতে লোক", name: "Hourly helper", detailBn: "ঘর গোছানো, বাজার টানা, ছোট কাজ।", detail: "Tidying, carrying shopping, small jobs.", pricing: "PER_HOUR", price: 200, minQty: 2, durationMin: 120 },
@@ -306,7 +306,7 @@ export const CATEGORIES: Array<{
     blurbBn: "বাইক, কার, মাইক্রো আর ছাদখোলা জিপ – ড্রাইভারসহ। মেরিন ড্রাইভ ঘুরতে বা শহরের কাজে।",
     blurb: "Bikes, cars, microbuses and open-roof jeeps with a driver. Cruise Marine Drive or get around town.",
     icon: "car",
-    image: "/services/rent-a-car.svg",
+    image: "/services/rent-a-car.jpg",
     flow: "RENTAL",
     offerings: [
       { slug: "bike", nameBn: "বাইক / স্কুটার", name: "Bike / scooter", detailBn: "নিজে চালাবেন, হেলমেটসহ। ঘণ্টা, হাফ-ডে বা সারা দিন। তেল আলাদা।", detail: "Self-drive with helmet, by the hour, half-day or full day. Fuel extra.", pricing: "PER_DAY", price: 800, durationMin: 720 },
@@ -323,7 +323,7 @@ export const CATEGORIES: Array<{
     blurbBn: "তালিকায় নেই? আপনার কাজটা লিখুন, আমরা কল দিয়ে দাম জানাব।",
     blurb: "Not on the list? Describe the job and we'll call with a price.",
     icon: "pencil",
-    image: "/services/other.svg",
+    image: "/services/other.jpg",
     flow: "CUSTOM",
     offerings: [
       { slug: "custom-job", nameBn: "আপনার কাজটা লিখুন", name: "Describe your job", detailBn: "নিজের ভাষায় লিখুন কী লাগবে। আমাদের টিম কল দিয়ে দাম জানাবে।", detail: "Tell us in your own words. Our team will call with a price.", pricing: "QUOTE", price: 0, durationMin: 60 },
