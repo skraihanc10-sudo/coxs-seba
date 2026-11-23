@@ -421,7 +421,8 @@ async function ensureOwner() {
  */
 async function ensureDemoVehicles(shop: { id: string }) {
   const category = await db.serviceCategory.findFirst({ where: { shopId: shop.id, flow: "RENTAL" }, include: { offerings: true } })
-  if (!category || (await db.vehicle.count({ where: { shopId: shop.id } }))) return
+  if (!category) return
+  const existingCount = await db.vehicle.count({ where: { shopId: shop.id } })
   const byType = Object.fromEntries(category.offerings.map((o) => [o.slug, o.id]))
   type Route = { name: string; spots: string; hours: string; capacity: string; price: number }
   const jeepRoutes: Route[] = [
@@ -447,6 +448,24 @@ async function ensureDemoVehicles(shop: { id: string }) {
     { type: "chander-gari", photo: "jeep-crv", title: "Chander gari (Toyota open-roof jeep)", titleBn: "চান্দের গাড়ি (টয়োটা ছাদখোলা জিপ)", seats: 13, hour: 0, half: 0, day: 0, minHours: 1, specs: "Open roof, 7–13 people, Driver included, Route packages", detail: "The classic Cox's Bazar chander gari: open roof, Marine Drive wind, with driver. Pick a route package below.", detailBn: "কক্সবাজারের আসল চান্দের গাড়ি: ছাদখোলা, মেরিন ড্রাইভের বাতাস, ড্রাইভারসহ। নিচে রুট প্যাকেজ বেছে নিন।", routes: jeepRoutes },
     { type: "bus", photo: "micro-hiace", routes: busRoutes, title: "Toyota Hiace microbus (11 seats)", titleBn: "টয়োটা হাইয়েস মাইক্রোবাস (১১ সিট)", seats: 11, hour: 900, half: 4000, day: 6500, minHours: 3, specs: "AC, 11 seats, Driver included", detail: "For groups: Teknaf, Inani, Ramu day tours with driver and fuel.", detailBn: "গ্রুপের জন্য: টেকনাফ, ইনানী, রামু ডে ট্যুর, ড্রাইভার ও তেলসহ।" },
   ]
+  if (existingCount) {
+    // Demo vehicles from an earlier version: give them their route packages and the
+    // chander-gari naming once, without touching anything the admin edited.
+    let patched = 0
+    for (const v of fleet) {
+      const row = await db.vehicle.findFirst({ where: { shopId: shop.id, photos: `/demo/vehicles/${v.photo}.jpg` }, include: { routes: true } })
+      if (!row) continue
+      if (v.routes && !row.routes.length) {
+        await db.vehicleRoute.createMany({ data: v.routes.map((r, j) => ({ ...r, vehicleId: row.id, sort: j })) })
+        patched++
+      }
+      if (v.photo === "jeep-crv" && row.title === "Marine Drive jeep (open roof)") {
+        await db.vehicle.update({ where: { id: row.id }, data: { title: v.title, titleBn: v.titleBn, seats: v.seats, specs: v.specs, detail: v.detail, detailBn: v.detailBn, pricePerHour: v.hour, pricePerHalfDay: v.half, pricePerDay: v.day } })
+      }
+    }
+    if (patched) console.log(`Demo fleet: route packages added to ${patched} vehicles`)
+    return
+  }
   let n = 0
   for (const [i, v] of fleet.entries()) {
     const offeringId = byType[v.type] ?? category.offerings[0]?.id
