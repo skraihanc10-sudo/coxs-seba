@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { ChevronLeft } from "lucide-react"
+import { BadgeCheck, ChevronLeft, MessageSquareText, ShieldCheck, Wallet } from "lucide-react"
 import type { Locale } from "@/lib/format"
 import { taka } from "@/lib/format"
 import { flowFor, statusText, statusTone } from "@/lib/booking-flow"
@@ -93,5 +93,31 @@ export function Photos({ photos, locale }: { photos: Array<{ id: string; path: s
         </a>
       ))}
     </div>
+  )
+}
+
+/** Three small trust points under a price card: verified, fixed price, pay at the end, chat. */
+export function TrustStrip({ locale, items }: { locale: Locale; items?: Array<[string, string]> }) {
+  const bn = locale === "bn"
+  const rows: Array<[typeof ShieldCheck, string, string]> = items
+    ? items.map(([a, b], i) => [[ShieldCheck, BadgeCheck, Wallet, MessageSquareText][i % 4], a, b])
+    : [
+        [ShieldCheck, bn ? "যাচাই করা" : "Verified", bn ? "HANDYO অফিস দেখে অনুমোদন দেয়" : "Approved by the HANDYO office"],
+        [BadgeCheck, bn ? "দাম আগেই লেখা" : "Price up front", bn ? "লুকানো চার্জ নেই" : "No hidden charges"],
+        [Wallet, bn ? "পরে পেমেন্ট" : "Pay at the end", bn ? "ক্যাশ / বিকাশ / নগদ" : "Cash / bKash / Nagad"],
+        [MessageSquareText, bn ? "অ্যাপে চ্যাট" : "In-app chat", bn ? "অফিস ও পার্টনারের সাথে" : "With office and partner"],
+      ]
+  return (
+    <ul className="grid grid-cols-2 gap-2">
+      {rows.map(([Icon, title, body]) => (
+        <li key={title} className="flex items-start gap-2 rounded-2xl bg-paper p-3 ring-1 ring-line">
+          <span className="grid size-8 shrink-0 place-items-center rounded-xl bg-brand-soft text-brand" aria-hidden><Icon className="size-4" /></span>
+          <span className="min-w-0">
+            <span className="block text-[13px] font-extrabold leading-tight text-ink">{title}</span>
+            <span className="block text-[11px] leading-snug text-muted-foreground">{body}</span>
+          </span>
+        </li>
+      ))}
+    </ul>
   )
 }

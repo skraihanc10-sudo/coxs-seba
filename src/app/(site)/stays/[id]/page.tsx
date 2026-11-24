@@ -9,7 +9,7 @@ import { taka } from "@/lib/format"
 import { photoUrl, photosOf } from "@/lib/vehicles"
 import { kindText, listOf, liveProperty, propertyName } from "@/lib/stays"
 import { clip, pageMeta } from "@/lib/seo"
-import { PageHeader } from "@/components/bits"
+import { PageHeader, TrustStrip } from "@/components/bits"
 import { breadcrumbs, JsonLd } from "@/components/seo/json-ld"
 
 type Params = Promise<{ id: string }>
@@ -70,11 +70,11 @@ export default async function StayPage({ params }: { params: Params }) {
           <p className="mt-3 inline-flex items-center gap-1 text-sm font-bold text-ink"><MapPin className="size-4 text-brand" aria-hidden /> {bn ? p.addressBn || p.address : p.address || p.addressBn || named(locale, p.area)}</p>
           {listOf(p.amenities).length ? (
             <div className="mt-3 flex flex-wrap gap-1.5 text-xs font-bold text-ink">
-              {listOf(p.amenities).map((a) => <span key={a} className="rounded-full bg-canvas px-3 py-1.5">{a}</span>)}
+              {listOf(p.amenities).map((a) => <span key={a} className="rounded-full bg-paper px-3 py-1.5 ring-1 ring-line">{a}</span>)}
             </div>
           ) : null}
           <p className="mt-4 inline-flex items-center gap-1 text-xs font-bold text-muted-foreground"><Clock3 className="size-3.5" aria-hidden /> {pick(locale, `চেক-ইন ${p.checkIn} · চেক-আউট ${p.checkOut}`, `Check-in ${p.checkIn} · check-out ${p.checkOut}`)}</p>
-          {policy ? <p className="mt-2 rounded-2xl bg-canvas px-4 py-3 text-sm text-muted-foreground">{policy}</p> : null}
+          {policy ? <p className="mt-2 rounded-2xl bg-paper px-4 py-3 text-sm text-muted-foreground ring-1 ring-line">{policy}</p> : null}
         </div>
 
         <div className="space-y-4">
@@ -102,6 +102,7 @@ export default async function StayPage({ params }: { params: Params }) {
               ))}
             </ul>
           </section>
+          <TrustStrip locale={locale} items={[[pick(locale, "যাচাই করা রিসোর্ট", "Verified resort"), pick(locale, "HANDYO অফিস দেখে অনুমোদন দেয়", "Approved by the HANDYO office")], [pick(locale, "রাতপ্রতি দাম লেখা", "Nightly price listed"), pick(locale, "লুকানো চার্জ নেই", "No hidden charges")], [pick(locale, "চেক-ইনে পেমেন্ট", "Pay at check-in"), pick(locale, "ক্যাশ / বিকাশ / নগদ", "Cash / bKash / Nagad")], [pick(locale, "অ্যাপে চ্যাট", "In-app chat"), pick(locale, "রিসোর্ট নিশ্চিত করলে", "Once the resort confirms")]]} />
           <p className="text-xs text-muted-foreground">{pick(locale, "বুকিংয়ের পর HANDYO অফিস রিসোর্টকে জানায়; রিসোর্ট নিশ্চিত করলে নোটিশ পাবেন আর চ্যাটে কথা বলতে পারবেন। পেমেন্ট চেক-ইনে ক্যাশ / বিকাশ / নগদ।", "After booking, the HANDYO office alerts the resort; you get a notice when it confirms and can chat. Pay at check-in by cash / bKash / Nagad.")}</p>
         </div>
       </div>

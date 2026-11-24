@@ -33,14 +33,17 @@ export default async function HowItWorksPage() {
     <div className="mx-auto max-w-2xl">
       <JsonLd data={breadcrumbs([{ name: "HANDYO", path: "/" }, { name: pick(locale, "কীভাবে কাজ করে", "How it works"), path: "/how-it-works" }])} />
       <PageHeader back="/" title={pick(locale, "কীভাবে কাজ করে", "How it works")} sub={pick(locale, `${shop.cityBn} এলাকায় ঘরের সেবা, চার ধাপে।`, `Home services in ${shop.city}, in four steps.`)} />
-      <div className="space-y-3">
-        {steps.map(([title, body]) => (
-          <section key={title} className="card p-5">
-            <h2 className="display text-lg font-extrabold text-ink">{title}</h2>
-            <p className="mt-2 text-[15px] text-muted-foreground">{body}</p>
-          </section>
+      <ol className="relative space-y-3 before:absolute before:top-6 before:bottom-6 before:left-[2.1rem] before:w-px before:bg-line md:before:left-[2.35rem]">
+        {steps.map(([title, body], i) => (
+          <li key={title} className="card card-lift relative flex gap-4 p-4 md:p-5">
+            <span className="step-dot" aria-hidden>{i + 1}</span>
+            <div className="min-w-0">
+              <h2 className="display text-lg font-extrabold text-ink">{title.replace(/^[০-৯0-9]+\.\s*/, "")}</h2>
+              <p className="mt-1.5 text-[15px] text-muted-foreground">{body}</p>
+            </div>
+          </li>
         ))}
-      </div>
+      </ol>
       <Link href="/services" className="btn-primary mt-6 w-full">{pick(locale, "সেবা দেখুন", "See services")}</Link>
     </div>
   )

@@ -24,7 +24,7 @@ export function ShopSwitch({ shops, current, locale, light = false }: { shops: S
   const label = bn ? active.cityBn : active.city
   const tone = light ? "bg-white/15 text-white ring-white/20" : "bg-brand-soft text-brand ring-transparent"
   return (
-    <form ref={form} action={setShopAction} className={`relative inline-flex h-9 max-w-[11rem] items-center gap-1.5 rounded-full px-3 text-xs font-extrabold ring-1 ${tone}`} aria-label={bn ? "শাখা বদলান" : "Change branch"}>
+    <form ref={form} action={setShopAction} className={`relative inline-flex h-9 max-w-[7.5rem] items-center gap-1.5 rounded-full px-2.5 sm:max-w-[11rem] sm:px-3 text-xs font-extrabold ring-1 ${tone}`} aria-label={bn ? "শাখা বদলান" : "Change branch"}>
       <input type="hidden" name="back" value={back} />
       <MapPin className="size-3.5 shrink-0" aria-hidden />
       <span className="truncate">{label}</span>

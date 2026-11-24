@@ -6,11 +6,12 @@ export function Mark({ size = 36 }: { size?: number }) {
   return <img src="/brand/icon-192.png" width={size} height={size} alt="" aria-hidden className="shrink-0 select-none" draggable={false} />
 }
 
-export function Logo({ light = false, size = 34, bn = false }: { light?: boolean; size?: number; bn?: boolean }) {
+/** `short` hides the wordmark on very small screens (phone header). */
+export function Logo({ light = false, size = 34, bn = false, short = false }: { light?: boolean; size?: number; bn?: boolean; short?: boolean }) {
   return (
     <span className="inline-flex items-center gap-2">
       <Mark size={size} />
-      <span className={`display text-[1.15rem] font-extrabold ${light ? "text-white" : "text-ink"}`}>{bn ? brand.nameBn : brand.name}</span>
+      <span className={`display text-[1.15rem] font-extrabold ${light ? "text-white" : "text-ink"} ${short ? "hidden min-[400px]:inline" : ""}`}>{bn ? brand.nameBn : brand.name}</span>
     </span>
   )
 }

@@ -7,6 +7,7 @@ import { pick, words } from "@/lib/i18n"
 import { privateMeta } from "@/lib/seo"
 import { loginAction } from "@/actions/auth"
 import { ActionForm, SubmitButton } from "@/components/forms"
+import { Mark } from "@/components/logo"
 import { PageHeader } from "@/components/bits"
 import { demoAccounts, demoShopStaff, demoWorkers, WORKER_PASSWORD } from "@/theme/demo-accounts"
 import { OtpLogin } from "./otp-login"
@@ -25,6 +26,16 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
 
   return (
     <div className="mx-auto max-w-md">
+      <div className="relative mb-5 overflow-hidden rounded-3xl bg-[linear-gradient(135deg,#0b1f3a,#0a3fb0_60%,#1259e8)] p-5 text-white">
+        <div className="pointer-events-none absolute inset-0 opacity-[0.12] [background-image:radial-gradient(rgba(255,255,255,0.9)_1px,transparent_1px)] [background-size:22px_22px]" aria-hidden />
+        <div className="relative flex items-center gap-3">
+          <Mark size={44} />
+          <div>
+            <p className="display text-xl font-extrabold leading-tight">{pick(locale, "HANDYO-তে স্বাগতম", "Welcome to HANDYO")}</p>
+            <p className="text-xs text-white/75">{pick(locale, "বুকিং, চ্যাট আর নোটিশ এক জায়গায়", "Bookings, chat and alerts in one place")}</p>
+          </div>
+        </div>
+      </div>
       <PageHeader title={t.login} sub={pick(locale, "কাস্টমাররা মোবাইল নম্বর দিয়ে ঢুকুন। কর্মী আর অফিস ইমেইল-পাসওয়ার্ড দিয়ে।", "Customers sign in with a mobile number. Workers and office staff use email and password.")} />
       <nav aria-label={pick(locale, "লগইনের ধরন", "Sign-in type")} className="mb-4 grid grid-cols-2 gap-1 rounded-full bg-paper p-1 ring-1 ring-line text-sm font-bold">
         <Link href={`/login${next ? `?next=${encodeURIComponent(next)}` : ""}`} aria-current={!staff ? "page" : undefined} className={`rounded-full py-2 text-center ${!staff ? "bg-ink text-white" : "text-muted-foreground"}`}>{pick(locale, "মোবাইল নম্বর", "Mobile number")}</Link>

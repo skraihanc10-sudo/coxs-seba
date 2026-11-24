@@ -8,7 +8,7 @@ import { named, pick } from "@/lib/i18n"
 import { taka } from "@/lib/format"
 import { photosOf, photoUrl, specsOf, vehicleById, vehicleName } from "@/lib/vehicles"
 import { clip, pageMeta } from "@/lib/seo"
-import { PageHeader } from "@/components/bits"
+import { PageHeader, TrustStrip } from "@/components/bits"
 import { breadcrumbs, JsonLd } from "@/components/seo/json-ld"
 
 type Params = Promise<{ id: string }>
@@ -82,7 +82,7 @@ export default async function VehiclePage({ params }: { params: Params }) {
           <div className="mt-3 flex flex-wrap gap-1.5 text-xs font-bold text-ink">
             <span className="inline-flex items-center gap-1 rounded-full bg-canvas px-3 py-1.5"><Users className="size-3.5" aria-hidden /> {pick(locale, `${v.seats} সিট`, `${v.seats} seats`)}</span>
             {v.plate ? <span className="rounded-full bg-canvas px-3 py-1.5">{v.plate}</span> : null}
-            {specsOf(v).map((s) => <span key={s} className="rounded-full bg-canvas px-3 py-1.5">{s}</span>)}
+            {specsOf(v).map((s) => <span key={s} className="rounded-full bg-paper px-3 py-1.5 ring-1 ring-line">{s}</span>)}
           </div>
         </div>
 
@@ -127,6 +127,7 @@ export default async function VehiclePage({ params }: { params: Params }) {
           ) : null}
 
           {!hasRates && !v.routes.length ? <p className="card p-4 text-sm text-muted-foreground">{pick(locale, "এই গাড়ির দাম এখনো দেওয়া হয়নি।", "No prices set for this vehicle yet.")}</p> : null}
+          <TrustStrip locale={locale} />
           <p className="text-xs text-muted-foreground">{pick(locale, "বুকিংয়ের পর HANDYO অফিস গাড়ির মালিকের সাথে মিলিয়ে দেয়; সময় ও পিকআপ চ্যাটে ঠিক হয়। পেমেন্ট কাজ শেষে ক্যাশ / বিকাশ / নগদ।", "After booking, the HANDYO office connects you with the owner; time and pickup are settled in chat. Pay cash / bKash / Nagad when done.")}</p>
         </div>
       </div>

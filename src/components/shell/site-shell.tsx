@@ -36,9 +36,9 @@ export async function SiteShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-dvh flex-col">
       <header className="sticky top-0 z-30 border-b border-line bg-paper/90 backdrop-blur">
-        <div className="mx-auto flex h-16 max-w-6xl items-center gap-3 px-4 md:gap-4 md:px-6">
+        <div className="mx-auto flex h-16 max-w-6xl items-center gap-2 px-3 sm:gap-3 sm:px-4 md:gap-4 md:px-6">
           <Link href="/" aria-label={`${brand.name} ${pick(locale, "হোম", "home")}`}>
-            <Logo bn={bn} />
+            <Logo bn={bn} short />
           </Link>
           <nav aria-label={pick(locale, "প্রধান মেনু", "Main menu")} className="ml-4 hidden items-center gap-6 md:flex">
             <TopNav
@@ -50,7 +50,7 @@ export async function SiteShell({ children }: { children: React.ReactNode }) {
               ]}
             />
           </nav>
-          <div className="ml-auto flex items-center gap-2">
+          <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
             <ShopSwitch shops={shopOptions} current={shop.slug} locale={locale} />
             <Link href="/partner" className="hidden items-center gap-1.5 rounded-full bg-brand-soft px-3.5 py-2 text-xs font-extrabold text-brand transition hover:bg-brand hover:text-white lg:inline-flex">
               <Handshake className="size-3.5" aria-hidden /> {pick(locale, "পার্টনার হোন", "Become a partner")}

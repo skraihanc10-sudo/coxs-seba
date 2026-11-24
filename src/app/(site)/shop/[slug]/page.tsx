@@ -9,7 +9,7 @@ import { taka } from "@/lib/format"
 import { photoUrl, photosOf } from "@/lib/vehicles"
 import { priceRange, productBySlug, productName, shopRules } from "@/lib/shop"
 import { clip, pageMeta } from "@/lib/seo"
-import { PageHeader } from "@/components/bits"
+import { PageHeader, TrustStrip } from "@/components/bits"
 import { ProductBuyBox } from "@/components/product-buy-box"
 import { breadcrumbs, JsonLd } from "@/components/seo/json-ld"
 
@@ -65,11 +65,15 @@ export default async function ProductPage({ params }: { params: Params }) {
         <div className="space-y-4">
           <ProductBuyBox locale={locale} productId={p.id} variants={p.variants.filter((v) => v.active).map((v) => ({ id: v.id, label: v.label, price: v.price, oldPrice: v.oldPrice, stock: v.stock }))} />
           {detail ? <p className="text-[15px] text-muted-foreground">{detail}</p> : null}
-          <ul className="space-y-1 rounded-2xl bg-canvas px-4 py-3 text-sm text-muted-foreground">
-            <li>✓ {pick(locale, `সরাসরি কক্সবাজার থেকে কুরিয়ারে, ডেলিভারি চার্জ ${taka(rules.delivery, locale)}${rules.freeAbove ? ` (${taka(rules.freeAbove, locale)}-এর ওপরে ফ্রি)` : ""}`, `Courier straight from Cox's Bazar, delivery ${taka(rules.delivery, locale)}${rules.freeAbove ? ` (free above ${taka(rules.freeAbove, locale)})` : ""}`)}</li>
-            <li>✓ {pick(locale, "পণ্য হাতে পেয়ে দেখে টাকা দিন (COD), বিকাশ / নগদও চলে", "Check the goods then pay (COD); bKash / Nagad also accepted")}</li>
-            <li>✓ {pick(locale, `ন্যূনতম অর্ডার ${taka(rules.minOrder, locale)}`, `Minimum order ${taka(rules.minOrder, locale)}`)}</li>
-          </ul>
+          <TrustStrip
+            locale={locale}
+            items={[
+              [pick(locale, "কক্সবাজার থেকে কুরিয়ার", "Courier from Cox's Bazar"), pick(locale, `ডেলিভারি ${taka(rules.delivery, locale)}${rules.freeAbove ? `, ${taka(rules.freeAbove, locale)}-এর ওপরে ফ্রি` : ""}`, `Delivery ${taka(rules.delivery, locale)}${rules.freeAbove ? `, free above ${taka(rules.freeAbove, locale)}` : ""}`)],
+              [pick(locale, "ন্যূনতম অর্ডার", "Minimum order"), taka(rules.minOrder, locale)],
+              [pick(locale, "হাতে পেয়ে পেমেন্ট", "Pay on delivery"), pick(locale, "COD, বিকাশ / নগদও চলে", "COD; bKash / Nagad too")],
+              [pick(locale, "দোকান অনুযায়ী পার্সেল", "Parcel per store"), pick(locale, "প্রতিটা দোকান আলাদা পাঠায়", "Each store ships its own")],
+            ]}
+          />
         </div>
       </div>
     </div>
