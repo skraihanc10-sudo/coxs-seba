@@ -57,12 +57,18 @@ export function VehicleMarket({ locale, vehicles, types, fallback }: { locale: L
       ) : null}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {list.map((v) => (
-          <article key={v.id} className="card flex flex-col overflow-hidden p-3">
+          <article key={v.id} className="card card-lift flex flex-col overflow-hidden p-3">
             <Link href={v.detailHref} className="relative block aspect-[16/10] w-full overflow-hidden rounded-2xl bg-canvas" aria-label={v.name}>
-              {v.cover || fallback ? (
+              {v.cover ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={v.cover ?? fallback ?? ""} alt={v.cover ? v.name : ""} className="h-full w-full object-cover transition duration-500 hover:scale-105" loading="lazy" />
-              ) : null}
+                <img src={v.cover} alt={v.name} className="h-full w-full object-cover transition duration-500 hover:scale-105" loading="lazy" />
+              ) : (
+                <span className="grid h-full w-full place-items-center bg-[linear-gradient(135deg,#eaf1ff,#dbe7ff)] text-brand/60" aria-hidden>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  {fallback ? <img src={fallback} alt="" className="h-full w-full object-cover opacity-30 blur-[1px]" loading="lazy" /> : null}
+                  <span className="absolute rounded-full bg-white/90 px-3 py-1 text-xs font-bold text-ink">{T("ছবি শিগগির", "Photo coming")}</span>
+                </span>
+              )}
               <span className="absolute top-3 left-3 rounded-full bg-black/70 px-3 py-1 text-xs font-bold text-white">{v.type}</span>
               {v.city ? <span className="absolute top-3 right-3 inline-flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-bold text-ink"><MapPin className="size-3" aria-hidden /> {v.city}</span> : null}
             </Link>

@@ -60,12 +60,18 @@ export function StayMarket({ locale, properties, fallback }: { locale: Locale; p
       {!list.length ? <p className="rounded-2xl bg-canvas px-4 py-3 text-sm text-muted-foreground">{T("এই ফিল্টারে কিছু নেই।", "Nothing matches this filter.")}</p> : null}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {list.map((p) => (
-          <article key={p.id} className="card group flex flex-col overflow-hidden p-3">
+          <article key={p.id} className="card card-lift group flex flex-col overflow-hidden p-3">
             <Link href={p.href} className="relative block aspect-[16/10] w-full overflow-hidden rounded-2xl bg-canvas" aria-label={p.name}>
-              {p.cover || fallback ? (
+              {p.cover ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={p.cover ?? fallback ?? ""} alt={p.cover ? p.name : ""} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" loading="lazy" />
-              ) : null}
+                <img src={p.cover} alt={p.name} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" loading="lazy" />
+              ) : (
+                <span className="grid h-full w-full place-items-center bg-[linear-gradient(135deg,#eaf1ff,#dbe7ff)]" aria-hidden>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  {fallback ? <img src={fallback} alt="" className="h-full w-full object-cover opacity-30 blur-[1px]" loading="lazy" /> : null}
+                  <span className="absolute rounded-full bg-white/90 px-3 py-1 text-xs font-bold text-ink">{T("ছবি শিগগির", "Photo coming")}</span>
+                </span>
+              )}
               <span className="absolute top-3 left-3 rounded-full bg-black/70 px-3 py-1 text-xs font-bold text-white">{p.kindText}</span>
               {p.fromNight ? <span className="absolute right-3 bottom-3 rounded-full bg-white/95 px-3 py-1 text-xs font-extrabold text-ink shadow">{T("রাতপ্রতি", "from")} {taka(p.fromNight, locale)}{T(" থেকে", "/night")}</span> : null}
             </Link>

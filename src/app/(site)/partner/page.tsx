@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { BadgeCheck, LayoutDashboard, MessageCircle, Tag } from "lucide-react"
+import { BadgeCheck, Building2, Car, LayoutDashboard, MessageCircle, Store, Tag } from "lucide-react"
 import { getLocale } from "@/lib/auth"
 import { currentShop } from "@/lib/shops"
 import { pick } from "@/lib/i18n"
@@ -46,6 +46,20 @@ export default async function PartnerPage() {
       <JsonLd data={breadcrumbs([{ name: "HANDYO", path: "/" }, { name: pick(locale, "পার্টনার হোন", "Become a partner"), path: "/partner" }])} />
       <PageHeader back="/" title={pick(locale, "গাড়ি ভাড়া দিয়ে আয় করুন", "Earn by renting out your vehicle")} sub={pick(locale, `${shop.cityBn} এলাকায় আপনার গাড়ি, মাইক্রো বা বাইক HANDYO-র মাধ্যমে ভাড়া দিন।`, `Rent out your car, microbus or bike in ${shop.city} through HANDYO.`)} />
 
+      <nav aria-label={pick(locale, "পার্টনার ধরন", "Partner type")} className="mb-5 grid grid-cols-3 gap-2">
+        {[
+          ["/partner", Car, pick(locale, "গাড়ি", "Vehicle"), true],
+          ["/partner/resort", Building2, pick(locale, "রিসোর্ট", "Resort"), false],
+          ["/partner/store", Store, pick(locale, "দোকান", "Store"), false],
+        ].map(([href, Icon, label, on]) => {
+          const I = Icon as typeof Car
+          return (
+            <Link key={href as string} href={href as string} className={`card flex flex-col items-center gap-1.5 px-2 py-3 text-xs font-extrabold transition hover:ring-brand/40 ${on ? "bg-brand text-white ring-brand" : "text-ink"}`} aria-current={on ? "page" : undefined}>
+              <I className="size-5" aria-hidden /> {label as string}
+            </Link>
+          )
+        })}
+      </nav>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         {benefits.map((b) => (
           <section key={b.title} className="card p-4">

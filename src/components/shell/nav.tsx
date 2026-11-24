@@ -49,6 +49,20 @@ function Badge({ count }: { count?: number }) {
   )
 }
 
+/** Desktop top-bar links with an active underline. */
+export function TopNav({ items }: { items: Array<{ href: string; label: string }> }) {
+  const path = usePathname()
+  return (
+    <>
+      {items.map((item) => (
+        <Link key={item.href} href={item.href} className="top-link" data-on={path === item.href || path.startsWith(`${item.href}/`)}>
+          {item.label}
+        </Link>
+      ))}
+    </>
+  )
+}
+
 /** Phone bottom tabs. Up to five items. */
 export function BottomNav({ items }: { items: NavItem[] }) {
   const path = usePathname()

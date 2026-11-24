@@ -107,7 +107,23 @@ export default async function CategoryPage({ params }: { params: Params }) {
           breadcrumbs([{ name: "HANDYO", path: "/" }, { name: pick(locale, "সব সেবা", "All services"), path: "/services" }, { name: named(locale, category), path: `/services/${category.slug}` }]),
         ]}
       />
-      <PageHeader back="/services" title={named(locale, category)} sub={bn ? category.blurbBn : category.blurb} action={<span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-brand-soft text-brand" aria-hidden><CategoryIcon name={category.icon} /></span>} />
+      {category.image ? (
+        <section className="relative mb-5 overflow-hidden rounded-[2rem] bg-ink text-white shadow-[0_20px_50px_rgba(11,31,58,0.2)]" aria-labelledby="cat-title">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={category.image} alt="" className="absolute inset-0 h-full w-full object-cover" />
+          <span className="absolute inset-0 bg-[linear-gradient(to_right,rgba(5,15,35,0.92)_0%,rgba(5,15,35,0.7)_55%,rgba(5,15,35,0.25)_100%)]" aria-hidden />
+          <div className="relative flex min-h-48 flex-col justify-end gap-2 p-5 md:min-h-60 md:p-8">
+            <Link href="/services" className="glass inline-flex w-fit items-center gap-1 rounded-full px-3 py-1.5 text-xs font-bold">← {pick(locale, "সব সেবা", "All services")}</Link>
+            <div className="flex items-center gap-3">
+              <span className="glass grid size-11 shrink-0 place-items-center rounded-2xl" aria-hidden><CategoryIcon name={category.icon} className="size-5" /></span>
+              <h1 id="cat-title" className="display text-2xl font-extrabold leading-tight md:text-4xl">{named(locale, category)}</h1>
+            </div>
+            <p className="max-w-2xl text-sm text-white/85 md:text-base">{bn ? category.blurbBn : category.blurb}</p>
+          </div>
+        </section>
+      ) : (
+        <PageHeader back="/services" title={named(locale, category)} sub={bn ? category.blurbBn : category.blurb} action={<span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-brand-soft text-brand" aria-hidden><CategoryIcon name={category.icon} /></span>} />
+      )}
       {category.flow === "LAUNDRY" ? (
         <p className="mb-4 rounded-2xl bg-teal-50 px-4 py-3 text-sm font-semibold text-teal-900">{pick(locale, "আমাদের রাইডার কাপড় নিয়ে যাবে, আমাদের লন্ড্রিতে পরিষ্কার হবে, রাইডারই ফেরত দেবে।", "Our rider collects, our laundry cleans, and the rider brings it back.")}</p>
       ) : null}

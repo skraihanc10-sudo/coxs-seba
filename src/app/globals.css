@@ -71,6 +71,21 @@
     @apply bg-background text-foreground;
     font-family: var(--font-sans), var(--font-bengali), system-ui, sans-serif;
     font-size: 16px;
+    background-image: radial-gradient(1200px 500px at 50% -200px, rgba(18, 89, 232, 0.08), transparent 70%);
+    background-repeat: no-repeat;
+  }
+  ::selection {
+    background: rgba(18, 89, 232, 0.18);
+  }
+  :focus-visible {
+    outline: 3px solid rgba(18, 89, 232, 0.35);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+  @media (hover: hover) {
+    html {
+      scroll-behavior: smooth;
+    }
   }
   html[lang="bn"] body {
     font-family: var(--font-bengali), var(--font-sans), system-ui, sans-serif;
@@ -95,6 +110,47 @@
   .kpi {
     @apply rounded-2xl bg-paper ring-1 ring-line shadow-[0_1px_2px_rgba(11,31,58,0.04),0_8px_24px_rgba(11,31,58,0.06)];
   }
+  .card-lift {
+    @apply transition duration-300 hover:-translate-y-1 hover:ring-brand/40 hover:shadow-[0_2px_4px_rgba(11,31,58,0.05),0_18px_40px_rgba(11,31,58,0.12)];
+  }
+  .eyebrow {
+    @apply inline-flex items-center gap-1.5 text-[11px] font-extrabold tracking-[0.14em] text-brand uppercase;
+  }
+  .eyebrow::before {
+    content: "";
+    @apply inline-block h-0.5 w-5 rounded-full bg-brand;
+  }
+  .section-head {
+    @apply mb-4 flex items-end justify-between gap-3;
+  }
+  .scroll-x {
+    @apply flex gap-2 overflow-x-auto pb-1;
+    scrollbar-width: none;
+  }
+  .scroll-x::-webkit-scrollbar {
+    display: none;
+  }
+  .glass {
+    @apply bg-white/15 ring-1 ring-white/25 backdrop-blur;
+  }
+  .tile {
+    @apply relative block overflow-hidden rounded-3xl bg-ink text-white ring-1 ring-black/5 shadow-[0_12px_30px_rgba(11,31,58,0.14)];
+  }
+  .tile img {
+    @apply absolute inset-0 h-full w-full object-cover transition duration-700;
+  }
+  .tile:hover img {
+    transform: scale(1.06);
+  }
+  .tile-shade {
+    @apply absolute inset-0 bg-[linear-gradient(to_top,rgba(5,15,35,0.92)_0%,rgba(5,15,35,0.45)_45%,rgba(5,15,35,0.05)_100%)];
+  }
+  .step-dot {
+    @apply grid size-11 shrink-0 place-items-center rounded-2xl bg-[linear-gradient(135deg,var(--brand),var(--brand-deep))] text-base font-extrabold text-white shadow-[0_8px_18px_rgba(18,89,232,0.35)];
+  }
+  .icon-tile {
+    @apply grid size-11 shrink-0 place-items-center rounded-2xl bg-brand-soft text-brand transition;
+  }
   .btn,
   .btn-primary,
   .btn-soft,
@@ -103,7 +159,7 @@
     @apply inline-flex h-12 items-center justify-center gap-2 rounded-xl px-5 text-[15px] font-bold transition active:translate-y-px disabled:pointer-events-none disabled:opacity-50;
   }
   .btn-primary {
-    @apply bg-brand text-white hover:bg-[var(--brand-hover)] shadow-[0_8px_20px_rgba(18,89,232,0.28)];
+    @apply bg-[linear-gradient(135deg,var(--brand),var(--brand-deep))] text-white shadow-[0_8px_20px_rgba(18,89,232,0.28)] hover:brightness-110 hover:shadow-[0_10px_26px_rgba(18,89,232,0.38)];
   }
   .btn-soft {
     @apply bg-brand-soft text-brand hover:bg-[#dbe7ff];
@@ -130,7 +186,7 @@
     @apply inline-flex h-9 items-center rounded-full border border-line bg-paper px-3.5 text-[13px] font-bold text-ink transition hover:border-brand/40;
   }
   .chip[data-on="true"] {
-    @apply border-brand bg-brand text-white;
+    @apply border-brand bg-brand text-white shadow-[0_6px_14px_rgba(18,89,232,0.3)];
   }
   .nav-bottom {
     @apply fixed inset-x-0 bottom-0 z-40 grid border-t border-line bg-paper/95 backdrop-blur md:hidden;
@@ -141,6 +197,20 @@
   }
   .nav-bottom a[data-on="true"] {
     @apply text-brand;
+  }
+  .nav-bottom a[data-on="true"]::before {
+    content: "";
+    @apply absolute top-0 h-0.5 w-8 rounded-b-full bg-brand;
+  }
+  .top-link {
+    @apply relative py-1 text-sm font-bold text-ink/80 transition hover:text-brand;
+  }
+  .top-link[data-on="true"] {
+    @apply text-brand;
+  }
+  .top-link[data-on="true"]::after {
+    content: "";
+    @apply absolute inset-x-0 -bottom-[22px] h-0.5 rounded-t-full bg-brand;
   }
   .side-link {
     @apply flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] font-semibold text-white/75 transition hover:bg-white/10 hover:text-white;

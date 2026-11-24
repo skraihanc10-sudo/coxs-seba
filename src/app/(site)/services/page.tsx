@@ -72,7 +72,7 @@ export default async function ServicesPage({ searchParams }: { searchParams: Pro
             const market = MARKET[c.flow]
             const priceLine = categoryPriceLine(c, locale, taka, unitLabel)
             return (
-              <article key={c.id} className="card group relative flex gap-3 overflow-hidden p-3 transition hover:ring-brand/40 md:gap-5 md:p-4" aria-labelledby={`cat-${c.slug}`}>
+              <article key={c.id} className="card card-lift group relative flex gap-3 overflow-hidden p-3 md:gap-5 md:p-4" aria-labelledby={`cat-${c.slug}`}>
                 <Link href={`/services/${c.slug}`} className="absolute inset-0 rounded-[inherit]" aria-label={named(locale, c)} />
                 <span className="relative block w-32 shrink-0 self-start overflow-hidden rounded-xl bg-brand-soft sm:w-44 md:w-56">
                   {c.image ? (

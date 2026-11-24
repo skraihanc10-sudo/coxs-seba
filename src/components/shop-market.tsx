@@ -102,7 +102,7 @@ function ProductCard({ p, locale, onAdd, onStore }: { p: MarketProduct; locale: 
   const off = v && v.oldPrice > v.price ? Math.round(((v.oldPrice - v.price) / v.oldPrice) * 100) : 0
   const soldOut = !v || v.stock === 0
   return (
-    <article className="card flex flex-col overflow-hidden p-2.5">
+    <article className="card card-lift flex flex-col overflow-hidden p-2.5">
       <Link href={`/shop/${p.slug}`} className="relative block aspect-square w-full overflow-hidden rounded-xl bg-canvas" aria-label={p.name}>
         {p.cover ? (
           // eslint-disable-next-line @next/next/no-img-element
