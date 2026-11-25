@@ -61,10 +61,14 @@ export async function liveStores(shopId: string) {
   return db.store.findMany({ where: { shopId, ...liveStoreWhere }, include: storeInclude, orderBy: [{ sort: "asc" }, { createdAt: "asc" }] })
 }
 
-/** Products customers can buy right now, optionally one category's shelves only. */
-export async function liveProducts(shopId: string, categoryId?: string) {
+/**
+ * Products customers can buy right now, optionally one category's shelves only.
+ * `strict` leaves out the shared shelves (categoryId null): the laundry price
+ * list wants only its own items, never dried fish.
+ */
+export async function liveProducts(shopId: string, categoryId?: string, strict = false) {
   return db.product.findMany({
-    where: { shopId, active: true, variants: { some: { active: true } }, OR: [{ storeId: null }, { store: liveStoreWhere }], ...(categoryId ? { group: { OR: [{ categoryId }, { categoryId: null }] } } : {}) },
+    where: { shopId, active: true, variants: { some: { active: true } }, OR: [{ storeId: null }, { store: liveStoreWhere }], ...(categoryId ? { group: strict ? { categoryId } : { OR: [{ categoryId }, { categoryId: null }] } } : {}) },
     include: productInclude,
     orderBy: [{ sort: "asc" }, { createdAt: "asc" }],
   })
@@ -288,7 +292,7 @@ export async function reviewStore(shopId: string, id: string, decision: "APPROVE
 
 export type CartLine = { variantId: string; qty: number }
 
-export type PricedLine = { productId: string; variantId: string; name: string; nameBn: string; label: string; unitPrice: number; qty: number; lineTotal: number; photo: string; storeId: string; storeName: string; storeNameBn: string; categoryId: string | null }
+export type PricedLine = { productId: string; variantId: string; name: string; nameBn: string; label: string; unitPrice: number; qty: number; lineTotal: number; photo: string; storeId: string; storeName: string; storeNameBn: string; categoryId: string | null; flow: string }
 
 export function shopRules(settings: Record<string, string>) {
   return {
@@ -298,10 +302,21 @@ export function shopRules(settings: Record<string, string>) {
   }
 }
 
+/** Laundry orders by the piece: the rider's pickup + return charge and the minimum order. */
+export function laundryRules(settings: Record<string, string>) {
+  return {
+    delivery: Math.max(0, Number(settings.laundryDelivery) || 0),
+    freeAbove: Math.max(0, Number(settings.laundryFreeAbove) || 0),
+    minOrder: Math.max(0, Number(settings.laundryMinOrder) || 0),
+  }
+}
+
 /** Price a cart against the database (never trust client prices); drops lines that are no longer sold. */
 export async function priceCart(shopId: string, lines: CartLine[]): Promise<PricedLine[]> {
   const ids = Array.from(new Set(lines.map((l) => l.variantId))).slice(0, 40)
   const variants = await db.productVariant.findMany({ where: { id: { in: ids }, active: true, product: { shopId, active: true, OR: [{ storeId: null }, { store: liveStoreWhere }] } }, include: { product: { include: { store: { select: storeSelect }, group: { select: { categoryId: true } } } } } })
+  const catIds = Array.from(new Set(variants.map((v) => v.product.group.categoryId).filter((x): x is string => !!x)))
+  const flows = new Map((await db.serviceCategory.findMany({ where: { id: { in: catIds } }, select: { id: true, flow: true } })).map((c) => [c.id, c.flow]))
   const out: PricedLine[] = []
   for (const l of lines) {
     const v = variants.find((x) => x.id === l.variantId)
@@ -313,6 +328,7 @@ export async function priceCart(shopId: string, lines: CartLine[]): Promise<Pric
       photo: v.product.photos.split(",")[0]?.trim() ?? "",
       storeId: v.product.store?.id ?? "", storeName: v.product.store?.name ?? "HANDYO", storeNameBn: v.product.store?.nameBn ?? "HANDYO",
       categoryId: v.product.group.categoryId,
+      flow: (v.product.group.categoryId && flows.get(v.product.group.categoryId)) || "SHOP",
     })
   }
   return out
@@ -356,7 +372,8 @@ export async function createShopOrder(shopId: string, customer: { id: string; na
   const lines = await priceCart(shopId, input.cart)
   if (!lines.length) throw new AppError("কার্ট খালি। আগে কিছু যোগ করুন।", "Your cart is empty.")
   const settings = await getSettings(shopId)
-  const rules = shopRules(settings)
+  const laundryOnly = lines.every((l) => l.flow === "LAUNDRY")
+  const rules = laundryOnly ? laundryRules(settings) : shopRules(settings)
   const subtotalAll = lines.reduce((n, l) => n + l.lineTotal, 0)
   if (subtotalAll < rules.minOrder) throw new AppError(`ন্যূনতম অর্ডার ৳${rules.minOrder}।`, `Minimum order is ৳${rules.minOrder}.`)
   const method = paymentProvider(input.paymentMethod)
@@ -364,8 +381,8 @@ export async function createShopOrder(shopId: string, customer: { id: string; na
   if (input.addressLine.trim().length < 6) throw new AppError("পুরো ডেলিভারি ঠিকানা লিখুন (বাসা, রোড, এলাকা, জেলা)।", "Enter the full delivery address (house, road, area, district).")
   const area = (await db.serviceArea.findFirst({ where: { shopId, slug: "nationwide" } })) ?? (await db.serviceArea.findFirst({ where: { shopId }, orderBy: { sort: "asc" } }))
   if (!area) throw new AppError("শপের এলাকা সেট নেই।", "The shop has no delivery area configured.")
-  const categories = await db.serviceCategory.findMany({ where: { shopId, flow: "SHOP", active: true }, include: { offerings: { where: { active: true }, orderBy: { sort: "asc" } } }, orderBy: { sort: "asc" } })
-  const fallback = categories[0]
+  const categories = await db.serviceCategory.findMany({ where: { shopId, flow: { in: ["SHOP", "LAUNDRY"] }, active: true }, include: { offerings: { where: { active: true }, orderBy: { sort: "asc" } } }, orderBy: { sort: "asc" } })
+  const fallback = categories.find((c) => c.flow === "SHOP") ?? categories[0]
   if (!fallback || !fallback.offerings[0]) throw new AppError("এই শাখায় শপ চালু নেই।", "This branch has no shop yet.")
   const parcels = parcelsOf(lines)
   const stores = await db.store.findMany({ where: { id: { in: parcels.map((p) => p.storeId).filter(Boolean) } }, include: { worker: { select: { id: true, autoAssign: true, userId: true, user: { select: { name: true } } } } } })
@@ -377,7 +394,11 @@ export async function createShopOrder(shopId: string, customer: { id: string; na
     for (const l of parcel.items) if (l.categoryId) counts.set(l.categoryId, (counts.get(l.categoryId) ?? 0) + l.qty)
     const topId = Array.from(counts.entries()).sort((a, b) => b[1] - a[1])[0]?.[0]
     const category = categories.find((c) => c.id === topId && c.offerings[0]) ?? fallback
-    const delivery = rules.freeAbove && parcel.subtotal >= rules.freeAbove ? 0 : rules.delivery
+    const laundry = category.flow === "LAUNDRY"
+    // Per-piece laundry books against its hidden "by-item" offering; shop parcels use the category's first.
+    const offering = (laundry ? category.offerings.find((o) => o.slug === "by-item") : null) ?? category.offerings[0]
+    const parcelRules = laundry ? laundryRules(settings) : shopRules(settings)
+    const delivery = parcelRules.freeAbove && parcel.subtotal >= parcelRules.freeAbove ? 0 : parcelRules.delivery
     const coupon = couponLeft ? await quoteCoupon(shopId, couponLeft, { categoryId: category.id, work: parcel.subtotal, customerId: customer.id }) : null
     couponLeft = ""
     const discount = coupon?.discount ?? 0
@@ -390,7 +411,7 @@ export async function createShopOrder(shopId: string, customer: { id: string; na
         shopId,
         customerId: customer.id,
         categoryId: category.id,
-        offeringId: category.offerings[0].id,
+        offeringId: offering.id,
         areaId: area.id,
         storeId: store?.id ?? null,
         addressLine: input.addressLine.trim(),
@@ -398,7 +419,7 @@ export async function createShopOrder(shopId: string, customer: { id: string; na
         phone: input.phone,
         contactName: input.contactName.trim() || customer.name,
         visitDate: localToday(),
-        visitSlot: "ডেলিভারি",
+        visitSlot: laundry ? "পিকআপ" : "ডেলিভারি",
         notes: input.notes.trim(),
         pricing: "FIXED",
         unitPrice: parcel.subtotal,
@@ -417,14 +438,14 @@ export async function createShopOrder(shopId: string, customer: { id: string; na
     for (const l of parcel.items) await db.productVariant.updateMany({ where: { id: l.variantId, stock: { gte: 0 } }, data: { stock: { decrement: l.qty } } })
     if (coupon) await db.coupon.update({ where: { id: coupon.coupon.id }, data: { usedCount: { increment: 1 } } })
     const summary = parcel.items.map((l) => `${l.nameBn} (${l.label}) × ${l.qty}`).join(", ")
-    if (store?.worker) await notify([store.worker.userId], { kind: "BOOKING", title: direct ? "নতুন অর্ডার এসেছে (সরাসরি)" : "আপনার দোকানে নতুন অর্ডার", body: `${booking.code} · ${summary} · ৳${parcel.subtotal}${direct ? "" : "। অফিস কনফার্ম করে পাঠাবে।"}`, link: `/worker/jobs/${booking.code}` })
-    await notify(await officeIds(shopId), { kind: "BOOKING", title: "নতুন শপ অর্ডার", body: `${booking.code} · ${parcel.storeNameBn} · ${summary} · ৳${parcel.subtotal + delivery - discount}`, link: `/admin/bookings/${booking.code}` })
+    if (store?.worker) await notify([store.worker.userId], { kind: "BOOKING", title: direct ? "নতুন অর্ডার এসেছে (সরাসরি)" : laundry ? "নতুন লন্ড্রি অর্ডার" : "আপনার দোকানে নতুন অর্ডার", body: `${booking.code} · ${summary} · ৳${parcel.subtotal}${direct ? "" : "। অফিস কনফার্ম করে পাঠাবে।"}`, link: `/worker/jobs/${booking.code}` })
+    await notify(await officeIds(shopId), { kind: "BOOKING", title: laundry ? "নতুন লন্ড্রি অর্ডার (পিস হিসেবে)" : "নতুন শপ অর্ডার", body: `${booking.code} · ${parcel.storeNameBn} · ${summary} · ৳${parcel.subtotal + delivery - discount}`, link: `/admin/bookings/${booking.code}` })
     created.push({ code: booking.code, id: booking.id })
   }
   await notify([customer.id], {
     kind: "BOOKING",
     title: created.length > 1 ? `অর্ডার হয়েছে (${created.length}টা পার্সেল)` : "অর্ডার হয়েছে",
-    body: created.length > 1 ? `${created.map((c) => c.code).join(", ")} – আলাদা দোকান থেকে আলাদা পার্সেলে আসবে।` : `${created[0].code} · কনফার্ম করে কুরিয়ারে পাঠালেই জানাব।`,
+    body: created.length > 1 ? `${created.map((c) => c.code).join(", ")} – আলাদা দোকান থেকে আলাদা পার্সেলে আসবে।` : laundryOnly ? `${created[0].code} · কনফার্ম হলে রাইডার কাপড় নিতে আসবে।` : `${created[0].code} · কনফার্ম করে কুরিয়ারে পাঠালেই জানাব।`,
     link: `/bookings/${created[0].code}`,
   })
   return created

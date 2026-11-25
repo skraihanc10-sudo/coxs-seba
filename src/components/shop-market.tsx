@@ -18,8 +18,9 @@ export type ShopRules = { delivery: number; freeAbove: number; minOrder: number 
  * and add-to-cart, and a sticky cart bar leading to checkout. Prices here are
  * for display; checkout re-prices everything on the server.
  */
-export function ShopMarket({ locale, groups, stores, products, rules, partnerHref }: { locale: Locale; groups: Array<{ id: string; name: string }>; stores: MarketStore[]; products: MarketProduct[]; rules: ShopRules; partnerHref: string }) {
+export function ShopMarket({ locale, groups, stores, products, rules, partnerHref, mode = "shop" }: { locale: Locale; groups: Array<{ id: string; name: string }>; stores: MarketStore[]; products: MarketProduct[]; rules: ShopRules; partnerHref: string; mode?: "shop" | "laundry" }) {
   const bn = locale === "bn"
+  const laundry = mode === "laundry"
   const T = (b: string, e: string) => (bn ? b : e)
   const [groupId, setGroupId] = useState("")
   const [storeId, setStoreId] = useState("")
@@ -35,12 +36,16 @@ export function ShopMarket({ locale, groups, stores, products, rules, partnerHre
     <div className="pb-20">
       <div className="mb-3 flex flex-wrap items-center gap-2 rounded-2xl bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900">
         <Truck className="size-4" aria-hidden />
+        {laundry ? (
+          <span>{T(`কাপড় বেছে প্রতিটার সার্ভিস দিন (ওয়াশ ও আয়রন / শুধু আয়রন / ড্রাই ক্লিন) · রাইডার পিকআপ ও ফেরত ${rules.delivery ? taka(rules.delivery, locale) : "ফ্রি"}${rules.freeAbove && rules.delivery ? ` (${taka(rules.freeAbove, locale)}-এর ওপরে ফ্রি)` : ""}${rules.minOrder ? ` · ন্যূনতম অর্ডার ${taka(rules.minOrder, locale)}` : ""} · কাপড় ফেরত পেয়ে টাকা দিন`, `Pick garments and a service for each (wash & iron / iron only / dry clean) · rider pickup & return ${rules.delivery ? taka(rules.delivery, locale) : "free"}${rules.freeAbove && rules.delivery ? ` (free above ${taka(rules.freeAbove, locale)})` : ""}${rules.minOrder ? ` · minimum order ${taka(rules.minOrder, locale)}` : ""} · pay when your clothes come back`)}</span>
+        ) : (
         <span>{T(`সরাসরি কক্সবাজার থেকে সারা দেশে কুরিয়ার · ডেলিভারি চার্জ ${taka(rules.delivery, locale)} প্রতি পার্সেল${rules.freeAbove ? ` (${taka(rules.freeAbove, locale)}-এর ওপরে ফ্রি)` : ""} · ন্যূনতম অর্ডার ${taka(rules.minOrder, locale)} · পণ্য হাতে পেয়ে টাকা দিন`, `Courier from Cox's Bazar to anywhere in Bangladesh · delivery ${taka(rules.delivery, locale)} per parcel${rules.freeAbove ? ` (free above ${taka(rules.freeAbove, locale)})` : ""} · minimum order ${taka(rules.minOrder, locale)} · pay on delivery`)}</span>
+        )}
       </div>
 
-      {stores.length ? (
+      {stores.length > 1 ? (
         <section className="mb-4">
-          <p className="mb-2 text-xs font-extrabold text-muted-foreground uppercase">{T("দোকান বেছে নিন", "Pick a store")}</p>
+          <p className="mb-2 text-xs font-extrabold text-muted-foreground uppercase">{T(laundry ? "লন্ড্রি বেছে নিন" : "দোকান বেছে নিন", laundry ? "Pick a laundry" : "Pick a store")}</p>
           <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0" role="tablist" aria-label={T("দোকান", "Stores")}>
             <button type="button" role="tab" aria-selected={!storeId} onClick={() => { setStoreId(""); setGroupId("") }} className="chip shrink-0" data-on={!storeId}><Store className="mr-1 size-3.5" aria-hidden /> {T("সব দোকান", "All stores")}</button>
             {stores.map((s) => (
@@ -67,16 +72,18 @@ export function ShopMarket({ locale, groups, stores, products, rules, partnerHre
       ) : null}
       {!list.length ? <p className="rounded-2xl bg-canvas px-4 py-3 text-sm text-muted-foreground">{T("এখনো কোনো পণ্য নেই।", "No products yet.")}</p> : null}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-        {list.map((p) => <ProductCard key={p.id} p={p} locale={locale} onAdd={(v) => add(v.id, p.id, 1)} onStore={() => { setStoreId(p.storeId ?? ""); setGroupId("") }} />)}
+        {list.map((p) => <ProductCard key={p.id} p={p} locale={locale} laundry={laundry} onAdd={(v) => add(v.id, p.id, 1)} onStore={() => { setStoreId(p.storeId ?? ""); setGroupId("") }} />)}
       </div>
 
-      <Link href={partnerHref} className="card mt-6 flex items-center justify-between gap-3 bg-brand-soft p-4 transition hover:ring-brand/40">
-        <div>
-          <p className="font-extrabold text-ink">{T("আপনার শুঁটকি বা আচারের দোকান HANDYO-তে আনুন", "Bring your dried-fish or pickle store to HANDYO")}</p>
-          <p className="text-sm text-muted-foreground">{T("নিজের দোকানের নামে পণ্য দিন, সারা দেশের অর্ডার পান; HANDYO মাত্র ১০% রাখে।", "List under your own store name, get orders nationwide; HANDYO keeps only 10%.")}</p>
-        </div>
-        <span className="shrink-0 font-extrabold text-brand">{T("দোকান খুলুন →", "Open a store →")}</span>
-      </Link>
+      {laundry ? null : (
+        <Link href={partnerHref} className="card mt-6 flex items-center justify-between gap-3 bg-brand-soft p-4 transition hover:ring-brand/40">
+          <div>
+            <p className="font-extrabold text-ink">{T("আপনার শুঁটকি বা আচারের দোকান HANDYO-তে আনুন", "Bring your dried-fish or pickle store to HANDYO")}</p>
+            <p className="text-sm text-muted-foreground">{T("নিজের দোকানের নামে পণ্য দিন, সারা দেশের অর্ডার পান; HANDYO মাত্র ১০% রাখে।", "List under your own store name, get orders nationwide; HANDYO keeps only 10%.")}</p>
+          </div>
+          <span className="shrink-0 font-extrabold text-brand">{T("দোকান খুলুন →", "Open a store →")}</span>
+        </Link>
+      )}
 
       {count > 0 ? (
         <div className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-paper/95 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur md:bottom-0">
@@ -93,7 +100,7 @@ export function ShopMarket({ locale, groups, stores, products, rules, partnerHre
   )
 }
 
-function ProductCard({ p, locale, onAdd, onStore }: { p: MarketProduct; locale: Locale; onAdd: (v: MarketVariant) => void; onStore: () => void }) {
+function ProductCard({ p, locale, onAdd, onStore, laundry = false }: { p: MarketProduct; locale: Locale; onAdd: (v: MarketVariant) => void; onStore: () => void; laundry?: boolean }) {
   const bn = locale === "bn"
   const T = (b: string, e: string) => (bn ? b : e)
   const [variantId, setVariantId] = useState(p.variants[0]?.id ?? "")
@@ -115,7 +122,7 @@ function ProductCard({ p, locale, onAdd, onStore }: { p: MarketProduct; locale: 
         {p.storeName ? <button type="button" onClick={onStore} className="inline-flex items-center gap-1 self-start text-[11px] font-bold text-brand hover:underline"><Store className="size-3" aria-hidden /> {p.storeName}</button> : null}
         <h3 className="line-clamp-2 text-[15px] font-extrabold leading-snug text-ink"><Link href={`/shop/${p.slug}`} className="hover:text-brand">{p.name}</Link></h3>
         {p.variants.length > 1 ? (
-          <select value={variantId} onChange={(e) => setVariantId(e.target.value)} className="field h-9 text-xs" aria-label={T("সাইজ / ওজন", "Size / weight")}>
+          <select value={variantId} onChange={(e) => setVariantId(e.target.value)} className="field h-9 text-xs" aria-label={T(laundry ? "সার্ভিস" : "সাইজ / ওজন", laundry ? "Service" : "Size / weight")}>
             {p.variants.map((x) => <option key={x.id} value={x.id}>{x.label} · {taka(x.price, locale)}</option>)}
           </select>
         ) : v ? <p className="text-xs font-semibold text-muted-foreground">{v.label}</p> : null}

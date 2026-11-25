@@ -23,6 +23,10 @@ export const SETTING_DEFAULTS: Record<string, string> = {
   shopDelivery: "130",
   shopFreeAbove: "0",
   shopMinOrder: "400",
+  /** Per-piece laundry: rider pickup + return charge, free above, minimum order. */
+  laundryDelivery: "50",
+  laundryFreeAbove: "500",
+  laundryMinOrder: "150",
   payCash: "1",
   payBkash: "1",
   payNagad: "1",

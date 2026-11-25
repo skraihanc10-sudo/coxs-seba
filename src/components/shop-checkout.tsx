@@ -12,7 +12,7 @@ import { photoUrl } from "@/lib/vehicles"
 import { useCart } from "@/lib/cart"
 import type { ShopRules } from "./shop-market"
 
-type Line = { variantId: string; productId: string; name: string; nameBn: string; label: string; unitPrice: number; qty: number; lineTotal: number; photo: string }
+type Line = { variantId: string; productId: string; name: string; nameBn: string; label: string; unitPrice: number; qty: number; lineTotal: number; photo: string; flow?: string }
 type Parcel = { storeId: string; storeName: string; storeNameBn: string; subtotal: number; items: Line[] }
 
 /**
@@ -20,7 +20,7 @@ type Parcel = { storeId: string; storeName: string; storeNameBn: string; subtota
  * delivery details, coupon, payment and OTP for guests. The cart is sent as
  * JSON; the server prices it again and creates one order per parcel.
  */
-export function ShopCheckout({ locale, categoryId, rules, payments, user, shopHref }: { locale: Locale; categoryId: string; rules: ShopRules; payments: Array<{ id: string; label: string; labelBn: string; hint: string; hintBn: string }>; user: { name: string; phone: string; address: string } | null; shopHref: string }) {
+export function ShopCheckout({ locale, categoryId, rules: shopRules, laundryRules, payments, user, shopHref: shopLink }: { locale: Locale; categoryId: string; rules: ShopRules; laundryRules: ShopRules; payments: Array<{ id: string; label: string; labelBn: string; hint: string; hintBn: string }>; user: { name: string; phone: string; address: string } | null; shopHref: string }) {
   const bn = locale === "bn"
   const T = (b: string, e: string) => (bn ? b : e)
   const { cart, setQty, clear } = useCart()
@@ -56,6 +56,10 @@ export function ShopCheckout({ locale, categoryId, rules, payments, user, shopHr
   }, [cartJson])
 
   const list = parcels ?? []
+  // A cart of only laundry pieces is a pickup job: its own charges, and the rider collects instead of a courier.
+  const laundry = list.length > 0 && list.every((p) => p.items.every((l) => l.flow === "LAUNDRY"))
+  const rules = laundry ? laundryRules : shopRules
+  const shopHref = laundry ? "/services/laundry" : shopLink
   const subtotal = list.reduce((n, p) => n + p.subtotal, 0)
   const delivery = list.reduce((n, p) => n + (rules.freeAbove && p.subtotal >= rules.freeAbove ? 0 : rules.delivery), 0)
   const discount = coupon ? Math.min(coupon.discount, list[0]?.subtotal ?? 0) : 0
@@ -132,7 +136,7 @@ export function ShopCheckout({ locale, categoryId, rules, payments, user, shopHr
         {belowMin ? <p className="rounded-xl bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-900">{T(`ন্যূনতম অর্ডার ${taka(rules.minOrder, locale)}; আরও ${taka(rules.minOrder - subtotal, locale)} যোগ করুন।`, `Minimum order is ${taka(rules.minOrder, locale)}; add ${taka(rules.minOrder - subtotal, locale)} more.`)} <Link href={shopHref} className="font-bold text-brand">{T("শপে ফিরুন →", "Back to shop →")}</Link></p> : null}
 
         <section className="card space-y-4 p-4">
-          <h2 className="font-extrabold text-ink">{T("ডেলিভারি তথ্য", "Delivery details")}</h2>
+          <h2 className="font-extrabold text-ink">{T(laundry ? "পিকআপ তথ্য" : "ডেলিভারি তথ্য", laundry ? "Pickup details" : "Delivery details")}</h2>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label className="label" htmlFor="contactName">{T("আপনার নাম", "Your name")}</label>
@@ -144,9 +148,9 @@ export function ShopCheckout({ locale, categoryId, rules, payments, user, shopHr
             </div>
           </div>
           <div>
-            <label className="label" htmlFor="addressLine">{T("পুরো ঠিকানা (বাসা, রোড, এলাকা, থানা, জেলা)", "Full address (house, road, area, thana, district)")}</label>
+            <label className="label" htmlFor="addressLine">{T(laundry ? "পিকআপ ঠিকানা (বাসা, রোড, এলাকা)" : "পুরো ঠিকানা (বাসা, রোড, এলাকা, থানা, জেলা)", laundry ? "Pickup address (house, road, area)" : "Full address (house, road, area, thana, district)")}</label>
             <textarea id="addressLine" name="addressLine" value={addressLine} onChange={(e) => setAddressLine(e.target.value)} className="field" rows={2} maxLength={300} required placeholder={T("যেমন: বাসা ১২, রোড ৩, ধানমন্ডি, ঢাকা", "e.g. House 12, Road 3, Dhanmondi, Dhaka")} />
-            <p className="mt-1 text-xs text-muted-foreground">{T("সারা বাংলাদেশে কুরিয়ারে পাঠাই; কক্সবাজার শহরে নিজেরা পৌঁছে দিই।", "We courier anywhere in Bangladesh; inside Cox's Bazar town we deliver ourselves.")}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{laundry ? T("রাইডার এই ঠিকানা থেকে কাপড় নেবে আর এখানেই ফেরত দেবে (কক্সবাজার শহরের মধ্যে)।", "The rider collects from this address and brings the clothes back here (inside Cox's Bazar town).") : T("সারা বাংলাদেশে কুরিয়ারে পাঠাই; কক্সবাজার শহরে নিজেরা পৌঁছে দিই।", "We courier anywhere in Bangladesh; inside Cox's Bazar town we deliver ourselves.")}</p>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
@@ -179,7 +183,7 @@ export function ShopCheckout({ locale, categoryId, rules, payments, user, shopHr
           <h2 className="font-extrabold text-ink">{T("অর্ডার সামারি", "Order summary")}</h2>
           <dl className="mt-2 divide-y divide-line text-sm">
             <div className="flex justify-between py-2"><dt className="text-muted-foreground">{T("সাবটোটাল", "Subtotal")}</dt><dd className="font-bold text-ink">{taka(subtotal, locale)}</dd></div>
-            <div className="flex justify-between py-2"><dt className="text-muted-foreground">{list.length > 1 ? T(`ডেলিভারি (${list.length} পার্সেল)`, `Delivery (${list.length} parcels)`) : T("ডেলিভারি চার্জ", "Delivery")}</dt><dd className="font-bold text-ink">{delivery ? taka(delivery, locale) : T("ফ্রি", "Free")}</dd></div>
+            <div className="flex justify-between py-2"><dt className="text-muted-foreground">{laundry ? T("পিকআপ ও ফেরত", "Pickup & return") : list.length > 1 ? T(`ডেলিভারি (${list.length} পার্সেল)`, `Delivery (${list.length} parcels)`) : T("ডেলিভারি চার্জ", "Delivery")}</dt><dd className="font-bold text-ink">{delivery ? taka(delivery, locale) : T("ফ্রি", "Free")}</dd></div>
             {discount ? <div className="flex justify-between py-2"><dt className="text-muted-foreground">{T("ছাড়", "Discount")} ({coupon?.code})</dt><dd className="font-bold text-ok">−{taka(discount, locale)}</dd></div> : null}
             <div className="flex justify-between py-2 text-base"><dt className="font-extrabold text-ink">{T("মোট", "Total")}</dt><dd className="font-extrabold text-ink">{taka(total, locale)}</dd></div>
           </dl>

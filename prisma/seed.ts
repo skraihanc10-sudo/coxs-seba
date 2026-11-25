@@ -12,6 +12,7 @@ import { AREAS, CATEGORIES, DHAKA_AREAS, FAQS, REPLY_TEMPLATES, SHOPS } from "./
 import { demoAccounts, demoShopStaff, demoWorkers, WORKER_PASSWORD } from "../src/theme/demo-accounts"
 import { SETTING_DEFAULTS } from "../src/lib/settings"
 import { GROUP_CATEGORY, SHOP_GROUPS, SHOP_PRODUCTS, SHOP_STORES } from "./shop-demo"
+import { LAUNDRY_GROUP, LAUNDRY_ITEMS, LAUNDRY_STORE, laundryVariants } from "./laundry-demo"
 
 const db = new PrismaClient()
 
@@ -627,6 +628,45 @@ async function ensureProductShop(shop: { id: string }) {
   console.log(`Demo shop added: ${n} products in ${SHOP_GROUPS.length} groups across ${stores.length} stores`)
 }
 
+/**
+ * The per-piece laundry price list: a "HANDYO Laundry" store (can later be handed
+ * to a partner by setting its owner in the admin panel), one shelf under the
+ * laundry category and a product per garment whose variants are the services.
+ * Created once; afterwards only missing/bundled photos are refreshed so prices
+ * edited in the panel stay.
+ */
+async function ensureLaundryItems(shop: { id: string }) {
+  const laundry = await db.serviceCategory.findFirst({ where: { shopId: shop.id, slug: "laundry" } })
+  if (!laundry) return
+  // Hidden offering the per-piece orders book against (the wizard offerings stay as they are).
+  await db.serviceOffering.upsert({
+    where: { categoryId_slug: { categoryId: laundry.id, slug: "by-item" } },
+    update: {},
+    create: { categoryId: laundry.id, slug: "by-item", name: "Laundry by item", nameBn: "আইটেম হিসেবে লন্ড্রি", detail: "Pick garments and a service each; priced per piece.", detailBn: "কাপড় বেছে প্রতিটার সার্ভিস দিন; পিস প্রতি দাম।", pricing: "FIXED", price: 0, durationMin: 2880, sort: 99, active: true },
+  })
+  const group = await db.productGroup.upsert({ where: { shopId_slug: { shopId: shop.id, slug: LAUNDRY_GROUP.slug } }, update: { categoryId: laundry.id }, create: { shopId: shop.id, ...LAUNDRY_GROUP, sort: 50, categoryId: laundry.id } })
+  const cover = bundled("/services/laundry.jpg")
+  const store = await db.store.upsert({ where: { shopId_slug: { shopId: shop.id, slug: LAUNDRY_STORE.slug } }, update: {}, create: { shopId: shop.id, ...LAUNDRY_STORE, photos: cover, status: "APPROVED", sort: 50 } })
+  let n = 0
+  let refreshed = 0
+  for (const [i, it] of LAUNDRY_ITEMS.entries()) {
+    const slug = `laundry-${it.slug}`
+    const photo = bundled(`/demo/laundry/${it.slug}.jpg`)
+    const have = await db.product.findUnique({ where: { shopId_slug: { shopId: shop.id, slug } } })
+    if (have) {
+      if (photo && (!have.photos || have.photos.startsWith("/demo/")) && have.photos !== photo) {
+        await db.product.update({ where: { id: have.id }, data: { photos: photo } })
+        refreshed++
+      }
+      continue
+    }
+    await db.product.create({ data: { shopId: shop.id, groupId: group.id, storeId: store.id, slug, name: it.name, nameBn: it.nameBn, photos: photo, badge: it.badge ?? "", sort: i, variants: { create: laundryVariants(it).map((v, j) => ({ ...v, sort: j })) } } })
+    n++
+  }
+  if (n) console.log(`Laundry price list added: ${n} items`)
+  if (refreshed) console.log(`Laundry price list: photos refreshed on ${refreshed} items`)
+}
+
 async function main() {
   const coxs = await catalog()
   await ensureOwner()
@@ -634,6 +674,7 @@ async function main() {
   await ensureDemoVehicles(coxs)
   await ensureDemoProperties(coxs)
   await ensureProductShop(coxs)
+  await ensureLaundryItems(coxs)
   if (catalogOnly) return
   await demo(coxs)
   console.log("Logins:")

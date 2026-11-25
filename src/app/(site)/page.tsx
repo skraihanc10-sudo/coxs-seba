@@ -13,6 +13,7 @@ import { ofBn } from "@/lib/bangla"
 import { CategoryIcon } from "@/components/category-icon"
 import { HeroShowcase } from "@/components/hero-showcase"
 import { MarketTiles } from "@/components/market-tiles"
+import { SearchBox } from "@/components/search-box"
 import { faqLd, JsonLd, localBusiness, organization } from "@/components/seo/json-ld"
 import { brand } from "@/theme/brand"
 
@@ -64,11 +65,7 @@ export default async function HomePage() {
           {bn ? settings.heroBn : settings.heroEn}
         </h1>
         <p className="mt-3 max-w-xl text-[15px] text-white/80 md:text-lg">{bn ? settings.bannerBn : settings.bannerEn}</p>
-        <form action="/services" role="search" className="mt-6 flex max-w-xl items-center gap-2 rounded-2xl bg-white p-1.5 shadow-[0_18px_40px_rgba(0,0,0,0.25)] ring-4 ring-white/10">
-          <Search className="ml-3 size-5 shrink-0 text-muted-foreground" aria-hidden />
-          <input name="q" aria-label={pick(locale, "সেবা খুঁজুন", "Search services")} placeholder={pick(locale, "কী লাগবে? যেমন: চান্দের গাড়ি, রিসোর্ট, শুঁটকি, এসি", "What do you need? e.g. chander gari, resort, dried fish, AC")} className="h-11 min-w-0 flex-1 bg-transparent text-ink outline-none placeholder:text-muted-foreground" />
-          <button className="btn-primary h-11 px-4 text-sm">{t.search}</button>
-        </form>
+        <div className="mt-6"><SearchBox locale={locale} variant="hero" buttonText={t.search} /></div>
         <div className="mt-5 -mx-5 scroll-x px-5 md:mx-0 md:flex-wrap md:px-0" aria-label={pick(locale, "জনপ্রিয় সেবা", "Popular services")}>
           {quick.map((c) => (
             <Link key={c.id} href={`/services/${c.slug}`} className="glass inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-[13px] font-bold text-white transition hover:bg-white hover:text-ink">

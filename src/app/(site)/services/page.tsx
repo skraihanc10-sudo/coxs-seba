@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { ChevronRight, Search } from "lucide-react"
+import { ChevronRight } from "lucide-react"
 import { getLocale } from "@/lib/auth"
 import { activeCategories, categoryPriceLine } from "@/lib/catalog"
 import { currentShop } from "@/lib/shops"
@@ -12,6 +12,9 @@ import { ofBn } from "@/lib/bangla"
 import { CategoryIcon } from "@/components/category-icon"
 import { PageHeader, EmptyState } from "@/components/bits"
 import { breadcrumbs, JsonLd } from "@/components/seo/json-ld"
+import { SearchBox } from "@/components/search-box"
+import { SearchResults } from "@/components/search-results"
+import { search, suggestions } from "@/lib/search"
 
 export async function generateMetadata(): Promise<Metadata> {
   const [locale, shop] = await Promise.all([getLocale(), currentShop()])
@@ -39,27 +42,28 @@ export default async function ServicesPage({ searchParams }: { searchParams: Pro
   const categories = await activeCategories(shop.id)
   const t = words(locale)
   const bn = locale === "bn"
-  const needle = q.trim().toLowerCase()
-  const hit = (s: string) => s.toLowerCase().includes(needle)
-  const list = needle
-    ? categories
-        .map((c) => ({
-          ...c,
-          offerings: hit(c.name) || hit(c.nameBn) || hit(c.blurb) || hit(c.blurbBn) ? c.offerings : c.offerings.filter((o) => hit(o.name) || hit(o.nameBn) || hit(o.detail) || hit(o.detailBn)),
-        }))
-        .filter((c) => c.offerings.length || hit(c.name) || hit(c.nameBn))
-    : categories
-
+  const needle = q.trim()
+  const hits = needle ? await search(shop.id, needle, 40) : []
+  const soft = needle && !hits.length ? await suggestions(shop.id, 8) : []
+  const list = needle ? [] : categories
   return (
     <div>
       <JsonLd data={breadcrumbs([{ name: "HANDYO", path: "/" }, { name: pick(locale, "সব সেবা", "All services"), path: "/services" }])} />
       <PageHeader title={pick(locale, "সব সেবা", "All services")} sub={pick(locale, `${ofBn(shop.cityBn)} যেকোনো এলাকায় – যাচাই করা টিম ও পার্টনার, দাম আগেই লেখা।`, `Anywhere in ${shop.city}: verified team and partners, prices up front.`)} />
-      <form role="search" className="mb-5 flex items-center gap-2 rounded-2xl bg-paper p-1.5 ring-1 ring-line">
-        <Search className="ml-3 size-5 shrink-0 text-muted-foreground" aria-hidden />
-        <input name="q" defaultValue={q} aria-label={pick(locale, "সেবা খুঁজুন", "Search services")} placeholder={pick(locale, "কী লাগবে? যেমন: চান্দের গাড়ি, রিসোর্ট, শুঁটকি, এসি", "What do you need? e.g. chander gari, resort, dried fish, AC")} className="h-11 min-w-0 flex-1 bg-transparent outline-none" />
-        <button className="btn-soft h-11 px-4 text-sm">{t.search}</button>
-      </form>
-      {!list.length ? (
+      <div className="mb-5"><SearchBox locale={locale} initial={q} buttonText={t.search} /></div>
+      {needle && hits.length ? (
+        <SearchResults locale={locale} q={needle} hits={hits} />
+      ) : needle ? (
+        <div className="space-y-5">
+          <EmptyState
+            title={pick(locale, `“${needle}” এর মতো কিছু পাইনি`, `Nothing close to “${needle}”`)}
+            body={pick(locale, "বানান একটু অন্যরকম লিখে দেখুন, বা নিচের থেকে বেছে নিন। তালিকায় নেই এমন কাজ হলে “অন্যান্য” সেবায় লিখুন, আমরা কল দিয়ে দাম জানাব।", "Try another spelling or pick from the list below. Not on the list? Use “Something else” and describe it; we'll call with a price.")}
+            href="/services/other"
+            action={pick(locale, "আপনার কাজটা লিখুন", "Describe your job")}
+          />
+          <SearchResults locale={locale} q={needle} hits={soft} soft />
+        </div>
+      ) : !list.length ? (
         <EmptyState
           title={pick(locale, "কিছু পাওয়া যায়নি", "Nothing matched")}
           body={pick(locale, "তালিকায় নেই এমন কাজ? “অন্যান্য” সেবায় নিজের ভাষায় লিখুন, আমরা কল দিয়ে দাম জানাব।", "Not on the list? Use “Something else” and describe it; we'll call with a price.")}
@@ -97,7 +101,7 @@ export default async function ServicesPage({ searchParams }: { searchParams: Pro
                     <p className="mt-1 text-xs text-muted-foreground">{bn ? market.bn : market.en}</p>
                   ) : (
                     <ul className="relative z-20 mt-2 flex flex-wrap gap-1.5">
-                      {c.offerings.map((o) => (
+                      {c.offerings.filter((o) => o.slug !== "by-item").map((o) => (
                         <li key={o.id}>
                           <Link href={`/book/${c.slug}/${o.slug}`} className="inline-flex items-center gap-1 rounded-full bg-canvas px-2.5 py-1 text-xs font-bold text-ink ring-1 ring-transparent transition hover:ring-brand/40">
                             {named(locale, o)}

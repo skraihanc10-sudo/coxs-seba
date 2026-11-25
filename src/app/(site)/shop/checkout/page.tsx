@@ -8,7 +8,7 @@ import { enabledProviders } from "@/lib/payments"
 import { pick } from "@/lib/i18n"
 import { homeFor } from "@/lib/roles"
 import { privateMeta } from "@/lib/seo"
-import { shopCategory, shopRules } from "@/lib/shop"
+import { laundryRules, shopCategory, shopRules } from "@/lib/shop"
 import { EmptyState, PageHeader } from "@/components/bits"
 import { ShopCheckout } from "@/components/shop-checkout"
 
@@ -32,6 +32,7 @@ export default async function CheckoutPage() {
           locale={locale}
           categoryId={category.id}
           rules={shopRules(settings)}
+          laundryRules={laundryRules(settings)}
           payments={enabledProviders(settings).map((x) => ({ id: x.id, label: x.label, labelBn: x.labelBn, hint: x.hint, hintBn: x.hintBn }))}
           user={user ? { name: user.name, phone: user.phone ?? "", address: address ? `${address.line}${address.landmark ? `, ${address.landmark}` : ""}` : "" } : null}
           shopHref="/services/shutki"

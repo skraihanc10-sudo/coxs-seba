@@ -47,6 +47,11 @@ export default async function SettingsPage() {
               <Field k="shopFreeAbove" label={pick(locale, "এর ওপরে ফ্রি ডেলিভারি (৳, ০ = নেই)", "Free delivery above (৳, 0 = never)")} type="number" value={s.shopFreeAbove} />
               <Field k="shopMinOrder" label={pick(locale, "শপ ন্যূনতম অর্ডার (৳)", "Shop minimum order (৳)")} type="number" value={s.shopMinOrder} />
             </div>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <Field k="laundryDelivery" label={pick(locale, "লন্ড্রি পিকআপ-ডেলিভারি চার্জ (৳)", "Laundry pickup & return charge (৳)")} type="number" value={s.laundryDelivery} />
+              <Field k="laundryFreeAbove" label={pick(locale, "এর ওপরে ফ্রি পিকআপ (৳, ০ = নেই)", "Free pickup above (৳, 0 = never)")} type="number" value={s.laundryFreeAbove} />
+              <Field k="laundryMinOrder" label={pick(locale, "লন্ড্রি ন্যূনতম অর্ডার (৳)", "Laundry minimum order (৳)")} type="number" value={s.laundryMinOrder} />
+            </div>
             <div>
               <p className="label">{pick(locale, "পেমেন্টের ধরন", "Payment methods")}</p>
               <div className="flex flex-wrap gap-3">

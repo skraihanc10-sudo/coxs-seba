@@ -12,7 +12,7 @@ import { marketVehicles, photoUrl, photosOf, specsOf, vehicleName } from "@/lib/
 import { VehicleMarket, type MarketVehicle } from "@/components/vehicle-market"
 import { fromNight, kindText, listOf, marketProperties, propertyName } from "@/lib/stays"
 import { StayMarket, type MarketProperty } from "@/components/stay-market"
-import { liveProducts, liveStores, shopGroups, shopRules } from "@/lib/shop"
+import { laundryRules, liveProducts, liveStores, shopGroups, shopRules } from "@/lib/shop"
 import { getSettings } from "@/lib/settings"
 import { ShopMarket } from "@/components/shop-market"
 import { clip, pageMeta } from "@/lib/seo"
@@ -46,7 +46,10 @@ export default async function CategoryPage({ params }: { params: Params }) {
   const rental = category.flow === "RENTAL"
   const stay = category.flow === "STAY"
   const shopFlow = category.flow === "SHOP"
-  const [products, groups, settings, stores] = shopFlow ? await Promise.all([liveProducts(shop.id, category.id), shopGroups(shop.id, true, category.id), getSettings(shop.id), liveStores(shop.id)]) : [[], [], null, []]
+  const laundryFlow = category.flow === "LAUNDRY"
+  const [products, groups, settings, stores] = shopFlow || laundryFlow ? await Promise.all([liveProducts(shop.id, category.id, laundryFlow), shopGroups(shop.id, true, category.id), getSettings(shop.id), liveStores(shop.id)]) : [[], [], null, []]
+  // The hidden per-piece offering only exists for the item orders; it is not a wizard card.
+  const offerings = category.offerings.filter((o) => !(laundryFlow && o.slug === "by-item"))
   const stays: MarketProperty[] = stay
     ? (await marketProperties()).map((p) => {
         const cover = photosOf(p)[0]
@@ -133,6 +136,33 @@ export default async function CategoryPage({ params }: { params: Params }) {
       {rental ? (
         <p className="mb-4 rounded-2xl bg-teal-50 px-4 py-3 text-sm font-semibold text-teal-900">{pick(locale, `পিকআপ পয়েন্ট (হোটেল বা বাসা) আর সময় দিন, গাড়ি বা বাইক সেখানেই পৌঁছে যাবে। ${shop.cityBn} এলাকার মধ্যে পিকআপ।`, `Give us a pickup point (hotel or home) and a time; the car or bike comes to you. Pickup inside ${shop.city}.`)}</p>
       ) : null}
+      {laundryFlow && settings && products.length ? (
+        <section className="mb-6">
+          <h2 className="display text-xl font-extrabold text-ink">{pick(locale, "কাপড় বেছে পিস হিসেবে দিন", "Pick garments, priced per piece")}</h2>
+          <p className="mt-1 mb-3 text-sm text-muted-foreground">{pick(locale, "প্রতিটা কাপড়ের জন্য সার্ভিস বেছে কার্টে নিন; রাইডার বাসা থেকে নিয়ে যাবে। কেজি হিসেবে দিতে চাইলে নিচের কার্ড থেকে বুক করুন।", "Choose a service per garment and add it to the cart; the rider collects from your door. Prefer by the kilo? Book from the cards below.")}</p>
+          <ShopMarket
+            locale={locale}
+            mode="laundry"
+            rules={laundryRules(settings)}
+            groups={groups.map((g) => ({ id: g.id, name: named(locale, g) }))}
+            stores={stores.filter((st) => products.some((p) => p.storeId === st.id)).map((st) => ({ id: st.id, slug: st.slug, name: named(locale, st), cover: photosOf(st)[0] ? photoUrl(photosOf(st)[0]) : null }))}
+            partnerHref="/partner/store"
+            products={products.map((p) => ({
+              id: p.id,
+              slug: p.slug,
+              groupId: p.groupId,
+              storeId: p.storeId,
+              storeName: p.store ? named(locale, p.store) : "",
+              name: bn ? p.nameBn || p.name : p.name || p.nameBn,
+              cover: photosOf(p)[0] ? photoUrl(photosOf(p)[0]) : null,
+              badge: p.badge,
+              variants: p.variants.filter((v) => v.active).map((v) => ({ id: v.id, label: v.label, price: v.price, oldPrice: v.oldPrice, stock: v.stock })),
+            }))}
+          />
+          <h2 className="display mt-8 text-xl font-extrabold text-ink">{pick(locale, "অথবা কেজি হিসেবে", "Or by the kilo")}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">{pick(locale, "অনেক কাপড় একসাথে? কেজি হিসেবে বুক করুন, রাইডার ওজন করে নেবে।", "A big load? Book by the kilo and the rider weighs it at pickup.")}</p>
+        </section>
+      ) : null}
       {shopFlow && settings ? (
         <section className="mb-6">
           <ShopMarket
@@ -192,7 +222,7 @@ export default async function CategoryPage({ params }: { params: Params }) {
       ) : null}
       {/* Rentals book a real vehicle from the marketplace above, never a bare type. */}
       <div className={rental || stay || shopFlow ? "hidden" : "grid gap-3 md:grid-cols-2"}>
-        {category.offerings.map((o) => (
+        {offerings.map((o) => (
           <Link key={o.id} href={`/book/${category.slug}/${o.slug}`} className="card card-lift flex gap-3 overflow-hidden p-3 md:gap-4 md:p-4">
             {o.image ? (
               // eslint-disable-next-line @next/next/no-img-element
