@@ -11,6 +11,8 @@ import { PAYMENT_PROVIDERS } from "@/lib/payments"
 import { bookingChat } from "@/lib/support"
 import { vehicleName } from "@/lib/vehicles"
 import { moveBookingAction, recordPaymentAction, sendQuoteAction, setQuantityAction, uploadPhotosAction } from "@/actions/booking"
+import { requestCancelAction, requestExtraAction } from "@/actions/partners"
+import { requestsOf } from "@/lib/partners"
 import { sendBookingMessageAction } from "@/actions/support"
 import { ActionForm, SubmitButton } from "@/components/forms"
 import { Composer, MessageList } from "@/components/chat-pane"
@@ -29,6 +31,7 @@ export default async function WorkerJobPage({ params }: { params: Promise<{ code
     throw error
   }
   const { booking: b, thread } = data
+  const pendingRequests = (await requestsOf(b.id)).filter((r) => r.status === "PENDING")
   const flow = flowOf(b)
   const next = workerNext(flow, b.status)
   const open = isOpen(b.status)
@@ -106,6 +109,32 @@ export default async function WorkerJobPage({ params }: { params: Promise<{ code
             <SubmitButton>{pick(locale, "টাকা নেওয়া হয়েছে", "Payment received")}</SubmitButton>
           </ActionForm>
         </Section>
+      ) : null}
+
+      {pendingRequests.length ? (
+        <p className="rounded-xl bg-amber-50 px-4 py-3 text-sm font-bold text-amber-800">{pick(locale, "অফিসের অনুমোদনের অপেক্ষায়:", "Waiting for office approval:")} {pendingRequests.map((r) => (r.kind === "EXTRA" ? pick(locale, `এক্সট্রা চার্জ ${taka(r.amount, locale)}`, `extra charge ${taka(r.amount, locale)}`) : pick(locale, "বাতিল", "cancellation"))).join(", ")}</p>
+      ) : null}
+
+      {open ? (
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Section title={pick(locale, "এক্সট্রা চার্জ চান", "Ask for an extra charge")}>
+            <ActionForm action={requestExtraAction} className="space-y-2">
+              <input type="hidden" name="code" value={b.code} />
+              <input name="amount" type="number" inputMode="numeric" min={1} max={500000} required className="field" placeholder="৳" />
+              <input name="note" className="field" required minLength={3} maxLength={200} placeholder={pick(locale, "কীসের জন্য (পার্টস, বাড়তি দূরত্ব…)", "What for (parts, extra distance…)")} />
+              <SubmitButton className="btn-soft w-full">{pick(locale, "এক্সট্রা চার্জ চাই", "Request extra")}</SubmitButton>
+            </ActionForm>
+            <p className="mt-2 text-xs text-muted-foreground">{pick(locale, "HANDYO অফিস অনুমোদন দিলে কাস্টমারের বিলে যোগ হবে।", "Added to the customer's bill once the HANDYO office approves.")}</p>
+          </Section>
+          <Section title={pick(locale, "বাতিল করতে চান?", "Need to cancel?")}>
+            <ActionForm action={requestCancelAction} className="space-y-2">
+              <input type="hidden" name="code" value={b.code} />
+              <input name="note" className="field" required minLength={3} maxLength={200} placeholder={pick(locale, "কেন বাতিল?", "Why?")} />
+              <SubmitButton className="btn-danger w-full">{pick(locale, "বাতিল চাই", "Request cancel")}</SubmitButton>
+            </ActionForm>
+            <p className="mt-2 text-xs text-muted-foreground">{pick(locale, "সব বাতিল HANDYO অফিসের অনুমোদনে হয়।", "Every cancellation goes through the HANDYO office.")}</p>
+          </Section>
+        </div>
       ) : null}
 
       <Section title={pick(locale, "অবস্থা", "Status")}>

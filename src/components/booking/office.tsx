@@ -8,6 +8,7 @@ import { named, pick } from "@/lib/i18n"
 import { billFor } from "@/lib/pricing"
 import { PAYMENT_PROVIDERS } from "@/lib/payments"
 import { assignWorkerAction, forceStatusAction, moveBookingAction, recordPaymentAction, refundNoteAction, rescheduleAction, sendQuoteAction, setPriceAction } from "@/actions/booking"
+import { adjustBillAction, decideRequestAction } from "@/actions/partners"
 import { sendBookingMessageAction } from "@/actions/support"
 import { ActionForm, SubmitButton } from "@/components/forms"
 import { Composer, MessageList, type ChatMessage } from "@/components/chat-pane"
@@ -24,6 +25,7 @@ export function OfficeBooking({
   locale,
   me,
   isAdmin,
+  requests = [],
   workers,
   messages,
   templates,
@@ -32,6 +34,7 @@ export function OfficeBooking({
   locale: Locale
   me: string
   isAdmin: boolean
+  requests?: Array<{ id: string; kind: string; amount: number; note: string; status: string; by: string; role: string }>
   workers: WorkerOption[]
   messages: ChatMessage[]
   templates: Array<{ id: string; title: string; body: string }>
@@ -191,9 +194,39 @@ export function OfficeBooking({
           </Section>
         ) : null}
 
+        {requests.filter((r) => r.status === "PENDING").length ? (
+          <Section title={pick(locale, "অনুমোদনের অপেক্ষায়", "Waiting for your approval")}>
+            <ul className="space-y-3">
+              {requests.filter((r) => r.status === "PENDING").map((r) => (
+                <li key={r.id} className="rounded-xl bg-amber-50 p-3 text-sm">
+                  <p className="font-extrabold text-amber-900">{r.kind === "EXTRA" ? pick(locale, `এক্সট্রা চার্জ +${taka(r.amount, locale)}`, `Extra charge +${taka(r.amount, locale)}`) : pick(locale, "বাতিলের অনুরোধ", "Cancellation request")} <span className="font-normal text-amber-800">· {r.by} ({r.role === "CUSTOMER" ? pick(locale, "কাস্টমার", "customer") : pick(locale, "পার্টনার", "partner")})</span></p>
+                  <p className="mt-1 text-amber-900">“{r.note}”</p>
+                  {isAdmin ? (
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <ActionForm action={decideRequestAction} resetOnSuccess={false} className="inline"><input type="hidden" name="id" value={r.id} /><input type="hidden" name="decision" value="APPROVE" /><SubmitButton className="btn-primary h-9 px-3 text-xs">{r.kind === "CANCEL" ? pick(locale, "বাতিল অনুমোদন", "Approve cancel") : pick(locale, "বিলে যোগ", "Add to bill")}</SubmitButton></ActionForm>
+                      <ActionForm action={decideRequestAction} resetOnSuccess={false} className="flex flex-1 gap-2"><input type="hidden" name="id" value={r.id} /><input type="hidden" name="decision" value="REJECT" /><input name="note" className="field h-9 flex-1 text-xs" placeholder={pick(locale, "নাকচের কারণ", "Reason")} required minLength={2} /><SubmitButton className="btn-soft h-9 shrink-0 px-3 text-xs">{pick(locale, "নাকচ", "Reject")}</SubmitButton></ActionForm>
+                    </div>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          </Section>
+        ) : null}
+
         <div className="grid gap-4 md:grid-cols-2">
           {isAdmin ? (
-            <Section title={pick(locale, "দাম ঠিক করুন", "Set price")}>
+            <Section title={pick(locale, "বিল কম / বেশি করুন", "Adjust the bill")}>
+              <ActionForm action={adjustBillAction} resetOnSuccess={false} className="space-y-2">
+                <input type="hidden" name="code" value={b.code} />
+                <input name="extraCharge" type="number" step={1} min={-500000} max={500000} defaultValue={b.extraCharge} className="field" placeholder={pick(locale, "+ যোগ / − কম (৳)", "+ add / − reduce (৳)")} />
+                <input name="note" className="field" defaultValue={b.extraNote} placeholder={pick(locale, "কীসের জন্য (যেমন: পার্টস, বাড়তি দূরত্ব)", "What for (e.g. parts, extra distance)")} maxLength={200} />
+                <SubmitButton className="btn-soft w-full">{pick(locale, "বিল আপডেট", "Update bill")}</SubmitButton>
+                <p className="text-xs text-muted-foreground">{pick(locale, `এখন বিল ${taka(b.finalPrice ?? billFor(b), locale)}। ঋণাত্মক লিখলে বিল কমবে।`, `Bill now ${taka(b.finalPrice ?? billFor(b), locale)}. Negative reduces it.`)}</p>
+              </ActionForm>
+            </Section>
+          ) : null}
+          {isAdmin ? (
+            <Section title={pick(locale, "চূড়ান্ত দাম লিখে দিন", "Override final price")}>
               <ActionForm action={setPriceAction} resetOnSuccess={false} className="space-y-2">
                 <input type="hidden" name="code" value={b.code} />
                 <input name="finalPrice" type="number" min={0} defaultValue={b.finalPrice ?? billFor(b)} className="field" />
@@ -202,6 +235,8 @@ export function OfficeBooking({
               </ActionForm>
             </Section>
           ) : null}
+        </div>
+        <div className="grid gap-4 md:grid-cols-2">
           <Section title={pick(locale, "বাতিল / রিফান্ড নোট", "Cancel / refund note")}>
             <ActionForm action={refundNoteAction} resetOnSuccess={false} className="space-y-2">
               <input type="hidden" name="code" value={b.code} />

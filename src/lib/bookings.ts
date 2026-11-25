@@ -43,15 +43,25 @@ export const bookingInclude = {
 
 export type BookingFull = Prisma.ServiceBookingGetPayload<{ include: typeof bookingInclude }>
 
-type Viewer = { id: string; role: string; shopId?: string | null; worker?: { id: string } | null }
+type Viewer = { id: string; role: string; shopId?: string | null; worker?: { id: string; kind?: string } | null }
+
+type Owned = { customerId: string; workerId: string | null; shopId: string; store?: { workerId: string | null } | null; vehicle?: { workerId: string | null } | null; property?: { workerId: string | null } | null }
+
+/** A partner owns a booking when it is assigned to them or placed on their store, vehicle or resort. */
+export function partnerOwns(worker: { id: string; kind?: string } | null | undefined, b: Owned) {
+  if (!worker) return false
+  if (b.workerId === worker.id) return true
+  if (worker.kind !== "PARTNER") return false
+  return b.store?.workerId === worker.id || b.vehicle?.workerId === worker.id || b.property?.workerId === worker.id
+}
 
 const NOT_FOUND = () => new AppError("বুকিংটা পাওয়া যায়নি।", "Booking not found.")
 
 /** Office staff see their own shop's bookings, owners see every shop, customers and workers only their own. */
-export function canView(user: Viewer, booking: { customerId: string; workerId: string | null; shopId: string }) {
+export function canView(user: Viewer, booking: Owned) {
   if (user.role === "OWNER" || user.role === "ADMIN" || user.role === "SUPPORT") return staffCanSee(user, booking.shopId)
   if (user.role === "CUSTOMER") return booking.customerId === user.id
-  if (user.role === "WORKER") return Boolean(user.worker && booking.workerId === user.worker.id)
+  if (user.role === "WORKER") return partnerOwns(user.worker, booking)
   return false
 }
 
@@ -499,6 +509,30 @@ export async function setPrice(user: Viewer & { role: Role }, code: string, fina
       events: { create: { fromStatus: booking.status, toStatus: booking.status, note: `Price set to ৳${finalPrice}${note ? ` — ${note.trim()}` : ""}`, actorId: user.id, actorRole: user.role } },
     },
   })
+}
+
+/**
+ * The office adds or takes money off a bill: an extra charge (parts, a longer trip,
+ * more pieces) or a reduction. Negative numbers reduce the bill. Logged on the booking.
+ */
+export async function adjustBill(user: Viewer & { role: Role }, code: string, extraCharge: number, note: string) {
+  if (user.role !== "ADMIN" && user.role !== "OWNER") throw new AppError("বিল বদলাতে পারে শুধু অ্যাডমিন।", "Only an admin can adjust the bill.")
+  const booking = await bookingFor(user, code)
+  if (!Number.isInteger(extraCharge) || Math.abs(extraCharge) > 500000) throw new AppError("সঠিক টাকার অঙ্ক দিন।", "Enter a valid amount.")
+  if (booking.paymentStatus === "PAID") throw new AppError("পেমেন্ট হয়ে যাওয়া বিল বদলানো যায় না।", "A paid bill cannot change.")
+  const next = { ...booking, extraCharge }
+  const bill = billFor(next)
+  await db.serviceBooking.update({
+    where: { id: booking.id },
+    data: {
+      extraCharge,
+      extraNote: note.trim(),
+      ...(booking.status === "COMPLETED" ? { finalPrice: bill } : {}),
+      events: { create: { fromStatus: booking.status, toStatus: booking.status, note: `Bill adjusted ${extraCharge >= 0 ? "+" : ""}৳${extraCharge} → ৳${bill}${note.trim() ? ` — ${note.trim()}` : ""}`, actorId: user.id, actorRole: user.role } },
+    },
+  })
+  await notify([booking.customerId], { kind: "BOOKING", title: `${booking.code} · বিল আপডেট`, body: `${extraCharge >= 0 ? "যোগ" : "কম"} হয়েছে ৳${Math.abs(extraCharge)}${note.trim() ? ` (${note.trim()})` : ""}। এখন মোট ৳${bill}।`, link: `/bookings/${booking.code}` }, user.id)
+  return bill
 }
 
 export async function setRefundNote(user: Viewer & { role: Role }, code: string, note: string) {

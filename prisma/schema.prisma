@@ -95,9 +95,16 @@ model User {
   shop         Shop?    @relation(fields: [shopId], references: [id], onDelete: SetNull)
   active       Boolean  @default(true)
   createdAt    DateTime @default(now())
+  /// Helper accounts: a partner's staff who work inside the partner's panel (max 2, approved by the HANDYO office).
+  helperOfId   String?
+  helperOf     WorkerProfile? @relation("Helpers", fields: [helperOfId], references: [id], onDelete: SetNull)
+  /// "" (not a helper), PENDING, APPROVED, REJECTED
+  helperStatus String   @default("")
 
   worker         WorkerProfile?
   addresses      Address[]
+  requests       ChangeRequest[]      @relation("RequestedBy")
+  decisions      ChangeRequest[]      @relation("DecidedBy")
   bookings       ServiceBooking[]     @relation("BookingCustomer")
   bookingEvents  BookingEvent[]
   bookingPhotos  BookingPhoto[]
@@ -129,6 +136,8 @@ model WorkerProfile {
   approved    Boolean  @default(true)
   /// Partner privilege: new bookings for their vehicle/resort/store go straight to them, skipping the office transfer.
   autoAssign  Boolean  @default(false)
+  /// Office switch: list this partner's orders on the admin booking pages (off = the partner handles them alone; the office still finds them on the partner page).
+  officeList  Boolean  @default(true)
   available   Boolean  @default(true)
   rating      Float    @default(0)
   ratingCount Int      @default(0)
@@ -141,6 +150,7 @@ model WorkerProfile {
   vehicles Vehicle[]
   properties Property[]
   stores     Store[]
+  helpers    User[]   @relation("Helpers")
 
   @@index([shopId])
 }
@@ -523,6 +533,9 @@ model ServiceBooking {
   coupon        Coupon?         @relation(fields: [couponId], references: [id], onDelete: SetNull)
   couponCode    String          @default("")
   discount      Int             @default(0)
+  /// Office adjustment on the bill (can be negative); partner-requested extras land here once approved.
+  extraCharge   Int             @default(0)
+  extraNote     String          @default("")
   estimatedPrice Int            @default(0)
   quoteAmount   Int?
   /// NONE, SENT, ACCEPTED, DECLINED
@@ -557,6 +570,7 @@ model ServiceBooking {
   roomType      RoomType?       @relation(fields: [roomTypeId], references: [id], onDelete: SetNull)
   items         OrderItem[]
   store         Store?          @relation(fields: [storeId], references: [id], onDelete: SetNull)
+  requests      ChangeRequest[]
 
   @@index([shopId, status])
   @@index([shopId, createdAt])
@@ -802,4 +816,30 @@ model Setting {
 model Sequence {
   name  String @id
   value Int    @default(0)
+}
+
+/// Something that needs the HANDYO office's approval before it happens:
+/// an extra charge a partner wants to add, or a cancellation asked by a customer or partner.
+model ChangeRequest {
+  id          String         @id @default(cuid())
+  shopId      String
+  bookingId   String
+  booking     ServiceBooking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  /// EXTRA (add money to the bill), CANCEL (cancel the booking)
+  kind        String
+  amount      Int            @default(0)
+  note        String         @default("")
+  /// PENDING, APPROVED, REJECTED
+  status      String         @default("PENDING")
+  requesterId String
+  requester   User           @relation("RequestedBy", fields: [requesterId], references: [id], onDelete: Cascade)
+  requesterRole String       @default("")
+  deciderId   String?
+  decider     User?          @relation("DecidedBy", fields: [deciderId], references: [id], onDelete: SetNull)
+  decisionNote String        @default("")
+  createdAt   DateTime       @default(now())
+  decidedAt   DateTime?
+
+  @@index([shopId, status])
+  @@index([bookingId])
 }

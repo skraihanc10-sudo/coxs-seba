@@ -48,22 +48,37 @@ export async function clearSession() {
   jar.delete(SESSION_COOKIE)
 }
 
-export async function getUser() {
+async function loadUser(id: string) {
+  return db.user.findUnique({ where: { id }, include: { worker: true, shop: { select: { id: true, slug: true, name: true, nameBn: true, active: true } } } })
+}
+
+type Loaded = NonNullable<Awaited<ReturnType<typeof loadUser>>>
+/** The signed-in user; helpers carry their partner's profile and are flagged. */
+export type SessionUser = Loaded & { isHelper?: boolean; helperBoss?: string }
+
+export async function getUser(): Promise<SessionUser | null> {
   const token = (await cookies()).get(SESSION_COOKIE)?.value
   if (!token) return null
   try {
     const { payload } = await jwtVerify(token, authSecret())
     const id = String(payload.sub || "")
     if (!id) return null
-    const user = await db.user.findUnique({ where: { id }, include: { worker: true, shop: { select: { id: true, slug: true, name: true, nameBn: true, active: true } } } })
+    const user = await loadUser(id)
     if (!user || !user.active) return null
+    // An approved helper works inside the partner's panel: they carry the partner's profile, flagged so the
+    // owner-only screens (helpers, payouts) can tell them apart.
+    if (!user.worker && user.helperOfId && user.helperStatus === "APPROVED") {
+      const boss = await db.workerProfile.findUnique({ where: { id: user.helperOfId }, include: { user: { select: { active: true, name: true } } } })
+      if (!boss || !boss.user.active || !boss.approved) return null
+      const { user: bossUser, ...profile } = boss
+      return { ...user, worker: profile, isHelper: true, helperBoss: bossUser.name }
+    }
     return user
   } catch {
     return null
   }
 }
 
-export type SessionUser = NonNullable<Awaited<ReturnType<typeof getUser>>>
 
 /** For pages: send strangers to /login and other roles to their own home. */
 export async function requireUser(roles: Role[], nextPath = "/") {

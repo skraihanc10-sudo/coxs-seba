@@ -32,6 +32,7 @@ export default async function AdminBookingsPage({ searchParams }: { searchParams
         <>
           <CategoryBoard items={counts} base="/admin/bookings" locale={locale} compact current={sp.category ?? ""} />
           <BookingFilters locale={locale} values={sp} categories={categories} areas={areas} base="/admin/bookings" />
+          {!sp.all ? <p className="mb-2 text-xs text-muted-foreground">{pick(locale, "“অফিস তালিকায় বন্ধ” পার্টনারদের অর্ডার এখানে নেই।", "Orders of partners switched off the office list are hidden.")} <a href={`/admin/bookings?${new URLSearchParams({ ...sp, all: "1" }).toString()}`} className="font-bold text-brand">{pick(locale, "সব দেখুন →", "Show all →")}</a></p> : null}
           <BookingTable rows={rows} locale={locale} base="/admin/bookings" />
         </>
       )}

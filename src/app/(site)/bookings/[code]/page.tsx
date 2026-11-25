@@ -10,7 +10,9 @@ import { AppError } from "@/lib/errors"
 import { formatDay, taka, upcomingDays } from "@/lib/format"
 import { named, pick } from "@/lib/i18n"
 import { bookingChat } from "@/lib/support"
-import { answerQuoteAction, moveBookingAction, rescheduleAction, reviewAction } from "@/actions/booking"
+import { answerQuoteAction, rescheduleAction, reviewAction } from "@/actions/booking"
+import { requestCancelAction } from "@/actions/partners"
+import { requestsOf } from "@/lib/partners"
 import { sendBookingMessageAction } from "@/actions/support"
 import { PageHeader, Section, StatusPill } from "@/components/bits"
 import { ClearCart } from "@/components/clear-cart"
@@ -35,6 +37,7 @@ export default async function BookingPage({ params, searchParams }: { params: Pr
     throw error
   }
   const { booking: b, thread } = data
+  const cancelPending = (await requestsOf(b.id)).some((r) => r.kind === "CANCEL" && r.status === "PENDING")
   const flow = flowOf(b)
   const changeable = customerCanChange(b.status)
 
@@ -120,12 +123,16 @@ export default async function BookingPage({ params, searchParams }: { params: Pr
               </ActionForm>
             </Section>
             <Section title={pick(locale, "বাতিল করুন", "Cancel")}>
-              <ActionForm action={moveBookingAction} resetOnSuccess={false} className="space-y-3">
-                <input type="hidden" name="code" value={b.code} />
-                <input type="hidden" name="to" value="CANCELLED" />
-                <input name="note" className="field" placeholder={pick(locale, "কেন বাতিল করছেন?", "Why are you cancelling?")} required minLength={3} maxLength={200} />
-                <SubmitButton className="btn-danger w-full"><XCircle className="size-4" /> {pick(locale, "বুকিং বাতিল করুন", "Cancel booking")}</SubmitButton>
-              </ActionForm>
+              {cancelPending ? (
+                <p className="rounded-xl bg-amber-50 px-3 py-2 text-sm font-bold text-amber-800">{pick(locale, "বাতিলের অনুরোধ অফিসে গেছে; সিদ্ধান্ত হলে নোটিশ পাবেন।", "Your cancellation request is with the office; you'll get a notice once decided.")}</p>
+              ) : (
+                <ActionForm action={requestCancelAction} resetOnSuccess={false} className="space-y-3">
+                  <input type="hidden" name="code" value={b.code} />
+                  <input name="note" className="field" placeholder={pick(locale, "কেন বাতিল করছেন?", "Why are you cancelling?")} required minLength={3} maxLength={200} />
+                  <SubmitButton className="btn-danger w-full"><XCircle className="size-4" /> {pick(locale, "বাতিলের অনুরোধ পাঠান", "Request cancellation")}</SubmitButton>
+                  <p className="text-xs text-muted-foreground">{pick(locale, "HANDYO অফিস দেখে বাতিল করবে।", "The HANDYO office reviews and cancels.")}</p>
+                </ActionForm>
+              )}
             </Section>
           </div>
         ) : null}

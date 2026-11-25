@@ -7,6 +7,7 @@ import { replyTemplates, workerOptions } from "@/lib/office"
 import { named } from "@/lib/i18n"
 import { PageHeader, StatusPill } from "@/components/bits"
 import { OfficeBooking } from "@/components/booking/office"
+import { requestsOf } from "@/lib/partners"
 
 export default async function AdminBookingPage({ params }: { params: Promise<{ code: string }> }) {
   const [{ code }, user, locale] = await Promise.all([params, requireUser(ADMINS, "/admin/bookings"), getLocale()])
@@ -20,11 +21,11 @@ export default async function AdminBookingPage({ params }: { params: Promise<{ c
   const { booking, thread } = data
   // Staff of another shop already got a 404 from bookingChat; the owner may open any
   // shop's booking, so workers and templates come from the booking's own shop.
-  const [workers, templates] = await Promise.all([workerOptions(booking.shopId, booking.categoryId, booking.areaId), replyTemplates(booking.shopId)])
+  const [workers, templates, requests] = await Promise.all([workerOptions(booking.shopId, booking.categoryId, booking.areaId), replyTemplates(booking.shopId), requestsOf(booking.id)])
   return (
     <div>
       <PageHeader back="/admin/bookings" title={`${booking.code} · ${named(locale, booking.offering)}`} sub={named(locale, booking.category)} action={<StatusPill status={booking.status} locale={locale} flow={booking.category.flow} className="mt-1" />} />
-      <OfficeBooking booking={booking} locale={locale} me={user.id} isAdmin={isAdmin(user.role)} workers={workers} messages={thread.messages} templates={templates} />
+      <OfficeBooking booking={booking} locale={locale} me={user.id} isAdmin={isAdmin(user.role)} workers={workers} messages={thread.messages} templates={templates} requests={requests.map((r) => ({ id: r.id, kind: r.kind, amount: r.amount, note: r.note, status: r.status, by: r.requester.name, role: r.requesterRole }))} />
     </div>
   )
 }

@@ -82,7 +82,8 @@ export function canMove(flow: Flow, from: string, to: string) {
 export function roleMayMove(role: Role, to: string) {
   if (role === "WORKER") return WORKER_MOVES.includes(to)
   if (role === "ADMIN" || role === "SUPPORT" || role === "OWNER") return OFFICE_MOVES.includes(to)
-  if (role === "CUSTOMER") return to === "CANCELLED"
+  // Customers (and partners) no longer cancel directly: they file a cancel request the office approves.
+  if (role === "CUSTOMER") return false
   return false
 }
 

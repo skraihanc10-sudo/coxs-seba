@@ -42,8 +42,10 @@ export function estimate({ pricing, unitPrice, quantity, days, areaCharge }: Est
 }
 
 /** The amount the customer actually pays when the job closes. */
-export function billFor(b: { pricing: string; estimatedPrice: number; visitCharge: number; quoteAmount: number | null; quoteStatus: string; discount?: number }) {
+export function billFor(b: { pricing: string; estimatedPrice: number; visitCharge: number; quoteAmount: number | null; quoteStatus: string; discount?: number; extraCharge?: number }) {
   // A coupon discount is already inside estimatedPrice; a quoted job applies it to the quote instead.
-  if (b.pricing === "QUOTE" && b.quoteStatus === "ACCEPTED" && b.quoteAmount) return Math.max(0, b.quoteAmount - (b.discount ?? 0)) + b.visitCharge
-  return b.estimatedPrice
+  // The office's adjustment (or an approved partner extra) sits on top and may be negative.
+  const extra = b.extraCharge ?? 0
+  if (b.pricing === "QUOTE" && b.quoteStatus === "ACCEPTED" && b.quoteAmount) return Math.max(0, Math.max(0, b.quoteAmount - (b.discount ?? 0)) + b.visitCharge + extra)
+  return Math.max(0, b.estimatedPrice + extra)
 }

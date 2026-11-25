@@ -226,6 +226,9 @@ test("5. customer care chat and a support ticket, both answered by support", asy
   await ready(support)
   await support.fill('textarea[name="body"]', "দুঃখিত! বাড়তি টাকা বিকাশে ফেরত দিচ্ছি।")
   await support.getByRole("button", { name: "Send" }).click()
+  // The reply refreshes the page; pick the status only after that refresh has landed, or the select resets under us.
+  await expect(support.getByText("বাড়তি টাকা বিকাশে ফেরত").first()).toBeVisible()
+  await ready(support)
   await support.selectOption('select[name="status"]', "RESOLVED")
   await support.getByRole("button", { name: "সেভ" }).click()
   await customer.goto(`/help/tickets/${ticket}`)

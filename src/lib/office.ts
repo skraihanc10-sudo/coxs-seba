@@ -27,7 +27,12 @@ export async function replyTemplates(shopId: string) {
 
 export const STATUS_FILTERS = ["", "REQUESTED", "CONFIRMED", "ASSIGNED", "ACCEPTED", "ON_THE_WAY", "ARRIVED", "IN_PROGRESS", "PICKED_UP", "AT_LAUNDRY", "READY", "OUT_FOR_DELIVERY", "COMPLETED", "CANCELLED"]
 
-export type BookingFilter = { status?: string; category?: string; area?: string; from?: string; to?: string; q?: string; worker?: string }
+export type BookingFilter = { status?: string; category?: string; area?: string; from?: string; to?: string; q?: string; worker?: string; all?: string }
+
+/** Bookings of partners whose "list in office" switch is off: the office sees them only on the partner page (or with ?all=1). */
+export const quietPartnerWhere = {
+  NOT: { OR: [{ store: { worker: { officeList: false } } }, { vehicle: { worker: { officeList: false } } }, { property: { worker: { officeList: false } } }, { worker: { kind: "PARTNER", officeList: false } }] },
+}
 
 /** Filtered booking list for the office pages of one shop. */
 export async function listBookings(shopId: string, f: BookingFilter, take = 200) {
@@ -40,6 +45,7 @@ export async function listBookings(shopId: string, f: BookingFilter, take = 200)
       ...(f.category ? { categoryId: f.category } : {}),
       ...(f.area ? { areaId: f.area } : {}),
       ...(f.worker ? { workerId: f.worker } : {}),
+      ...(f.all ? {} : quietPartnerWhere),
       ...(iso(f.from) || iso(f.to) ? { visitDate: { ...(iso(f.from) ? { gte: iso(f.from) } : {}), ...(iso(f.to) ? { lte: iso(f.to) } : {}) } } : {}),
       ...(q ? { OR: [{ code: { contains: q } }, { phone: { contains: q } }, { contactName: { contains: q } }, { customer: { name: { contains: q } } }, { addressLine: { contains: q } }] } : {}),
     },
