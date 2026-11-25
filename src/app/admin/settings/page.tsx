@@ -26,6 +26,8 @@ export default async function SettingsPage() {
             <Field k="whatsapp" label={pick(locale, "হোয়াটসঅ্যাপ নম্বর", "WhatsApp number")} value={s.whatsapp} />
             <Field k="emergency" label={pick(locale, "ইমার্জেন্সি নম্বর", "Emergency number")} value={s.emergency} />
             <Field k="supportEmail" label={pick(locale, "সাপোর্ট ইমেইল", "Support email")} type="email" value={s.supportEmail} />
+            <Field k="facebook" label={pick(locale, "ফেসবুক পেজ লিংক", "Facebook page link")} value={s.facebook} />
+            <Field k="youtube" label={pick(locale, "ইউটিউব চ্যানেল লিংক", "YouTube channel link")} value={s.youtube} />
             <Field k="officeHours" label={pick(locale, "অফিসের সময় (বাংলা)", "Office hours (Bangla)")} value={s.officeHours} />
             <Field k="officeHoursEn" label={pick(locale, "অফিসের সময় (ইংরেজি)", "Office hours (English)")} value={s.officeHoursEn} />
             <Field k="address" label={pick(locale, "ঠিকানা (বাংলা)", "Address (Bangla)")} value={s.address} />

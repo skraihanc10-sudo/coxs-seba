@@ -7,6 +7,9 @@ export const SETTING_DEFAULTS: Record<string, string> = {
   whatsapp: brand.whatsapp,
   emergency: brand.emergencyPhone,
   supportEmail: brand.supportEmail,
+  /** Social links shown in the footer; leave empty to hide the icon. */
+  facebook: "https://facebook.com/handyobd",
+  youtube: "https://youtube.com/@handyobd",
   officeHours: "প্রতিদিন সকাল ৮টা – রাত ১০টা",
   officeHoursEn: "Every day, 8 am – 10 pm",
   address: brand.addressBn,

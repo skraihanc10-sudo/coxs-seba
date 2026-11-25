@@ -14,6 +14,13 @@ import { unreadMessages } from "@/lib/support"
 import { homeFor } from "@/lib/roles"
 import { brand } from "@/theme/brand"
 
+const Facebook = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden><path d="M13.5 22v-8h2.7l.4-3.2h-3.1V8.8c0-.9.3-1.6 1.6-1.6h1.7V4.4c-.3 0-1.3-.1-2.5-.1-2.5 0-4.1 1.5-4.1 4.2v2.3H7.4V14h2.8v8h3.3Z" /></svg>
+)
+const Youtube = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden><path d="M23 7.2a2.9 2.9 0 0 0-2-2C19.2 4.7 12 4.7 12 4.7s-7.2 0-9 .5a2.9 2.9 0 0 0-2 2A30 30 0 0 0 .5 12a30 30 0 0 0 .5 4.8 2.9 2.9 0 0 0 2 2c1.8.5 9 .5 9 .5s7.2 0 9-.5a2.9 2.9 0 0 0 2-2 30 30 0 0 0 .5-4.8 30 30 0 0 0-.5-4.8ZM9.7 15.1V8.9l6 3.1-6 3.1Z" /></svg>
+)
+
 /** Public site and customer area: top bar, phone tabs, footer. Everything shown is the current shop's. */
 export async function SiteShell({ children }: { children: React.ReactNode }) {
   const [locale, user, shop, shops] = await Promise.all([getLocale(), getUser(), currentShop(), activeShops()])
@@ -25,6 +32,13 @@ export async function SiteShell({ children }: { children: React.ReactNode }) {
   const helpline = shop.phone || settings.helpline
   const whatsapp = shop.whatsapp || settings.whatsapp
   const address = bn ? shop.addressBn || settings.address : shop.address || settings.addressEn
+  const social = [
+    settings.facebook ? { label: "Facebook", href: settings.facebook, external: true, icon: <Facebook className="size-5" /> } : null,
+    settings.youtube ? { label: "YouTube", href: settings.youtube, external: true, icon: <Youtube className="size-5" /> } : null,
+    { label: "WhatsApp", href: whatsappHref(whatsapp), external: true, icon: <MessageCircle className="size-5" aria-hidden /> },
+    { label: pick(locale, "ইমেইল", "Email"), href: `mailto:${settings.supportEmail || brand.supportEmail}`, external: false, icon: <Mail className="size-5" aria-hidden /> },
+    { label: pick(locale, "হেল্পলাইন", "Helpline"), href: telHref(helpline), external: false, icon: <Phone className="size-5" aria-hidden /> },
+  ].filter((x) => x !== null)
   const items: NavItem[] = [
     { href: "/", label: t.home, icon: "home", exact: true },
     { href: "/services", label: t.services, icon: "grid" },
@@ -75,39 +89,26 @@ export async function SiteShell({ children }: { children: React.ReactNode }) {
       <main id="main" className="mx-auto w-full max-w-6xl flex-1 px-4 pt-5 pb-10 md:px-6 md:pt-8 md:pb-16">{children}</main>
 
       <footer className="mt-10 bg-ink text-white" aria-label={pick(locale, "ফুটার", "Footer")}>
-        <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 md:grid-cols-[1.3fr_1fr_1fr_1.2fr] md:px-6 md:py-14">
+        <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 md:grid-cols-[1.4fr_1fr_1.2fr] md:px-6 md:py-14">
           <div>
             <Logo bn={bn} light />
             <p className="mt-3 max-w-xs text-sm text-white/70">{bn ? brand.taglineBn : brand.tagline}</p>
             <p className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-white">
               <MapPin className="size-3.5" aria-hidden /> {coverageText(shop, locale)}
             </p>
-            <ul className="mt-5 flex flex-wrap gap-2 text-[11px] font-bold text-white/80" aria-label={pick(locale, "পেমেন্ট", "Payment")}>
-              {(bn ? ["ক্যাশ", "বিকাশ", "নগদ"] : ["Cash", "bKash", "Nagad"]).map((m) => (
-                <li key={m} className="rounded-md bg-white/10 px-2.5 py-1">{m}</li>
+          </div>
+          <div className="text-sm">
+            <p className="font-extrabold">{pick(locale, "আমাদের সাথে থাকুন", "Stay connected")}</p>
+            <ul className="mt-3 flex flex-wrap gap-2" aria-label={pick(locale, "সোশ্যাল মিডিয়া ও যোগাযোগ", "Social media & contact")}>
+              {social.map((x) => (
+                <li key={x.label}>
+                  <a href={x.href} target={x.external ? "_blank" : undefined} rel={x.external ? "noopener noreferrer" : undefined} title={x.label} aria-label={x.label} className="grid size-11 place-items-center rounded-xl bg-white/10 text-white ring-1 ring-white/15 transition hover:bg-white hover:text-ink">
+                    {x.icon}
+                  </a>
+                </li>
               ))}
             </ul>
-          </div>
-          <div className="text-sm">
-            <p className="font-extrabold">{pick(locale, "সেবা", "Services")}</p>
-            <ul className="mt-3 space-y-2 text-white/70">
-              <li><Link href="/services/rent-a-car" className="hover:text-white">{pick(locale, "গাড়ি ও বাইক ভাড়া", "Car & bike rental")}</Link></li>
-              <li><Link href="/services/resort-booking" className="hover:text-white">{pick(locale, "রিসোর্ট ও হোটেল বুকিং", "Resort & hotel booking")}</Link></li>
-              <li><Link href="/services/shutki" className="hover:text-white">{pick(locale, "কক্সবাজারের শুঁটকি", "Cox's dried fish")}</Link></li>
-              <li><Link href="/services/achar" className="hover:text-white">{pick(locale, "ঘরোয়া আচার", "Homemade pickles")}</Link></li>
-              <li><Link href="/services" className="font-bold text-white">{pick(locale, "সব সেবা →", "All services →")}</Link></li>
-            </ul>
-          </div>
-          <div className="text-sm">
-            <p className="font-extrabold">{pick(locale, "পার্টনার ও অফিস", "Partners & office")}</p>
-            <ul className="mt-3 space-y-2 text-white/70">
-              <li><Link href="/partner" className="hover:text-white">{pick(locale, "গাড়ি ভাড়া দিন", "Rent out your vehicle")}</Link></li>
-              <li><Link href="/partner/resort" className="hover:text-white">{pick(locale, "রিসোর্ট যুক্ত করুন", "List your resort")}</Link></li>
-              <li><Link href="/partner/store" className="hover:text-white">{pick(locale, "দোকান খুলুন", "Open a store")}</Link></li>
-              <li><Link href="/how-it-works" className="hover:text-white">{pick(locale, "কীভাবে কাজ করে", "How it works")}</Link></li>
-              <li><Link href="/branches" className="hover:text-white">{pick(locale, "আমাদের শাখা", "Our branches")}</Link></li>
-              <li><Link href="/login" className="hover:text-white">{pick(locale, "কর্মী বা অফিস লগইন", "Worker & office login")}</Link></li>
-            </ul>
+            <p className="mt-3 text-xs text-white/60">{pick(locale, "ফেসবুক · ইউটিউব · হোয়াটসঅ্যাপ · ইমেইল · হেল্পলাইন", "Facebook · YouTube · WhatsApp · Email · Helpline")}</p>
           </div>
           <div className="text-sm">
             <p className="font-extrabold">{bn ? shop.nameBn : shop.name}</p>
