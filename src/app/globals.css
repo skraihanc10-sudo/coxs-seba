@@ -136,10 +136,10 @@
   .tile {
     @apply relative block overflow-hidden rounded-3xl bg-ink text-white ring-1 ring-black/5 shadow-[0_12px_30px_rgba(11,31,58,0.14)];
   }
-  .tile img {
+  .tile > img {
     @apply absolute inset-0 h-full w-full object-cover transition duration-700;
   }
-  .tile:hover img {
+  .tile:hover > img {
     transform: scale(1.06);
   }
   .tile-shade {

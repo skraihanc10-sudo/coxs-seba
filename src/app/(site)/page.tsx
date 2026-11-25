@@ -12,6 +12,7 @@ import { clip, pageMeta } from "@/lib/seo"
 import { ofBn } from "@/lib/bangla"
 import { CategoryIcon } from "@/components/category-icon"
 import { HeroShowcase } from "@/components/hero-showcase"
+import { MarketTiles } from "@/components/market-tiles"
 import { faqLd, JsonLd, localBusiness, organization } from "@/components/seo/json-ld"
 import { brand } from "@/theme/brand"
 
@@ -122,21 +123,7 @@ export default async function HomePage() {
             </div>
             <Link href="/services" className="hidden text-sm font-bold text-brand sm:inline">{t.seeAll} →</Link>
           </div>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
-            {markets.map((c, i) => (
-              <Link key={c.id} href={`/services/${c.slug}`} className={`tile group ${i === 0 ? "col-span-2 aspect-[2/1] md:col-span-2 md:aspect-auto md:row-span-2" : "aspect-[4/3] md:aspect-auto md:min-h-44"}`}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                {c.image ? <img src={c.image} alt="" loading={i === 0 ? "eager" : "lazy"} /> : null}
-                <span className="tile-shade" aria-hidden />
-                <span className="absolute inset-x-0 bottom-0 p-4 md:p-5">
-                  <span className="glass inline-grid size-9 place-items-center rounded-xl" aria-hidden><CategoryIcon name={c.icon} className="size-4" /></span>
-                  <span className={`display mt-2 block font-extrabold leading-tight ${i === 0 ? "text-xl md:text-3xl" : "text-base md:text-xl"}`}>{named(locale, c)}</span>
-                  <span className="mt-1 line-clamp-2 block text-xs text-white/80 md:text-sm">{categoryPriceLine(c, locale, taka, unitLabel)}</span>
-                  <span className="mt-2 inline-flex items-center gap-1 text-xs font-extrabold text-white">{pick(locale, "দেখুন", "Open")} <ArrowRight className="size-3.5 transition group-hover:translate-x-0.5" aria-hidden /></span>
-                </span>
-              </Link>
-            ))}
-          </div>
+          <MarketTiles locale={locale} shopId={shop.id} categories={categories} />
         </section>
       ) : null}
 

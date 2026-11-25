@@ -73,7 +73,6 @@ export default async function ServicesPage({ searchParams }: { searchParams: Pro
             const priceLine = categoryPriceLine(c, locale, taka, unitLabel)
             return (
               <article key={c.id} className="card card-lift group relative flex gap-3 overflow-hidden p-3 md:gap-5 md:p-4" aria-labelledby={`cat-${c.slug}`}>
-                <Link href={`/services/${c.slug}`} className="absolute inset-0 rounded-[inherit]" aria-label={named(locale, c)} />
                 <span className="relative block w-32 shrink-0 self-start overflow-hidden rounded-xl bg-brand-soft sm:w-44 md:w-56">
                   {c.image ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -97,7 +96,7 @@ export default async function ServicesPage({ searchParams }: { searchParams: Pro
                   {market ? (
                     <p className="mt-1 text-xs text-muted-foreground">{bn ? market.bn : market.en}</p>
                   ) : (
-                    <ul className="relative z-10 mt-2 flex flex-wrap gap-1.5">
+                    <ul className="relative z-20 mt-2 flex flex-wrap gap-1.5">
                       {c.offerings.map((o) => (
                         <li key={o.id}>
                           <Link href={`/book/${c.slug}/${o.slug}`} className="inline-flex items-center gap-1 rounded-full bg-canvas px-2.5 py-1 text-xs font-bold text-ink ring-1 ring-transparent transition hover:ring-brand/40">
@@ -109,6 +108,8 @@ export default async function ServicesPage({ searchParams }: { searchParams: Pro
                     </ul>
                   )}
                 </div>
+                {/* Last in the DOM and above everything but the offering chips: the whole card opens the category. */}
+                <Link href={`/services/${c.slug}`} className="absolute inset-0 z-10 rounded-[inherit]" aria-label={named(locale, c)} />
               </article>
             )
           })}
