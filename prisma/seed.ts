@@ -4,6 +4,8 @@
  *   tsx prisma/seed.ts            shops + catalog + demo accounts + demo bookings
  *   tsx prisma/seed.ts --catalog  default shop, its areas, services, FAQs, templates, settings only
  */
+import { existsSync } from "node:fs"
+import { join } from "node:path"
 import { PrismaClient } from "@prisma/client"
 import bcrypt from "bcryptjs"
 import { AREAS, CATEGORIES, DHAKA_AREAS, FAQS, REPLY_TEMPLATES, SHOPS } from "./catalog"
@@ -12,6 +14,11 @@ import { SETTING_DEFAULTS } from "../src/lib/settings"
 import { GROUP_CATEGORY, SHOP_GROUPS, SHOP_PRODUCTS, SHOP_STORES } from "./shop-demo"
 
 const db = new PrismaClient()
+
+/** A bundled illustration under public/, or "" when none ships for that path. */
+function bundled(path: string) {
+  return existsSync(join(process.cwd(), "public", path)) ? path : ""
+}
 const catalogOnly = process.argv.includes("--catalog")
 
 /** The first branch keeps the fixed id the shops migration used for existing rows. */
@@ -53,10 +60,14 @@ async function catalogFor(shopId: string, areas: typeof AREAS, categories: typeo
     const pin = c.slug === "rent-a-car" ? { sort: -4 } : c.slug === "resort-booking" ? { sort: -3 } : c.slug === "shutki" ? { sort: -2 } : c.slug === "achar" ? { sort: -1 } : {}
     const row = await db.serviceCategory.upsert({ where: { shopId_slug: { shopId, slug: c.slug } }, update: { ...(refreshImage ? { image: cat.image } : {}), ...pin }, create: { ...cat, shopId, sort: i, ...pin } })
     for (const [j, o] of offerings.entries()) {
+      // Every offering ships with an AI illustration under public/services/offerings; rows keep an admin-uploaded photo.
+      const image = bundled(`/services/offerings/${c.slug}/${o.slug}.jpg`)
+      const have = await db.serviceOffering.findUnique({ where: { categoryId_slug: { categoryId: row.id, slug: o.slug } }, select: { image: true } })
+      const refresh = image && have && (!have.image || have.image.startsWith("/services/")) && have.image !== image
       await db.serviceOffering.upsert({
         where: { categoryId_slug: { categoryId: row.id, slug: o.slug } },
-        update: {},
-        create: { ...o, minQty: o.minQty ?? 1, categoryId: row.id, sort: j },
+        update: refresh ? { image } : {},
+        create: { ...o, image, minQty: o.minQty ?? 1, categoryId: row.id, sort: j },
       })
     }
   }
@@ -129,12 +140,12 @@ async function demo(coxs: { id: string }) {
 
   // Vehicles customers can pick on the rent-a-car page: two of HANDYO's own, two from the partner, one waiting for approval.
   const rentalOfferings = Object.fromEntries((await db.serviceOffering.findMany({ where: { categoryId: categories["rent-a-car"].id } })).map((o) => [o.slug, o]))
-  const vehicles: Array<{ key: string; type: string; owner: string | null; title: string; titleBn: string; plate: string; seats: number; hour: number; day: number; half?: number; specs?: string; minHours: number; detail: string; detailBn: string; status: string }> = [
-    { key: "noah", type: "car", owner: null, title: "Toyota Noah 2018 (AC)", titleBn: "টয়োটা নোয়া ২০১৮ (এসি)", plate: "Cox-Ga-11-2233", seats: 7, hour: 600, day: 4000, half: 2500, specs: "7 seats, AC, Driver included", minHours: 2, detail: "Driver and fuel included inside town; Inani/Himchari day trips.", detailBn: "ড্রাইভার ও তেলসহ, শহরের মধ্যে; ইনানী-হিমছড়ি ডে ট্রিপ।", status: "APPROVED" },
-    { key: "jeep", type: "chander-gari", owner: null, title: "Open-roof Marine Drive jeep", titleBn: "ছাদখোলা মেরিন ড্রাইভ জিপ", plate: "Cox-Tha-12-4455", seats: 8, hour: 0, day: 4500, half: 2800, specs: "Open roof, 8 seats, Driver included", minHours: 1, detail: "Open-roof jeep for the Marine Drive run to Inani, with driver.", detailBn: "মেরিন ড্রাইভ ধরে ইনানী পর্যন্ত ছাদখোলা জিপ, ড্রাইভারসহ।", status: "APPROVED" },
-    { key: "scooter", type: "bike", owner: "partner.rony@needcoxs.test", title: "Yamaha Ray ZR scooter", titleBn: "ইয়ামাহা রে ZR স্কুটার", plate: "Cox-Ha-21-7788", seats: 2, hour: 150, day: 800, half: 500, specs: "125cc, Automatic, 2 helmets", minHours: 2, detail: "Self-drive, two helmets, licence required. Fuel extra.", detailBn: "নিজে চালাবেন, দুইটা হেলমেট, লাইসেন্স লাগবে। তেল আলাদা।", status: "APPROVED" },
-    { key: "premio", type: "car", owner: "partner.rony@needcoxs.test", title: "Toyota Premio 2016 (AC)", titleBn: "টয়োটা প্রিমিও ২০১৬ (এসি)", plate: "Cox-Ga-14-9911", seats: 4, hour: 500, day: 3500, half: 2000, specs: "AC, 4 seats, Driver included", minHours: 2, detail: "AC sedan with driver and fuel, inside town.", detailBn: "এসি সেডান, ড্রাইভার ও তেলসহ, শহরের মধ্যে।", status: "APPROVED" },
-    { key: "hiace", type: "bus", owner: "partner.rony@needcoxs.test", title: "Toyota Hiace microbus (11 seats)", titleBn: "টয়োটা হাইয়েস মাইক্রোবাস (১১ সিট)", plate: "Cox-Cha-11-3344", seats: 11, hour: 900, day: 6500, minHours: 3, detail: "For groups: Teknaf, Inani, Ramu day tours.", detailBn: "গ্রুপের জন্য: টেকনাফ, ইনানী, রামু ডে ট্যুর।", status: "PENDING" },
+  const vehicles: Array<{ key: string; photo: string; type: string; owner: string | null; title: string; titleBn: string; plate: string; seats: number; hour: number; day: number; half?: number; specs?: string; minHours: number; detail: string; detailBn: string; status: string }> = [
+    { key: "noah", photo: "car-noah", type: "car", owner: null, title: "Toyota Noah 2018 (AC)", titleBn: "টয়োটা নোয়া ২০১৮ (এসি)", plate: "Cox-Ga-11-2233", seats: 7, hour: 600, day: 4000, half: 2500, specs: "7 seats, AC, Driver included", minHours: 2, detail: "Driver and fuel included inside town; Inani/Himchari day trips.", detailBn: "ড্রাইভার ও তেলসহ, শহরের মধ্যে; ইনানী-হিমছড়ি ডে ট্রিপ।", status: "APPROVED" },
+    { key: "jeep", photo: "jeep-marine", type: "chander-gari", owner: null, title: "Open-roof Marine Drive jeep", titleBn: "ছাদখোলা মেরিন ড্রাইভ জিপ", plate: "Cox-Tha-12-4455", seats: 8, hour: 0, day: 4500, half: 2800, specs: "Open roof, 8 seats, Driver included", minHours: 1, detail: "Open-roof jeep for the Marine Drive run to Inani, with driver.", detailBn: "মেরিন ড্রাইভ ধরে ইনানী পর্যন্ত ছাদখোলা জিপ, ড্রাইভারসহ।", status: "APPROVED" },
+    { key: "scooter", photo: "scooter-rayzr", type: "bike", owner: "partner.rony@needcoxs.test", title: "Yamaha Ray ZR scooter", titleBn: "ইয়ামাহা রে ZR স্কুটার", plate: "Cox-Ha-21-7788", seats: 2, hour: 150, day: 800, half: 500, specs: "125cc, Automatic, 2 helmets", minHours: 2, detail: "Self-drive, two helmets, licence required. Fuel extra.", detailBn: "নিজে চালাবেন, দুইটা হেলমেট, লাইসেন্স লাগবে। তেল আলাদা।", status: "APPROVED" },
+    { key: "premio", photo: "car-premio", type: "car", owner: "partner.rony@needcoxs.test", title: "Toyota Premio 2016 (AC)", titleBn: "টয়োটা প্রিমিও ২০১৬ (এসি)", plate: "Cox-Ga-14-9911", seats: 4, hour: 500, day: 3500, half: 2000, specs: "AC, 4 seats, Driver included", minHours: 2, detail: "AC sedan with driver and fuel, inside town.", detailBn: "এসি সেডান, ড্রাইভার ও তেলসহ, শহরের মধ্যে।", status: "APPROVED" },
+    { key: "hiace", photo: "micro-hiace-2", type: "bus", owner: "partner.rony@needcoxs.test", title: "Toyota Hiace microbus (11 seats)", titleBn: "টয়োটা হাইয়েস মাইক্রোবাস (১১ সিট)", plate: "Cox-Cha-11-3344", seats: 11, hour: 900, day: 6500, minHours: 3, detail: "For groups: Teknaf, Inani, Ramu day tours.", detailBn: "গ্রুপের জন্য: টেকনাফ, ইনানী, রামু ডে ট্যুর।", status: "PENDING" },
   ]
   for (const [i, v] of vehicles.entries()) {
     const offering = rentalOfferings[v.type]
@@ -143,6 +154,7 @@ async function demo(coxs: { id: string }) {
     if (existing) {
       // Older rows: fill the newer marketplace fields once, never overwrite edits.
       if (!existing.specs && !existing.pricePerHalfDay) await db.vehicle.update({ where: { id: existing.id }, data: { specs: v.specs ?? "", pricePerHalfDay: v.half ?? 0 } })
+      if (!existing.photos && bundled(`/demo/vehicles/${v.photo}.jpg`)) await db.vehicle.update({ where: { id: existing.id }, data: { photos: `/demo/vehicles/${v.photo}.jpg` } })
       continue
     }
     await db.vehicle.create({
@@ -154,6 +166,7 @@ async function demo(coxs: { id: string }) {
         titleBn: v.titleBn,
         plate: v.plate,
         seats: v.seats,
+        photos: bundled(`/demo/vehicles/${v.photo}.jpg`),
         pricePerHour: v.hour,
         pricePerDay: v.day,
         pricePerHalfDay: v.half ?? 0,
@@ -522,20 +535,39 @@ async function syncRentalTypes() {
  */
 async function ensureDemoProperties(shop: { id: string }) {
   const category = await db.serviceCategory.findFirst({ where: { shopId: shop.id, flow: "STAY" } })
-  if (!category || (await db.property.count({ where: { shopId: shop.id } }))) return
+  if (!category) return
   const areas = await db.serviceArea.findMany({ where: { shopId: shop.id } })
   const area = (slug: string) => areas.find((a) => a.slug === slug) ?? areas[0]
   if (!areas.length) return
   const list = [
-    { area: "marine-drive-sadar", kind: "RESORT", photos: ["sea-view-resort", "infinity-pool", "deluxe-room"], name: "Blue Bay Sea View Resort", nameBn: "ব্লু বে সি ভিউ রিসোর্ট", address: "Marine Drive, Inani", addressBn: "মেরিন ড্রাইভ, ইনানী", amenities: "Sea view, Pool, Breakfast, WiFi, Parking, Restaurant", detail: "Beachfront resort on Marine Drive with an infinity pool facing the sea. Breakfast and WiFi included.", detailBn: "মেরিন ড্রাইভে সমুদ্রের সামনে রিসোর্ট, সাগরমুখী ইনফিনিটি পুল। সকালের নাস্তা ও ওয়াইফাই সহ।",
-      rooms: [{ name: "Deluxe Sea View", sleeps: 2, pricePerNight: 6500, totalRooms: 8, amenities: "Sea view balcony, AC, King bed" }, { name: "Family Suite", sleeps: 4, pricePerNight: 11000, totalRooms: 4, amenities: "2 bedrooms, Sea view, AC, Mini fridge" }] },
-    { area: "kolatoli", kind: "HOTEL", photos: ["city-hotel", "hotel-lobby", "deluxe-room"], name: "Kolatoli Grand Hotel", nameBn: "কলাতলী গ্র্যান্ড হোটেল", address: "Kolatoli Main Road", addressBn: "কলাতলী মেইন রোড", amenities: "Beach 2 min, Pool, Breakfast, WiFi, Elevator, Restaurant", detail: "City hotel two minutes from Kolatoli beach, rooftop pool and 24-hour reception.", detailBn: "কলাতলী সৈকত থেকে ২ মিনিট, ছাদে পুল, ২৪ ঘণ্টা রিসেপশন।",
-      rooms: [{ name: "Standard Double", sleeps: 2, pricePerNight: 3500, totalRooms: 20, amenities: "AC, Queen bed, TV" }, { name: "Premium Twin", sleeps: 3, pricePerNight: 4800, totalRooms: 10, amenities: "AC, 2 beds, City view" }, { name: "Executive Suite", sleeps: 4, pricePerNight: 8500, totalRooms: 3, amenities: "Living room, Bathtub, Sea view" }] },
-    { area: "marine-drive-sadar", kind: "COTTAGE", photos: ["beach-cottage", "cottage-room", "garden-pool"], name: "Himchari Hill Cottages", nameBn: "হিমছড়ি হিল কটেজ", address: "Himchari, Marine Drive", addressBn: "হিমছড়ি, মেরিন ড্রাইভ", amenities: "Hill view, Garden, Breakfast, Bonfire, Parking", detail: "Wooden cottages on the hill above Himchari waterfall; sunset over the sea from every deck.", detailBn: "হিমছড়ি ঝরনার ওপরের পাহাড়ে কাঠের কটেজ; প্রতিটা ডেক থেকে সাগরে সূর্যাস্ত।",
-      rooms: [{ name: "Hill Cottage", sleeps: 2, pricePerNight: 4200, totalRooms: 6, amenities: "Private deck, Fan + AC, Breakfast" }, { name: "Family Cottage", sleeps: 5, pricePerNight: 7500, totalRooms: 3, amenities: "2 rooms, Deck, Kitchenette" }] },
-    { area: "laboni-point", kind: "GUESTHOUSE", photos: ["garden-pool", "cottage-room"], name: "Laboni Point Guest House", nameBn: "লাবণী পয়েন্ট গেস্ট হাউস", address: "Laboni Beach Road", addressBn: "লাবণী বিচ রোড", amenities: "Beach 5 min, WiFi, Family friendly, Parking", detail: "Budget-friendly guest house near Laboni point, clean rooms and a quiet garden.", detailBn: "লাবণী পয়েন্টের কাছে সাশ্রয়ী গেস্ট হাউস, পরিষ্কার রুম আর নিরিবিলি বাগান।",
-      rooms: [{ name: "Economy Double", sleeps: 2, pricePerNight: 1800, totalRooms: 12, amenities: "AC, Double bed" }, { name: "Family Room", sleeps: 4, pricePerNight: 3200, totalRooms: 5, amenities: "AC, 2 beds, Balcony" }] },
+    { area: "marine-drive-sadar", kind: "RESORT", photos: ["bluebay-cover", "room-bluebay-deluxe", "room-bluebay-family"], name: "Blue Bay Sea View Resort", nameBn: "ব্লু বে সি ভিউ রিসোর্ট", address: "Marine Drive, Inani", addressBn: "মেরিন ড্রাইভ, ইনানী", amenities: "Sea view, Pool, Breakfast, WiFi, Parking, Restaurant", detail: "Beachfront resort on Marine Drive with an infinity pool facing the sea. Breakfast and WiFi included.", detailBn: "মেরিন ড্রাইভে সমুদ্রের সামনে রিসোর্ট, সাগরমুখী ইনফিনিটি পুল। সকালের নাস্তা ও ওয়াইফাই সহ।",
+      rooms: [{ name: "Deluxe Sea View", sleeps: 2, pricePerNight: 6500, totalRooms: 8, amenities: "Sea view balcony, AC, King bed", photos: "/demo/stays/room-bluebay-deluxe.jpg" }, { name: "Family Suite", sleeps: 4, pricePerNight: 11000, totalRooms: 4, amenities: "2 bedrooms, Sea view, AC, Mini fridge", photos: "/demo/stays/room-bluebay-family.jpg" }] },
+    { area: "kolatoli", kind: "HOTEL", photos: ["kolatoli-cover", "room-kolatoli-suite", "room-kolatoli-standard"], name: "Kolatoli Grand Hotel", nameBn: "কলাতলী গ্র্যান্ড হোটেল", address: "Kolatoli Main Road", addressBn: "কলাতলী মেইন রোড", amenities: "Beach 2 min, Pool, Breakfast, WiFi, Elevator, Restaurant", detail: "City hotel two minutes from Kolatoli beach, rooftop pool and 24-hour reception.", detailBn: "কলাতলী সৈকত থেকে ২ মিনিট, ছাদে পুল, ২৪ ঘণ্টা রিসেপশন।",
+      rooms: [{ name: "Standard Double", sleeps: 2, pricePerNight: 3500, totalRooms: 20, amenities: "AC, Queen bed, TV", photos: "/demo/stays/room-kolatoli-standard.jpg" }, { name: "Premium Twin", sleeps: 3, pricePerNight: 4800, totalRooms: 10, amenities: "AC, 2 beds, City view", photos: "/demo/stays/room-kolatoli-twin.jpg" }, { name: "Executive Suite", sleeps: 4, pricePerNight: 8500, totalRooms: 3, amenities: "Living room, Bathtub, Sea view", photos: "/demo/stays/room-kolatoli-suite.jpg" }] },
+    { area: "marine-drive-sadar", kind: "COTTAGE", photos: ["himchari-cover", "room-himchari-hill", "room-himchari-family"], name: "Himchari Hill Cottages", nameBn: "হিমছড়ি হিল কটেজ", address: "Himchari, Marine Drive", addressBn: "হিমছড়ি, মেরিন ড্রাইভ", amenities: "Hill view, Garden, Breakfast, Bonfire, Parking", detail: "Wooden cottages on the hill above Himchari waterfall; sunset over the sea from every deck.", detailBn: "হিমছড়ি ঝরনার ওপরের পাহাড়ে কাঠের কটেজ; প্রতিটা ডেক থেকে সাগরে সূর্যাস্ত।",
+      rooms: [{ name: "Hill Cottage", sleeps: 2, pricePerNight: 4200, totalRooms: 6, amenities: "Private deck, Fan + AC, Breakfast", photos: "/demo/stays/room-himchari-hill.jpg" }, { name: "Family Cottage", sleeps: 5, pricePerNight: 7500, totalRooms: 3, amenities: "2 rooms, Deck, Kitchenette", photos: "/demo/stays/room-himchari-family.jpg" }] },
+    { area: "laboni-point", kind: "GUESTHOUSE", photos: ["laboni-cover", "room-laboni-family", "room-laboni-economy"], name: "Laboni Point Guest House", nameBn: "লাবণী পয়েন্ট গেস্ট হাউস", address: "Laboni Beach Road", addressBn: "লাবণী বিচ রোড", amenities: "Beach 5 min, WiFi, Family friendly, Parking", detail: "Budget-friendly guest house near Laboni point, clean rooms and a quiet garden.", detailBn: "লাবণী পয়েন্টের কাছে সাশ্রয়ী গেস্ট হাউস, পরিষ্কার রুম আর নিরিবিলি বাগান।",
+      rooms: [{ name: "Economy Double", sleeps: 2, pricePerNight: 1800, totalRooms: 12, amenities: "AC, Double bed", photos: "/demo/stays/room-laboni-economy.jpg" }, { name: "Family Room", sleeps: 4, pricePerNight: 3200, totalRooms: 5, amenities: "AC, 2 beds, Balcony", photos: "/demo/stays/room-laboni-family.jpg" }] },
   ]
+  if (await db.property.count({ where: { shopId: shop.id } })) {
+    // Demo resorts from an earlier version: swap the old stock photos for the bundled set once; owner uploads stay.
+    let refreshed = 0
+    for (const p of list) {
+      const row = await db.property.findFirst({ where: { shopId: shop.id, name: p.name }, include: { rooms: true } })
+      if (!row) continue
+      const photos = p.photos.map((x) => `/demo/stays/${x}.jpg`).join(",")
+      if ((!row.photos || row.photos.startsWith("/demo/stays/")) && row.photos !== photos) {
+        await db.property.update({ where: { id: row.id }, data: { photos } })
+        refreshed++
+      }
+      for (const r of p.rooms) {
+        const room = row.rooms.find((x) => x.name === r.name)
+        if (room && !room.photos && r.photos) await db.roomType.update({ where: { id: room.id }, data: { photos: r.photos } })
+      }
+    }
+    if (refreshed) console.log(`Demo resorts: photos refreshed on ${refreshed} properties`)
+    return
+  }
   let n = 0
   for (const [i, p] of list.entries()) {
     const a = area(p.area)
@@ -571,7 +603,9 @@ async function ensureProductShop(shop: { id: string }) {
   // Demo partner stores (HANDYO-managed until a real owner is attached); products without a store are spread across them.
   const stores: string[] = []
   for (const [i, st] of SHOP_STORES.entries()) {
-    const row = await db.store.upsert({ where: { shopId_slug: { shopId: shop.id, slug: st.slug } }, update: {}, create: { shopId: shop.id, ...st, status: "APPROVED", sort: i } })
+    const cover = bundled(`/demo/shop/stores/${st.slug}.jpg`)
+    const row = await db.store.upsert({ where: { shopId_slug: { shopId: shop.id, slug: st.slug } }, update: {}, create: { shopId: shop.id, ...st, photos: cover, status: "APPROVED", sort: i } })
+    if (!row.photos && cover) await db.store.update({ where: { id: row.id }, data: { photos: cover } })
     stores.push(row.id)
   }
   if (await db.product.count({ where: { shopId: shop.id } })) {

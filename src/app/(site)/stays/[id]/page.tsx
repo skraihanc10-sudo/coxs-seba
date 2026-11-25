@@ -87,12 +87,18 @@ export default async function StayPage({ params }: { params: Params }) {
             <ul className="divide-y divide-line">
               {rooms.map((r) => (
                 <li key={r.id} className="flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="min-w-0">
+                  <div className="flex min-w-0 items-center gap-3">
+                    {photosOf(r)[0] ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={photoUrl(photosOf(r)[0])} alt="" loading="lazy" className="size-20 shrink-0 rounded-xl object-cover ring-1 ring-line sm:size-24" />
+                    ) : null}
+                    <div className="min-w-0">
                     <p className="font-extrabold text-ink"><BedDouble className="mr-1 inline size-4 text-brand" aria-hidden />{r.name}</p>
                     <p className="mt-1 flex flex-wrap gap-x-3 text-xs font-bold text-muted-foreground">
                       <span className="inline-flex items-center gap-1"><Users className="size-3.5" aria-hidden /> {pick(locale, `${r.sleeps} জন`, `Sleeps ${r.sleeps}`)}</span>
                       {r.amenities ? <span>{r.amenities}</span> : null}
                     </p>
+                    </div>
                   </div>
                   <div className="flex shrink-0 items-center justify-between gap-3 sm:flex-col sm:items-end">
                     <span className="text-xl font-extrabold text-brand">{taka(r.pricePerNight, locale)}<span className="ml-1 text-xs font-semibold text-muted-foreground">/{pick(locale, "রাত", "night")}</span></span>

@@ -193,9 +193,14 @@ export default async function CategoryPage({ params }: { params: Params }) {
       {/* Rentals book a real vehicle from the marketplace above, never a bare type. */}
       <div className={rental || stay || shopFlow ? "hidden" : "grid gap-3 md:grid-cols-2"}>
         {category.offerings.map((o) => (
-          <Link key={o.id} href={`/book/${category.slug}/${o.slug}`} className="card flex flex-col gap-2 p-4 transition hover:ring-brand/40 md:p-5">
+          <Link key={o.id} href={`/book/${category.slug}/${o.slug}`} className="card card-lift flex gap-3 overflow-hidden p-3 md:gap-4 md:p-4">
+            {o.image ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={o.image} alt="" loading="lazy" className="size-24 shrink-0 rounded-2xl object-cover ring-1 ring-line md:size-28" />
+            ) : null}
+            <div className="flex min-w-0 flex-1 flex-col gap-1.5">
             <div className="flex items-start justify-between gap-3">
-              <h2 className="text-lg font-extrabold text-ink">{named(locale, o)}</h2>
+              <h2 className="text-base font-extrabold leading-tight text-ink md:text-lg">{named(locale, o)}</h2>
               <span className="shrink-0 text-right">
                 {o.pricing === "QUOTE" ? (
                   <span className="pill bg-brand-soft text-brand">{PRICING_TEXT.QUOTE[locale]}</span>
@@ -204,11 +209,12 @@ export default async function CategoryPage({ params }: { params: Params }) {
                 )}
               </span>
             </div>
-            <p className="text-sm text-muted-foreground">{bn ? o.detailBn : o.detail}</p>
-            <div className="mt-auto flex items-center justify-between pt-2 text-xs font-bold text-muted-foreground">
+            <p className="line-clamp-2 text-[13px] text-muted-foreground md:text-sm">{bn ? o.detailBn : o.detail}</p>
+            <div className="mt-auto flex items-center justify-between gap-2 pt-1 text-xs font-bold text-muted-foreground">
               <span className="inline-flex items-center gap-1"><Clock3 className="size-3.5" aria-hidden /> {minutes(o.durationMin)}</span>
               {o.pricing === "QUOTE" && o.price > 0 ? <span>{pick(locale, `পরিদর্শন ফি ${taka(o.price, locale)}`, `Inspection ${taka(o.price, locale)}`)}</span> : null}
               <span className="text-brand">{t.bookNow} →</span>
+            </div>
             </div>
           </Link>
         ))}
