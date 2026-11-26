@@ -1,9 +1,8 @@
-import bcrypt from "bcryptjs"
 import type { Prisma } from "@prisma/client"
 import { db } from "./db"
 import { AppError } from "./errors"
 import { notify, officeIds } from "./notify"
-import { localToday, normalisePhone, shiftDays } from "./format"
+import { localToday, shiftDays } from "./format"
 import type { Locale } from "./format"
 import { quoteCoupon } from "./coupons"
 import { directAssignData, newCode } from "./bookings"
@@ -200,27 +199,6 @@ async function requireRooms(input: PropertyInput) {
   const rooms = parseRooms(input.rooms)
   if (!rooms.length) throw new AppError("অন্তত একটা রুমের ধরন আর প্রতি রাতের দাম দিন।", "Add at least one room type with a nightly price.")
   return rooms
-}
-
-/** A resort/hotel owner signs up from the public page: inactive WORKER + PARTNER profile + PENDING property. */
-export async function applyAsStayPartner(shopId: string, person: { name: string; phone: string; email: string; password: string }, input: PropertyInput, photos: string[]) {
-  const phone = normalisePhone(person.phone)
-  if (!phone) throw new AppError("সঠিক মোবাইল নম্বর দিন।", "Enter a valid mobile number.")
-  const email = person.email ? person.email.toLowerCase() : null
-  const category = await stayCategory(shopId)
-  if (!category) throw new AppError("এই শাখায় রিসোর্ট বুকিং চালু নেই।", "This branch has no resort booking yet.")
-  const area = await areaOf(shopId, input.areaId)
-  const rooms = await requireRooms(input)
-  const clash = await db.user.findFirst({ where: { OR: [{ phone }, ...(email ? [{ email }] : [])] } })
-  if (clash) throw new AppError("এই মোবাইল বা ইমেইলে আগেই অ্যাকাউন্ট আছে। লগইন করে “আমার রিসোর্ট” থেকে যোগ করুন।", "That mobile or email already has an account. Log in and add it under “My resorts”.")
-  const passwordHash = await bcrypt.hash(person.password, 10)
-  const property = await db.$transaction(async (tx) => {
-    const user = await tx.user.create({ data: { name: person.name, phone, email, passwordHash, role: "WORKER", shopId, active: false } })
-    const worker = await tx.workerProfile.create({ data: { userId: user.id, shopId, kind: "PARTNER", approved: false, skills: { create: { categoryId: category.id } } } })
-    return tx.property.create({ data: { ...propertyData(input), shopId, areaId: area.id, workerId: worker.id, photos: photos.join(","), status: "PENDING", rooms: { create: rooms.map((r, i) => ({ ...r, sort: i })) } } })
-  })
-  await notify(await officeIds(shopId), { kind: "SYSTEM", title: "নতুন রিসোর্ট পার্টনার আবেদন", body: `${person.name} · ${property.nameBn} (${area.nameBn})। অনুমোদন দিন।`, link: "/admin/stays" })
-  return property
 }
 
 /** A logged-in partner adds a property (PENDING) or edits one of theirs. */

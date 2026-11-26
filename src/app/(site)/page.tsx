@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { ArrowRight, BadgeCheck, Building2, Car, Clock3, Fish, Handshake, MapPin, MapPinned, MessageCircle, Phone, Search, ShieldCheck, Star } from "lucide-react"
+import { ArrowRight, BadgeCheck, Building2, Car, Clock3, Fish, Handshake, MapPin, MapPinned, MessageCircle, Phone, ShieldCheck, Star } from "lucide-react"
 import { getLocale } from "@/lib/auth"
 import { getSettings } from "@/lib/settings"
 import { activeAreas, activeCategories, activeFaqs, categoryPriceLine, publishedReviews } from "@/lib/catalog"
@@ -295,8 +295,8 @@ export default async function HomePage() {
           <div className="grid gap-2">
             {[
               ["/partner", Car, pick(locale, "গাড়ি ভাড়া দিন", "Rent out your vehicle"), pick(locale, "বাইক, কার, চান্দের গাড়ি, বাস", "Bike, car, chander gari, bus")],
-              ["/partner/resort", Building2, pick(locale, "রিসোর্ট যুক্ত করুন", "List your resort"), pick(locale, "রুম ও রাতপ্রতি দাম আপনার হাতে", "Rooms and nightly prices, your call")],
-              ["/partner/store", Fish, pick(locale, "দোকান খুলুন", "Open a store"), pick(locale, "শুঁটকি বা আচার, সারা দেশে অর্ডার", "Dried fish or pickles, orders nationwide")],
+              ["/partner", Building2, pick(locale, "রিসোর্ট যুক্ত করুন", "List your resort"), pick(locale, "রুম ও রাতপ্রতি দাম আপনার হাতে", "Rooms and nightly prices, your call")],
+              ["/partner", Fish, pick(locale, "দোকান খুলুন", "Open a store"), pick(locale, "শুঁটকি বা আচার, সারা দেশে অর্ডার", "Dried fish or pickles, orders nationwide")],
             ].map(([href, Icon, title, body]) => {
               const I = Icon as typeof Car
               return (

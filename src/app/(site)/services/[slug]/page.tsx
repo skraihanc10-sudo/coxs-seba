@@ -146,7 +146,7 @@ export default async function CategoryPage({ params }: { params: Params }) {
             rules={laundryRules(settings)}
             groups={groups.map((g) => ({ id: g.id, name: named(locale, g) }))}
             stores={stores.filter((st) => products.some((p) => p.storeId === st.id)).map((st) => ({ id: st.id, slug: st.slug, name: named(locale, st), cover: photosOf(st)[0] ? photoUrl(photosOf(st)[0]) : null }))}
-            partnerHref="/partner/store"
+            partnerHref="/partner"
             products={products.map((p) => ({
               id: p.id,
               slug: p.slug,
@@ -170,7 +170,7 @@ export default async function CategoryPage({ params }: { params: Params }) {
             rules={shopRules(settings)}
             groups={groups.map((g) => ({ id: g.id, name: named(locale, g) }))}
             stores={stores.filter((st) => products.some((p) => p.storeId === st.id)).map((st) => ({ id: st.id, slug: st.slug, name: named(locale, st), cover: photosOf(st)[0] ? photoUrl(photosOf(st)[0]) : null }))}
-            partnerHref="/partner/store"
+            partnerHref="/partner"
             products={products.map((p) => ({
               id: p.id,
               slug: p.slug,
@@ -195,7 +195,7 @@ export default async function CategoryPage({ params }: { params: Params }) {
           ) : (
             <StayMarket locale={locale} properties={stays} fallback={category.image || null} />
           )}
-          <Link href="/partner/resort" className="card mt-6 flex items-center justify-between gap-3 bg-brand-soft p-4 transition hover:ring-brand/40">
+          <Link href="/partner" className="card mt-6 flex items-center justify-between gap-3 bg-brand-soft p-4 transition hover:ring-brand/40">
             <div>
               <p className="font-extrabold text-ink">{pick(locale, "আপনার রিসোর্ট বা হোটেল HANDYO-তে লিস্ট করুন", "List your resort or hotel on HANDYO")}</p>
               <p className="text-sm text-muted-foreground">{pick(locale, "রুম আর দাম আপনি ঠিক করেন; বুকিং, চ্যাট আর কাস্টমার আমরা আনি।", "You set rooms and prices; we bring bookings, chat and customers.")}</p>

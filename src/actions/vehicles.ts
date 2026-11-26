@@ -2,28 +2,13 @@
 
 import { revalidatePath } from "next/cache"
 import { run, type ActionState } from "@/lib/action"
-import { actor, getUser } from "@/lib/auth"
+import { actor } from "@/lib/auth"
 import { AppError } from "@/lib/errors"
-import { limited } from "@/lib/rate-limit"
-import { clientIp } from "@/lib/auth"
 import { saveImages } from "@/lib/uploads"
 import { ADMINS } from "@/lib/roles"
-import { currentShop, officeShopId } from "@/lib/shops"
-import { formObject, parse, partnerApplySchema, vehicleSchema } from "@/lib/validation"
-import { applyAsPartner, reviewVehicle, savePartnerVehicle, saveShopVehicle, togglePartnerVehicle } from "@/lib/vehicles"
-
-/** Public: a vehicle owner applies to rent through the branch the visitor is browsing. */
-export async function partnerApplyAction(_prev: ActionState, form: FormData): Promise<ActionState> {
-  return run(async () => {
-    limited("partner", await clientIp())
-    if (await getUser()) throw new AppError("আপনি লগইন করা আছেন। গাড়ি যোগ করতে পার্টনার অ্যাকাউন্টে “আমার গাড়ি” খুলুন।", "You are signed in. Use “My vehicles” in a partner account to add a vehicle.")
-    const input = parse(partnerApplySchema, formObject(form))
-    const shop = await currentShop()
-    const photos = await saveImages(form.getAll("photos"), 4)
-    await applyAsPartner(shop.id, { name: input.name, phone: input.phone, email: input.email, password: input.password }, input, photos)
-    return "আবেদন জমা হয়েছে। অ্যাডমিন অনুমোদন দিলে মোবাইল নম্বর ও পাসওয়ার্ড দিয়ে লগইন করতে পারবেন।"
-  })
-}
+import { officeShopId } from "@/lib/shops"
+import { formObject, parse, vehicleSchema } from "@/lib/validation"
+import { reviewVehicle, savePartnerVehicle, saveShopVehicle, togglePartnerVehicle } from "@/lib/vehicles"
 
 async function partner() {
   const user = await actor(["WORKER"])

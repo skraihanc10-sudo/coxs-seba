@@ -129,6 +129,10 @@ model WorkerProfile {
   photo       String   @default("")
   nid         String   @default("")
   nidPhoto    String   @default("")
+  /// NID | PASSPORT | BIRTH (birth certificate) | DRIVING
+  idType      String   @default("NID")
+  businessName String  @default("")
+  rejectNote  String   @default("")
   isRider     Boolean  @default(false)
   /// STAFF = our own team. PARTNER = an outside vehicle owner who rents through us.
   kind        String   @default("STAFF")

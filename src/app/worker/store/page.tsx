@@ -9,13 +9,6 @@ import { partnerStoreAction, partnerToggleProductAction } from "@/actions/shop"
 import { EmptyState, PageHeader, Section } from "@/components/bits"
 import { StoreForm } from "@/components/partner/store-form"
 
-const TONE: Record<string, string> = {
-  PENDING: "bg-amber-50 text-amber-800",
-  APPROVED: "bg-ok/10 text-emerald-800",
-  PAUSED: "bg-canvas text-muted-foreground",
-  REJECTED: "bg-[var(--danger-soft)] text-danger",
-}
-
 /** The partner's store: its details, status, and its products. */
 export default async function PartnerStorePage() {
   const [user, locale] = await Promise.all([requireUser(["WORKER"], "/worker/store"), getLocale()])

@@ -11,8 +11,8 @@ import { verifyOtp } from "@/lib/otp"
 import { saveImages } from "@/lib/uploads"
 import { ADMINS } from "@/lib/roles"
 import { currentShop, officeShopId } from "@/lib/shops"
-import { formObject, parse, productGroupSchema, productSchema, shopOrderSchema, storePartnerApplySchema, storeSchema } from "@/lib/validation"
-import { applyAsStorePartner, createShopOrder, parcelsOf, parseCart, partnerStore, priceCart, reviewStore, saveGroup, savePartnerStore, saveProduct, saveShopStore, toggleProduct } from "@/lib/shop"
+import { formObject, parse, productGroupSchema, productSchema, shopOrderSchema, storeSchema } from "@/lib/validation"
+import { createShopOrder, parcelsOf, parseCart, partnerStore, priceCart, reviewStore, saveGroup, savePartnerStore, saveProduct, saveShopStore, toggleProduct } from "@/lib/shop"
 import { customerByPhone } from "@/actions/auth"
 
 /* ---------- admin ---------- */
@@ -83,19 +83,6 @@ async function partner() {
   const user = await actor(["WORKER"])
   if (!user.worker) throw new AppError("পার্টনার প্রোফাইল পাওয়া যায়নি।", "Partner profile not found.")
   return { ...user, worker: user.worker }
-}
-
-/** Public: a store owner applies through the branch the visitor is browsing. */
-export async function storePartnerApplyAction(_prev: ActionState, form: FormData): Promise<ActionState> {
-  return run(async () => {
-    limited("partner", await clientIp())
-    if (await getUser()) throw new AppError("আপনি লগইন করা আছেন। পার্টনার অ্যাকাউন্টে “আমার দোকান” খুলুন।", "You are signed in. Use “My store” in a partner account.")
-    const input = parse(storePartnerApplySchema, formObject(form))
-    const shop = await currentShop()
-    const photos = await saveImages(form.getAll("photos"), 2)
-    await applyAsStorePartner(shop.id, { name: input.ownerName, phone: input.phone, email: input.email, password: input.password }, input, photos)
-    return "আবেদন জমা হয়েছে। অ্যাডমিন অনুমোদন দিলে মোবাইল নম্বর ও পাসওয়ার্ড দিয়ে লগইন করে পণ্য যোগ করতে পারবেন।"
-  })
 }
 
 export async function partnerStoreAction(_prev: ActionState, form: FormData): Promise<ActionState> {

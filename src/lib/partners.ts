@@ -9,6 +9,7 @@ import { billFor } from "./pricing"
 import { partnerShare } from "./vehicles"
 import { bookingFor, moveBooking, partnerOwns } from "./bookings"
 import type { Role } from "./roles"
+import type { PartnerSignupInput } from "./validation"
 
 /**
  * Partners (store owners, vehicle owners, resort owners) and what the office
@@ -18,6 +19,68 @@ import type { Role } from "./roles"
  */
 
 export const MAX_HELPERS = 2
+
+export const ID_TYPES: Record<string, { bn: string; en: string }> = {
+  NID: { bn: "জাতীয় পরিচয়পত্র (NID)", en: "National ID (NID)" },
+  PASSPORT: { bn: "পাসপোর্ট", en: "Passport" },
+  BIRTH: { bn: "জন্ম নিবন্ধন", en: "Birth certificate" },
+  DRIVING: { bn: "ড্রাইভিং লাইসেন্স", en: "Driving licence" },
+}
+
+/** Category flows an outside partner may sell under. */
+export const PARTNER_FLOWS = ["RENTAL", "STAY", "SHOP", "LAUNDRY"]
+
+/* ---------- sign-up & approval ---------- */
+
+/**
+ * Anyone becomes a partner the same way: an account, ID papers and the
+ * category they will sell under. The office approves the person; listings
+ * (store, vehicles, resort, laundry items) are added from the panel afterwards
+ * and get their own approval.
+ */
+export async function partnerSignup(shopId: string, input: PartnerSignupInput, idPhotos: string[]) {
+  const phone = normalisePhone(input.phone)
+  if (!phone) throw new AppError("সঠিক মোবাইল নম্বর দিন।", "Enter a valid mobile number.")
+  const email = input.email ? input.email.toLowerCase() : null
+  const category = await db.serviceCategory.findFirst({ where: { id: input.categoryId, shopId, active: true, flow: { in: PARTNER_FLOWS } } })
+  if (!category) throw new AppError("এই ক্যাটাগরিতে পার্টনার নেওয়া হচ্ছে না।", "That category is not open to partners.")
+  if (!idPhotos.length) throw new AppError("পরিচয়পত্রের ছবি দিন।", "Upload a photo of the ID.")
+  const clash = await db.user.findFirst({ where: { OR: [{ phone }, ...(email ? [{ email }] : [])] } })
+  if (clash) throw new AppError("এই মোবাইল বা ইমেইলে আগেই অ্যাকাউন্ট আছে। লগইন করুন।", "That mobile or email already has an account. Please log in.")
+  const passwordHash = await bcrypt.hash(input.password, 10)
+  const worker = await db.$transaction(async (tx) => {
+    const user = await tx.user.create({ data: { name: input.name, phone, email, passwordHash, role: "WORKER", shopId, active: false } })
+    return tx.workerProfile.create({
+      data: { userId: user.id, shopId, kind: "PARTNER", approved: false, idType: input.idType, nid: input.idNumber, nidPhoto: idPhotos.join(","), businessName: input.businessName, skills: { create: { categoryId: category.id } } },
+    })
+  })
+  await notify(await officeIds(shopId), { kind: "SYSTEM", title: "নতুন পার্টনার আবেদন", body: `${input.name} · ${category.nameBn}${input.businessName ? ` · ${input.businessName}` : ""}। কাগজ দেখে অনুমোদন দিন।`, link: "/admin/approvals" })
+  return worker
+}
+
+export async function pendingPartners(shopId: string | null) {
+  return db.workerProfile.findMany({
+    where: { kind: "PARTNER", approved: false, ...(shopId ? { shopId } : {}) },
+    include: { user: { select: { id: true, name: true, phone: true, email: true } }, skills: { include: { category: { select: { nameBn: true, name: true, flow: true } } } } },
+    orderBy: { joinedAt: "asc" },
+  })
+}
+
+/** The office approves a partner (login switched on) or rejects them (account removed). */
+export async function reviewPartner(user: Viewer & { role: Role }, workerId: string, decision: "APPROVE" | "REJECT", note = "") {
+  if (user.role !== "ADMIN" && user.role !== "OWNER") throw new AppError("অনুমোদন দিতে পারে শুধু অ্যাডমিন।", "Only an admin can decide.")
+  const w = await db.workerProfile.findUnique({ where: { id: workerId }, include: { user: { select: { id: true, name: true } } } })
+  if (!w || w.kind !== "PARTNER" || (user.role !== "OWNER" && user.shopId !== w.shopId)) throw new AppError("পার্টনার পাওয়া যায়নি।", "Partner not found.")
+  if (decision === "REJECT") {
+    await db.user.delete({ where: { id: w.userId } })
+    return
+  }
+  await db.$transaction([
+    db.workerProfile.update({ where: { id: w.id }, data: { approved: true, rejectNote: note } }),
+    db.user.update({ where: { id: w.userId }, data: { active: true } }),
+  ])
+  await notify([w.userId], { kind: "SYSTEM", title: "আপনার পার্টনার অ্যাকাউন্ট অনুমোদিত", body: "এখন লগইন করে আপনার পণ্য, গাড়ি বা রিসোর্ট যোগ করুন; অফিস অনুমোদন দিলে সাইটে দেখাবে।", link: "/worker" })
+}
 
 type Viewer = { id: string; role: string; shopId?: string | null; worker?: { id: string; kind?: string } | null; isHelper?: boolean }
 

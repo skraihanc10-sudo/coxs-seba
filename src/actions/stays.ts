@@ -10,23 +10,10 @@ import { limited } from "@/lib/rate-limit"
 import { verifyOtp } from "@/lib/otp"
 import { saveImages } from "@/lib/uploads"
 import { ADMINS } from "@/lib/roles"
-import { currentShop, officeShopId } from "@/lib/shops"
-import { formObject, parse, propertySchema, stayBookingSchema, stayPartnerApplySchema } from "@/lib/validation"
-import { applyAsStayPartner, createStayBooking, liveProperty, quoteStay, reviewProperty, savePartnerProperty, saveShopProperty, togglePartnerProperty } from "@/lib/stays"
+import { officeShopId } from "@/lib/shops"
+import { formObject, parse, propertySchema, stayBookingSchema } from "@/lib/validation"
+import { createStayBooking, liveProperty, quoteStay, reviewProperty, savePartnerProperty, saveShopProperty, togglePartnerProperty } from "@/lib/stays"
 import { customerByPhone } from "@/actions/auth"
-
-/** Public: a resort/hotel owner applies through the branch the visitor is browsing. */
-export async function stayPartnerApplyAction(_prev: ActionState, form: FormData): Promise<ActionState> {
-  return run(async () => {
-    limited("partner", await clientIp())
-    if (await getUser()) throw new AppError("আপনি লগইন করা আছেন। রিসোর্ট যোগ করতে পার্টনার অ্যাকাউন্টে “আমার রিসোর্ট” খুলুন।", "You are signed in. Use “My resorts” in a partner account to add a property.")
-    const input = parse(stayPartnerApplySchema, formObject(form))
-    const shop = await currentShop()
-    const photos = await saveImages(form.getAll("photos"), 6)
-    await applyAsStayPartner(shop.id, { name: input.ownerName, phone: input.phone, email: input.email, password: input.password }, input, photos)
-    return "আবেদন জমা হয়েছে। অ্যাডমিন অনুমোদন দিলে মোবাইল নম্বর ও পাসওয়ার্ড দিয়ে লগইন করতে পারবেন।"
-  })
-}
 
 async function partner() {
   const user = await actor(["WORKER"])

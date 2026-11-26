@@ -123,16 +123,6 @@ const propertyFields = {
   rooms: z.string().trim().min(3, msg("অন্তত একটা রুমের ধরন দিন।", "Add at least one room type.")).max(4000),
 }
 
-/** A resort/hotel owner signing up with their first property. */
-export const stayPartnerApplySchema = z.object({
-  ...propertyFields,
-  /** The owner's own name; the property's name is `name`. */
-  ownerName: z.string().trim().min(2, msg("আপনার নাম দিন।", "Add your name.")).max(80),
-  phone: phoneInput,
-  email: z.union([z.literal(""), z.string().trim().email(msg("সঠিক ইমেইল দিন।", "Enter a valid email."))]).default(""),
-  password: z.string().min(6, msg("পাসওয়ার্ড অন্তত ৬ অক্ষরের দিন।", "Password must be at least 6 characters.")).max(100),
-})
-
 /** A partner editing/adding a property, or an admin editing any property of the shop. */
 export const propertySchema = z.object({
   id: optionalText(40),
@@ -166,15 +156,6 @@ const storeFields = {
   detail: optionalText(600),
   detailBn: optionalText(600),
 }
-
-/** A store owner signing up from the public page. */
-export const storePartnerApplySchema = z.object({
-  ...storeFields,
-  ownerName: z.string().trim().min(2, msg("আপনার নাম দিন।", "Add your name.")).max(80),
-  phone: phoneInput,
-  email: z.union([z.literal(""), z.string().trim().email(msg("সঠিক ইমেইল দিন।", "Enter a valid email."))]).default(""),
-  password: z.string().min(6, msg("পাসওয়ার্ড অন্তত ৬ অক্ষরের দিন।", "Password must be at least 6 characters.")).max(100),
-})
 
 export const storeSchema = z.object({
   id: optionalText(40),
@@ -220,15 +201,6 @@ export const shopOrderSchema = z.object({
 })
 
 /** A partner (vehicle owner) signing up with their first vehicle. */
-export const partnerApplySchema = z.object({
-  name: z.string().trim().min(2, msg("আপনার নাম দিন।", "Add your name.")).max(80),
-  phone: phoneInput,
-  email: z.union([z.literal(""), z.string().trim().email(msg("সঠিক ইমেইল দিন।", "Enter a valid email."))]).default(""),
-  password: z.string().min(6, msg("পাসওয়ার্ড অন্তত ৬ অক্ষরের দিন।", "Password must be at least 6 characters.")).max(100),
-  agree: z.preprocess((v) => v === "on" || v === "1" || v === true, z.literal(true, msg("শর্তে সম্মতি দিন।", "Please accept the terms."))),
-  ...vehicleFields,
-})
-
 /** A partner editing/adding one of their vehicles, or an admin editing any vehicle of the shop. */
 export const vehicleSchema = z.object({
   id: optionalText(40),
@@ -382,3 +354,17 @@ export const templateSchema = z.object({
   body: z.string().trim().min(3, msg("উত্তরটা লিখুন।", "Write the reply.")).max(1000),
   sort: int(0, 999, "ক্রম ০–৯৯৯ দিন।", "Order must be 0–999.").default(0),
 })
+
+/** Anyone becoming a partner: an account, identity papers and the category they will sell under. Listings come later from the panel. */
+export const partnerSignupSchema = z.object({
+  name: z.string().trim().min(2, msg("আপনার নাম দিন।", "Add your name.")).max(80),
+  phone: phoneInput,
+  email: z.union([z.literal(""), z.string().trim().email(msg("সঠিক ইমেইল দিন।", "Enter a valid email."))]).default(""),
+  password: z.string().min(6, msg("পাসওয়ার্ড অন্তত ৬ অক্ষরের দিন।", "Password must be at least 6 characters.")).max(100),
+  categoryId: z.string().trim().min(1, msg("কী ধরনের পার্টনার হতে চান বেছে নিন।", "Pick what you will offer.")).max(40),
+  businessName: optionalText(100),
+  idType: z.enum(["NID", "PASSPORT", "BIRTH", "DRIVING"], msg("পরিচয়পত্রের ধরন বেছে নিন।", "Pick the ID type.")),
+  idNumber: z.string().trim().min(5, msg("পরিচয়পত্রের নম্বর দিন।", "Enter the ID number.")).max(40),
+  agree: z.preprocess((v) => v === "on" || v === "1" || v === true, z.literal(true, msg("শর্তে সম্মতি দিন।", "Please accept the terms."))),
+})
+export type PartnerSignupInput = z.infer<typeof partnerSignupSchema>

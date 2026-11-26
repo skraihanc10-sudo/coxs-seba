@@ -1,112 +1,111 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { BadgeCheck, Building2, Car, LayoutDashboard, MessageCircle, Store, Tag } from "lucide-react"
+import { BadgeCheck, FileCheck, LayoutDashboard, ShieldCheck, Upload } from "lucide-react"
 import { getLocale } from "@/lib/auth"
 import { currentShop } from "@/lib/shops"
-import { pick } from "@/lib/i18n"
+import { activeCategories } from "@/lib/catalog"
+import { ID_TYPES, PARTNER_FLOWS } from "@/lib/partners"
+import { named, pick } from "@/lib/i18n"
 import { pageMeta } from "@/lib/seo"
-import { rentalCategory } from "@/lib/vehicles"
-import { partnerApplyAction } from "@/actions/vehicles"
+import { partnerSignupAction } from "@/actions/partners"
 import { PageHeader } from "@/components/bits"
+import { CategoryIcon } from "@/components/category-icon"
 import { ActionForm, SubmitButton } from "@/components/forms"
-import { VehicleFields } from "@/components/partner/vehicle-form"
 import { breadcrumbs, JsonLd } from "@/components/seo/json-ld"
 
 export async function generateMetadata(): Promise<Metadata> {
   const [locale, shop] = await Promise.all([getLocale(), currentShop()])
   return pageMeta({
     locale,
-    title: pick(locale, "গাড়ি ভাড়া দিয়ে আয় করুন · পার্টনার হোন", "Earn by renting out your vehicle · Become a partner"),
+    title: pick(locale, "HANDYO পার্টনার হোন · দোকান, গাড়ি, রিসোর্ট, লন্ড্রি", "Become a HANDYO partner · store, vehicle, resort, laundry"),
     description: pick(
       locale,
-      `${shop.cityBn} এলাকায় আপনার গাড়ি, মাইক্রো বা বাইক HANDYO-র মাধ্যমে ভাড়া দিন। আপনি দাম ঠিক করেন, অর্ডার, চ্যাট আর পেমেন্ট আমরা সামলাই।`,
-      `Rent out your car, microbus or bike in ${shop.city} through HANDYO. You set the price; we handle orders, chat and payment.`,
+      `${shop.cityBn}-এ আপনার দোকান, গাড়ি, রিসোর্ট বা লন্ড্রি HANDYO-তে যুক্ত করুন। অ্যাকাউন্ট খুলুন, অফিস অনুমোদন দিলে নিজের প্যানেল থেকে ছবি আর দাম দিয়ে সব যোগ করুন।`,
+      `Bring your store, vehicle, resort or laundry in ${shop.city} to HANDYO. Open an account; once the office approves, add everything with photos and prices from your own panel.`,
     ),
     path: "/partner",
   })
 }
 
+/**
+ * One sign-up for every kind of partner: who you are (with ID papers) and what
+ * you will offer. Vehicles, rooms, products and prices are added from the
+ * partner panel after the office approves the person.
+ */
 export default async function PartnerPage() {
   const [locale, shop] = await Promise.all([getLocale(), currentShop()])
-  const category = await rentalCategory(shop.id)
-  const offerings = category?.offerings ?? []
-  const benefits = [
-    { icon: Tag, title: pick(locale, "আপনি দাম ঠিক করেন", "You set the price"), body: pick(locale, "ঘণ্টা বা দিনের ভাড়া আপনার হাতে। যখন খুশি গাড়ি বন্ধ রাখুন বা চালু করুন।", "Hourly or daily rate, your call. Pause or resume the vehicle whenever you like.") },
-    { icon: MessageCircle, title: pick(locale, "অর্ডার, চ্যাট আর পেমেন্ট আমরা সামলাই", "We handle orders, chat and payment"), body: pick(locale, "কাস্টমার HANDYO-তে বুক করে আর টাকা দেয়। আপনি শুধু সময়মতো গাড়ি পৌঁছে দেন।", "Customers book and pay through HANDYO. You just bring the vehicle on time.") },
-    { icon: LayoutDashboard, title: pick(locale, "অনুমোদনের পর নিজের প্যানেল", "Your own panel once approved"), body: pick(locale, "অর্ডার, আয় আর গাড়ির তালিকা এক জায়গায়, মোবাইল থেকেই।", "Orders, earnings and your vehicles in one place, right from your phone.") },
-  ]
+  const categories = (await activeCategories(shop.id)).filter((c) => PARTNER_FLOWS.includes(c.flow))
+  const bn = locale === "bn"
   const steps = [
-    pick(locale, "নিচের ফর্মে আবেদন করুন (গাড়ির ছবি আর ভাড়া দিন)", "Apply with the form below (photos and rates)"),
-    pick(locale, "অ্যাডমিন কাগজ আর গাড়ি দেখে অনুমোদন দেন", "Admin checks the papers and the vehicle, then approves"),
-    pick(locale, "অর্ডার এলে আপনার প্যানেলে আর নোটিশে দেখবেন", "Orders arrive in your panel and as alerts"),
-    pick(locale, "কাস্টমারের সাথে চ্যাট করুন, গাড়ি পৌঁছে দিন, আয় দেখুন", "Chat with the customer, deliver the vehicle, see your earnings"),
+    { icon: FileCheck, title: pick(locale, "১. অ্যাকাউন্ট খুলুন", "1. Open an account"), body: pick(locale, "নাম, মোবাইল, পাসওয়ার্ড, পরিচয়পত্র (NID / পাসপোর্ট) আর কী দেবেন সেটা বেছে নিন। ২ মিনিট।", "Name, mobile, password, your ID (NID / passport) and what you will offer. Two minutes.") },
+    { icon: ShieldCheck, title: pick(locale, "২. অফিস যাচাই করে", "2. The office verifies"), body: pick(locale, "HANDYO অফিস কাগজ দেখে অনুমোদন দেয়; তারপর এই নম্বর আর পাসওয়ার্ড দিয়ে লগইন।", "The HANDYO office checks the papers and approves; then log in with this number and password.") },
+    { icon: Upload, title: pick(locale, "৩. ছবি আর দাম দিয়ে যোগ করুন", "3. Add with photos and prices"), body: pick(locale, "নিজের প্যানেলে ক্যাটাগরি অনুযায়ী পণ্য, গাড়ি, রুম বা কাপড়ের দাম তুলুন; অফিস অনুমোদন দিলেই সাইটে দেখাবে।", "In your panel, list products, vehicles, rooms or laundry prices; each goes live once the office approves.") },
+    { icon: LayoutDashboard, title: pick(locale, "৪. অর্ডার, চ্যাট, হিসাব", "4. Orders, chat, ledger"), body: pick(locale, "অর্ডার আপনার প্যানেলে আর নোটিশে আসে; কাস্টমারের সাথে চ্যাট; হিসাব দেখুন; ২ জন হেল্পার রাখুন।", "Orders arrive in your panel and as alerts; chat with customers; see your ledger; keep two helpers.") },
   ]
   return (
     <div className="mx-auto max-w-2xl">
       <JsonLd data={breadcrumbs([{ name: "HANDYO", path: "/" }, { name: pick(locale, "পার্টনার হোন", "Become a partner"), path: "/partner" }])} />
-      <PageHeader back="/" title={pick(locale, "গাড়ি ভাড়া দিয়ে আয় করুন", "Earn by renting out your vehicle")} sub={pick(locale, `${shop.cityBn} এলাকায় আপনার গাড়ি, মাইক্রো বা বাইক HANDYO-র মাধ্যমে ভাড়া দিন।`, `Rent out your car, microbus or bike in ${shop.city} through HANDYO.`)} />
+      <PageHeader back="/" title={pick(locale, "HANDYO পার্টনার হোন", "Become a HANDYO partner")} sub={pick(locale, `${shop.cityBn}-এ আপনার দোকান, গাড়ি, রিসোর্ট বা লন্ড্রি HANDYO-তে। আপনি দাম ঠিক করেন, বিক্রির ৯০% আপনার।`, `Your store, vehicle, resort or laundry in ${shop.city}, on HANDYO. You set the prices and keep 90% of every sale.`)} />
 
-      <nav aria-label={pick(locale, "পার্টনার ধরন", "Partner type")} className="mb-5 grid grid-cols-3 gap-2">
-        {[
-          ["/partner", Car, pick(locale, "গাড়ি", "Vehicle"), true],
-          ["/partner/resort", Building2, pick(locale, "রিসোর্ট", "Resort"), false],
-          ["/partner/store", Store, pick(locale, "দোকান", "Store"), false],
-        ].map(([href, Icon, label, on]) => {
-          const I = Icon as typeof Car
-          return (
-            <Link key={href as string} href={href as string} className={`card flex flex-col items-center gap-1.5 px-2 py-3 text-xs font-extrabold transition hover:ring-brand/40 ${on ? "bg-brand text-white ring-brand" : "text-ink"}`} aria-current={on ? "page" : undefined}>
-              <I className="size-5" aria-hidden /> {label as string}
-            </Link>
-          )
-        })}
-      </nav>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        {benefits.map((b) => (
-          <section key={b.title} className="card p-4">
-            <span className="grid size-10 place-items-center rounded-xl bg-brand-soft text-brand" aria-hidden><b.icon className="size-5" /></span>
-            <h2 className="mt-3 font-extrabold text-ink">{b.title}</h2>
-            <p className="mt-1 text-sm text-muted-foreground">{b.body}</p>
-          </section>
+      <ol className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        {steps.map((s) => (
+          <li key={s.title} className="card p-4">
+            <span className="grid size-10 place-items-center rounded-xl bg-brand-soft text-brand" aria-hidden><s.icon className="size-5" /></span>
+            <h2 className="mt-3 font-extrabold text-ink">{s.title}</h2>
+            <p className="mt-1 text-sm text-muted-foreground">{s.body}</p>
+          </li>
         ))}
-      </div>
-
-      <section className="card mt-4 p-4 md:p-5">
-        <h2 className="display text-lg font-extrabold text-ink">{pick(locale, "কীভাবে কাজ করে", "How it works")}</h2>
-        <ol className="mt-3 space-y-2">
-          {steps.map((s, i) => (
-            <li key={s} className="flex items-start gap-3 text-[15px]">
-              <span className="grid size-7 shrink-0 place-items-center rounded-full bg-brand text-xs font-extrabold text-white">{i + 1}</span>
-              <span className="text-ink">{s}</span>
-            </li>
-          ))}
-        </ol>
-      </section>
+      </ol>
 
       <section className="mt-6">
-        <h2 className="display text-xl font-extrabold text-ink">{pick(locale, "আবেদন করুন", "Apply")}</h2>
-        <p className="mt-1 mb-3 text-sm text-muted-foreground">{pick(locale, "৫ মিনিট লাগবে। অনুমোদনের পর এই মোবাইল নম্বর আর পাসওয়ার্ড দিয়েই লগইন করবেন।", "Takes 5 minutes. Once approved you log in with this mobile number and password.")}</p>
-        {!offerings.length ? (
+        <h2 className="display text-xl font-extrabold text-ink">{pick(locale, "অ্যাকাউন্ট খুলুন", "Open your account")}</h2>
+        <p className="mt-1 mb-3 text-sm text-muted-foreground">{pick(locale, "গাড়ি, পণ্য বা রুমের তথ্য এখন লাগবে না; অনুমোদনের পর প্যানেল থেকে দেবেন।", "No vehicle, product or room details now; you add those from the panel after approval.")}</p>
+        {!categories.length ? (
           <div className="card px-6 py-10 text-center">
-            <p className="font-extrabold text-ink">{pick(locale, `${shop.nameBn} শাখায় এখনো ভাড়ার সেবা চালু হয়নি`, `${shop.name} branch has no rental service yet`)}</p>
-            <p className="mt-2 text-sm text-muted-foreground">{pick(locale, "অন্য শাখা বেছে নিন বা হেল্পলাইনে কথা বলুন।", "Pick another branch or call the helpline.")}</p>
+            <p className="font-extrabold text-ink">{pick(locale, `${shop.nameBn} শাখায় এখনো পার্টনার নেওয়া হচ্ছে না`, `${shop.name} branch is not taking partners yet`)}</p>
             <Link href="/branches" className="btn-soft mt-4 inline-flex">{pick(locale, "শাখা দেখুন", "See branches")}</Link>
           </div>
         ) : (
-          <ActionForm action={partnerApplyAction} resetOnSuccess={false} className="card space-y-3 p-4 md:p-5">
-            <h3 className="text-xs font-extrabold text-muted-foreground uppercase">{pick(locale, "আপনার তথ্য", "About you")}</h3>
-            <div><label className="label">{pick(locale, "নাম", "Name")}</label><input name="name" className="field" required minLength={2} maxLength={80} autoComplete="name" /></div>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div><label className="label">{pick(locale, "মোবাইল (লগইনে লাগবে)", "Mobile (used to log in)")}</label><input name="phone" type="tel" inputMode="tel" className="field" required placeholder="01XXXXXXXXX" autoComplete="tel" /></div>
-              <div><label className="label">{pick(locale, "ইমেইল (ঐচ্ছিক)", "Email (optional)")}</label><input name="email" type="email" className="field" autoComplete="email" /></div>
+          <ActionForm action={partnerSignupAction} resetOnSuccess={false} className="card space-y-3 p-4 md:p-5">
+            <h3 className="text-xs font-extrabold text-muted-foreground uppercase">{pick(locale, "কী দেবেন", "What you will offer")}</h3>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4" role="radiogroup" aria-label={pick(locale, "ক্যাটাগরি", "Category")}>
+              {categories.map((c, i) => (
+                <label key={c.id} className="card flex cursor-pointer flex-col items-center gap-1.5 px-2 py-3 text-center text-xs font-extrabold text-ink transition has-[:checked]:bg-brand has-[:checked]:text-white has-[:checked]:ring-brand hover:ring-brand/40">
+                  <input type="radio" name="categoryId" value={c.id} defaultChecked={i === 0} className="sr-only" required />
+                  <CategoryIcon name={c.icon} className="size-6" />
+                  {named(locale, c)}
+                </label>
+              ))}
             </div>
-            <div><label className="label">{pick(locale, "পাসওয়ার্ড (অন্তত ৬ অক্ষর)", "Password (at least 6 characters)")}</label><input name="password" type="password" className="field" required minLength={6} maxLength={100} autoComplete="new-password" /></div>
+            <div><label className="label" htmlFor="businessName">{pick(locale, "ব্যবসা / দোকানের নাম (ঐচ্ছিক)", "Business / store name (optional)")}</label><input id="businessName" name="businessName" className="field" maxLength={100} placeholder={pick(locale, "যেমন: সাগর শুঁটকি ঘর", "e.g. Sagor Dried Fish House")} /></div>
 
-            <h3 className="pt-2 text-xs font-extrabold text-muted-foreground uppercase">{pick(locale, "গাড়ির তথ্য", "The vehicle")}</h3>
-            <VehicleFields locale={locale} vehicle={null} offerings={offerings} />
+            <h3 className="pt-2 text-xs font-extrabold text-muted-foreground uppercase">{pick(locale, "আপনার তথ্য", "About you")}</h3>
+            <div><label className="label" htmlFor="name">{pick(locale, "পুরো নাম (পরিচয়পত্র অনুযায়ী)", "Full name (as on the ID)")}</label><input id="name" name="name" className="field" required minLength={2} maxLength={80} autoComplete="name" /></div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div><label className="label" htmlFor="phone">{pick(locale, "মোবাইল (লগইনে লাগবে)", "Mobile (used to log in)")}</label><input id="phone" name="phone" type="tel" inputMode="tel" className="field" required placeholder="01XXXXXXXXX" autoComplete="tel" /></div>
+              <div><label className="label" htmlFor="email">{pick(locale, "ইমেইল (ঐচ্ছিক)", "Email (optional)")}</label><input id="email" name="email" type="email" className="field" autoComplete="email" /></div>
+            </div>
+            <div><label className="label" htmlFor="password">{pick(locale, "পাসওয়ার্ড (অন্তত ৬ অক্ষর)", "Password (at least 6 characters)")}</label><input id="password" name="password" type="password" className="field" required minLength={6} maxLength={100} autoComplete="new-password" /></div>
+
+            <h3 className="pt-2 text-xs font-extrabold text-muted-foreground uppercase">{pick(locale, "পরিচয়পত্র", "Identity papers")}</h3>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div>
+                <label className="label" htmlFor="idType">{pick(locale, "ধরন", "Type")}</label>
+                <select id="idType" name="idType" className="field" required defaultValue="NID">
+                  {Object.entries(ID_TYPES).map(([k, v]) => <option key={k} value={k}>{bn ? v.bn : v.en}</option>)}
+                </select>
+              </div>
+              <div><label className="label" htmlFor="idNumber">{pick(locale, "নম্বর", "Number")}</label><input id="idNumber" name="idNumber" className="field" required minLength={5} maxLength={40} inputMode="numeric" placeholder={pick(locale, "NID / পাসপোর্ট নম্বর", "NID / passport number")} /></div>
+            </div>
+            <div>
+              <label className="label" htmlFor="idPhotos">{pick(locale, "পরিচয়পত্রের ছবি (সামনে ও পেছনে, সর্বোচ্চ ২টা)", "Photo of the ID (front and back, up to 2)")}</label>
+              <input id="idPhotos" type="file" name="idPhotos" accept="image/*" multiple required className="text-xs" />
+              <p className="mt-1 text-xs text-muted-foreground">{pick(locale, "শুধু HANDYO অফিস দেখবে; সাইটে কখনো দেখানো হয় না।", "Seen only by the HANDYO office; never shown on the site.")}</p>
+            </div>
 
             <label className="flex items-start gap-2 rounded-xl bg-canvas px-3 py-3 text-sm text-ink">
               <input type="checkbox" name="agree" required className="mt-0.5 size-4 shrink-0 accent-[var(--brand)]" />
-              <span>{pick(locale, "আমি সম্মত: HANDYO প্রতিটা ভাড়া থেকে কমিশন রাখে, কাস্টমার HANDYO-র মাধ্যমে টাকা দেয়, আর গাড়ি ও কাগজপত্র ঠিক রাখা আমার দায়িত্ব।", "I agree: HANDYO keeps a commission on each rental, customers pay through HANDYO, and keeping the vehicle and its papers in order is my responsibility.")}</span>
+              <span>{pick(locale, "আমি সম্মত: HANDYO প্রতিটা বিক্রি বা ভাড়া থেকে ১০% রাখে, কাস্টমার HANDYO-র মাধ্যমে বুক করে ও টাকা দেয়, আর আমার দেওয়া তথ্য ও কাগজ সঠিক।", "I agree: HANDYO keeps 10% of every sale or rental, customers book and pay through HANDYO, and the details and papers I give are genuine.")}</span>
             </label>
             <SubmitButton><BadgeCheck className="size-4" /> {pick(locale, "আবেদন জমা দিন", "Submit application")}</SubmitButton>
             <p className="text-center text-xs text-muted-foreground">

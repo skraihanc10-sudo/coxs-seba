@@ -1,9 +1,8 @@
-import bcrypt from "bcryptjs"
 import type { Prisma } from "@prisma/client"
 import { db } from "./db"
 import { AppError } from "./errors"
 import { notify, officeIds } from "./notify"
-import { localToday, normalisePhone } from "./format"
+import { localToday } from "./format"
 import type { Locale } from "./format"
 import { quoteCoupon } from "./coupons"
 import { directAssignData, newCode } from "./bookings"
@@ -206,26 +205,6 @@ async function uniqueStoreSlug(shopId: string, name: string, keep?: string) {
   const clash = await db.store.findFirst({ where: { shopId, slug, NOT: keep ? { id: keep } : undefined } })
   if (clash) slug = `${slug}-${Date.now().toString(36).slice(-4)}`
   return slug
-}
-
-/** A store owner signs up from the public page: inactive WORKER + PARTNER profile + PENDING store. */
-export async function applyAsStorePartner(shopId: string, person: { name: string; phone: string; email: string; password: string }, input: StoreInput, photos: string[]) {
-  const phone = normalisePhone(person.phone)
-  if (!phone) throw new AppError("সঠিক মোবাইল নম্বর দিন।", "Enter a valid mobile number.")
-  const email = person.email ? person.email.toLowerCase() : null
-  const categories = await db.serviceCategory.findMany({ where: { shopId, flow: "SHOP", active: true } })
-  if (!categories.length) throw new AppError("এই শাখায় শপ চালু নেই।", "This branch has no shop yet.")
-  const clash = await db.user.findFirst({ where: { OR: [{ phone }, ...(email ? [{ email }] : [])] } })
-  if (clash) throw new AppError("এই মোবাইল বা ইমেইলে আগেই অ্যাকাউন্ট আছে। লগইন করে “আমার দোকান” খুলুন।", "That mobile or email already has an account. Log in and open “My store”.")
-  const passwordHash = await bcrypt.hash(person.password, 10)
-  const slug = await uniqueStoreSlug(shopId, input.name)
-  const store = await db.$transaction(async (tx) => {
-    const user = await tx.user.create({ data: { name: person.name, phone, email, passwordHash, role: "WORKER", shopId, active: false } })
-    const worker = await tx.workerProfile.create({ data: { userId: user.id, shopId, kind: "PARTNER", approved: false, skills: { create: categories.map((c) => ({ categoryId: c.id })) } } })
-    return tx.store.create({ data: { ...storeData(input), shopId, slug, workerId: worker.id, photos: photos.join(","), status: "PENDING" } })
-  })
-  await notify(await officeIds(shopId), { kind: "SYSTEM", title: "নতুন দোকানের পার্টনার আবেদন", body: `${person.name} · ${store.nameBn}। অনুমোদন দিন।`, link: "/admin/stores" })
-  return store
 }
 
 /** The store of a logged-in partner (one store per partner). */

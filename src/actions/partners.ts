@@ -2,11 +2,40 @@
 
 import { revalidatePath } from "next/cache"
 import { run, type ActionState } from "@/lib/action"
-import { actor } from "@/lib/auth"
+import { actor, clientIp, getUser } from "@/lib/auth"
+import { limited } from "@/lib/rate-limit"
+import { saveImages } from "@/lib/uploads"
+import { currentShop } from "@/lib/shops"
+import { formObject, parse, partnerSignupSchema } from "@/lib/validation"
 import { AppError } from "@/lib/errors"
 import type { Role } from "@/lib/roles"
 import { adjustBill } from "@/lib/bookings"
-import { addHelper, createRequest, decideRequest, reviewHelper, setOfficeList } from "@/lib/partners"
+import { addHelper, createRequest, decideRequest, partnerSignup, reviewHelper, reviewPartner, setOfficeList } from "@/lib/partners"
+
+/** Public: become a partner (account + ID papers + category). The office approves the person. */
+export async function partnerSignupAction(_prev: ActionState, form: FormData): Promise<ActionState> {
+  return run(async () => {
+    limited("partner", await clientIp())
+    if (await getUser()) throw new AppError("আপনি লগইন করা আছেন। নতুন পার্টনার হতে আগে লগআউট করুন।", "You are signed in. Log out first to sign up as a partner.")
+    const input = parse(partnerSignupSchema, formObject(form))
+    const shop = await currentShop()
+    const idPhotos = await saveImages(form.getAll("idPhotos"), 2)
+    await partnerSignup(shop.id, input, idPhotos)
+    return "আবেদন জমা হয়েছে। HANDYO অফিস কাগজ দেখে অনুমোদন দিলে এই মোবাইল নম্বর ও পাসওয়ার্ড দিয়ে লগইন করে পণ্য/গাড়ি/রিসোর্ট যোগ করতে পারবেন।"
+  })
+}
+
+/** Office: approve or reject a partner application. */
+export async function reviewPartnerAction(_prev: ActionState, form: FormData): Promise<ActionState> {
+  return run(async () => {
+    const user = await actor(["ADMIN", "OWNER"])
+    const decision = String(form.get("decision") ?? "")
+    if (decision !== "APPROVE" && decision !== "REJECT") throw new AppError("সিদ্ধান্ত ঠিক নেই।", "Bad decision.")
+    await reviewPartner({ ...user, role: user.role as Role }, String(form.get("id") ?? ""), decision, String(form.get("note") ?? ""))
+    revalidatePath("/admin", "layout")
+    return decision === "APPROVE" ? "পার্টনার অনুমোদিত, এখন লগইন করতে পারবে।" : "আবেদন নাকচ করা হয়েছে।"
+  })
+}
 
 function code(form: FormData) {
   const value = String(form.get("code") ?? "").trim()

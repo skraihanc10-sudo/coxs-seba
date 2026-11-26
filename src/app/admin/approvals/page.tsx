@@ -2,10 +2,10 @@ import Link from "next/link"
 import { requireUser, getLocale } from "@/lib/auth"
 import { ADMINS } from "@/lib/roles"
 import { officeShop } from "@/lib/shops"
-import { decidedRequests, pendingHelpers, pendingRequests, REQUEST_KIND_TEXT } from "@/lib/partners"
+import { decidedRequests, ID_TYPES, pendingHelpers, pendingPartners, pendingRequests, REQUEST_KIND_TEXT } from "@/lib/partners"
 import { formatWhen, taka } from "@/lib/format"
 import { named, pick } from "@/lib/i18n"
-import { decideRequestAction, reviewHelperAction } from "@/actions/partners"
+import { decideRequestAction, reviewHelperAction, reviewPartnerAction } from "@/actions/partners"
 import { EmptyState, PageHeader, Section, StatusPill } from "@/components/bits"
 import { ActionForm, SubmitButton } from "@/components/forms"
 
@@ -17,11 +17,44 @@ export default async function ApprovalsPage() {
   const [user, locale] = await Promise.all([requireUser(ADMINS, "/admin/approvals"), getLocale()])
   const shop = await officeShop(user)
   const scope = user.role === "OWNER" ? null : shop.id
-  const [pending, helpers, history] = await Promise.all([pendingRequests(scope), pendingHelpers(scope), decidedRequests(scope, 30)])
+  const [pending, helpers, history, partners] = await Promise.all([pendingRequests(scope), pendingHelpers(scope), decidedRequests(scope, 30), pendingPartners(scope)])
   const bn = locale === "bn"
   return (
     <div className="space-y-6">
-      <PageHeader title={pick(locale, "অনুমোদন", "Approvals")} sub={pick(locale, `${pending.length}টা অনুরোধ · ${helpers.length} জন হেল্পার অপেক্ষায়`, `${pending.length} requests · ${helpers.length} helpers waiting`)} />
+      <PageHeader title={pick(locale, "অনুমোদন", "Approvals")} sub={pick(locale, `${partners.length} জন নতুন পার্টনার · ${pending.length}টা অনুরোধ · ${helpers.length} জন হেল্পার অপেক্ষায়`, `${partners.length} new partners · ${pending.length} requests · ${helpers.length} helpers waiting`)} />
+
+      <Section title={pick(locale, "নতুন পার্টনার আবেদন", "Partner applications")}>
+        {!partners.length ? <p className="py-4 text-sm text-muted-foreground">{pick(locale, "অনুমোদনের অপেক্ষায় কোনো পার্টনার নেই। অনুমোদনের পর তারা নিজের প্যানেল থেকে পণ্য, গাড়ি বা রিসোর্ট যোগ করবে।", "No partner applications waiting. Once approved they add their listings from their own panel.")}</p> : (
+          <ul className="space-y-3">
+            {partners.map((p) => (
+              <li key={p.id} className="card p-4">
+                <div className="flex flex-wrap items-start gap-4">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-extrabold text-ink">{p.user.name} <span className="text-sm font-normal text-muted-foreground">· {p.user.phone}{p.user.email ? ` · ${p.user.email}` : ""}</span></p>
+                    <p className="mt-1 flex flex-wrap gap-1.5 text-xs">
+                      {p.skills.map((s) => <span key={s.categoryId} className="pill bg-brand-soft text-brand">{bn ? s.category.nameBn : s.category.name}</span>)}
+                      {p.businessName ? <span className="pill bg-canvas text-ink">{p.businessName}</span> : null}
+                    </p>
+                    <p className="mt-2 text-sm text-ink">{bn ? ID_TYPES[p.idType]?.bn : ID_TYPES[p.idType]?.en}: <span className="font-mono font-bold">{p.nid}</span> <span className="text-muted-foreground">· {formatWhen(p.joinedAt, locale)}</span></p>
+                  </div>
+                  <div className="flex gap-2">
+                    {p.nidPhoto.split(",").filter(Boolean).map((f) => (
+                      <a key={f} href={`/api/uploads/${f}`} target="_blank" rel="noopener" className="block overflow-hidden rounded-xl ring-1 ring-line">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={`/api/uploads/${f}`} alt={pick(locale, "পরিচয়পত্র", "ID")} className="h-20 w-28 object-cover" />
+                      </a>
+                    ))}
+                  </div>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <ActionForm action={reviewPartnerAction} resetOnSuccess={false} className="inline"><input type="hidden" name="id" value={p.id} /><input type="hidden" name="decision" value="APPROVE" /><SubmitButton className="btn-primary h-10 px-4 text-sm">{pick(locale, "অনুমোদন দিন", "Approve")}</SubmitButton></ActionForm>
+                  <ActionForm action={reviewPartnerAction} resetOnSuccess={false} className="inline"><input type="hidden" name="id" value={p.id} /><input type="hidden" name="decision" value="REJECT" /><SubmitButton className="btn-soft h-10 px-4 text-sm">{pick(locale, "নাকচ", "Reject")}</SubmitButton></ActionForm>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Section>
 
       <Section title={pick(locale, "অর্ডারে অনুরোধ", "Order requests")}>
         {!pending.length ? <EmptyState title={pick(locale, "কোনো অনুরোধ নেই", "Nothing waiting")} body={pick(locale, "পার্টনার এক্সট্রা চার্জ চাইলে বা কেউ বাতিল চাইলে এখানে আসবে।", "Extra-charge and cancellation requests land here.")} /> : (

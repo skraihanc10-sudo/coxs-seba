@@ -85,6 +85,31 @@ async function press(page: Page, label: string, nextLabel?: string) {
   if (nextLabel) await expect(page.getByRole("button", { name: nextLabel, exact: true })).toBeVisible()
 }
 
+/** Public partner sign-up: account + ID papers + category. A 1×1 PNG stands in for the ID photo. */
+async function signUpAsPartner(page: Page, p: { name: string; phone: string; password: string; category: RegExp }) {
+  await page.goto("/partner")
+  await ready(page)
+  await page.getByRole("radiogroup").getByText(p.category).first().click()
+  await page.fill('input[name="name"]', p.name)
+  await page.fill('input[name="phone"]', p.phone)
+  await page.fill('input[name="password"]', p.password)
+  await page.fill('input[name="idNumber"]', "1234567890")
+  await page.setInputFiles('input[name="idPhotos"]', { name: "nid.png", mimeType: "image/png", buffer: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==", "base64") })
+  await page.check('input[name="agree"]')
+  await page.getByRole("button", { name: "আবেদন জমা দিন" }).click()
+  await expect(page.getByText("আবেদন জমা হয়েছে")).toBeVisible()
+}
+
+/** The office approves the partner application that carries this phone number. */
+async function approvePartner(admin: Page, phone: string) {
+  await admin.goto("/admin/approvals")
+  await ready(admin)
+  const card = admin.locator(".card", { hasText: phone }).first()
+  await expect(card).toBeVisible()
+  await card.getByRole("button", { name: "অনুমোদন দিন" }).click()
+  await expect(admin.locator(".card", { hasText: phone })).toHaveCount(0)
+}
+
 test("1. laundry: customer books, admin assigns, rider completes every step, customer reviews", async ({ browser }) => {
   const customer = await freshPage(browser)
   await loginWithOtp(customer, "01799990001", "টেস্ট কাস্টমার")
@@ -294,19 +319,7 @@ test("9. rent-a-car: a partner applies, the admin approves, a customer books tha
   const carBn = `টেস্ট করোলা ${phone.slice(-4)}`
   // 1. Vehicle owner applies from the public page.
   const owner = await freshPage(browser)
-  await owner.goto("/partner")
-  await ready(owner)
-  await owner.fill('input[name="name"]', "টেস্ট পার্টনার")
-  await owner.fill('input[name="phone"]', phone)
-  await owner.fill('input[name="password"]', "partner123")
-  await owner.selectOption('select[name="offeringId"]', { index: 1 })
-  await owner.fill('input[name="title"]', "Test Corolla 2015")
-  await owner.fill('input[name="titleBn"]', carBn)
-  await owner.fill('input[name="pricePerHour"]', "400")
-  await owner.fill('input[name="pricePerDay"]', "3000")
-  await owner.check('input[name="agree"]')
-  await owner.getByRole("button", { name: "আবেদন জমা দিন" }).click()
-  await expect(owner.getByText("আবেদন জমা হয়েছে")).toBeVisible()
+  await signUpAsPartner(owner, { name: "টেস্ট পার্টনার", phone, password: "partner123", category: /গাড়ি/ })
 
   // Not approved yet: login is refused.
   await owner.goto("/login?tab=staff")
@@ -316,9 +329,27 @@ test("9. rent-a-car: a partner applies, the admin approves, a customer books tha
   await owner.getByRole("button", { name: "লগইন" }).click()
   await expect(owner).toHaveURL(/\/login/)
 
-  // 2. Admin sees it pending and approves.
+  // 2. Admin checks the papers and approves the person; the partner logs in and adds the vehicle from the panel.
   const admin = await freshPage(browser)
   await loginWithPassword(admin, ADMIN)
+  await approvePartner(admin, phone)
+  await owner.goto("/login?tab=staff")
+  await ready(owner)
+  await owner.fill("#identifier", phone)
+  await owner.fill("#password", "partner123")
+  await owner.getByRole("button", { name: "লগইন" }).click()
+  await owner.waitForURL(/\/worker/)
+  await owner.goto("/worker/vehicles/new")
+  await ready(owner)
+  await owner.selectOption('select[name="offeringId"]', { index: 1 })
+  await owner.fill('input[name="title"]', "Test Corolla 2015")
+  await owner.fill('input[name="titleBn"]', carBn)
+  await owner.fill('input[name="pricePerHour"]', "400")
+  await owner.fill('input[name="pricePerDay"]', "3000")
+  await owner.getByRole("button", { name: "গাড়ি যোগ করুন" }).click()
+  await expect(owner.getByText("গাড়ি যোগ হয়েছে")).toBeVisible()
+
+  // The vehicle itself still needs the office's approval.
   await admin.goto("/admin/vehicles")
   await ready(admin)
   const card = admin.locator(".card", { hasText: carBn }).first()
@@ -347,13 +378,8 @@ test("9. rent-a-car: a partner applies, the admin approves, a customer books tha
   await admin.getByRole("button", { name: "গাড়ির মালিকের কাছে পাঠান" }).click()
   await expect(admin.getByText("টেস্ট পার্টনার").first()).toBeVisible()
 
-  // 5. The partner logs in and sees it in the partner panel, with chat to the customer.
-  await owner.goto("/login?tab=staff")
-  await ready(owner)
-  await owner.fill("#identifier", phone)
-  await owner.fill("#password", "partner123")
-  await owner.getByRole("button", { name: "লগইন" }).click()
-  await owner.waitForURL(/\/worker/)
+  // 5. The partner (already signed in) sees it in the partner panel, with chat to the customer.
+  await owner.goto("/worker")
   await expect(owner.getByText("পার্টনার প্যানেল").first()).toBeVisible()
   await expect(owner.getByText(code).first()).toBeVisible()
   await owner.goto(`/worker/jobs/${code}`)
@@ -396,21 +422,27 @@ test("11. resorts: an owner applies, the admin approves, a customer books two ni
   const resortBn = `টেস্ট রিসোর্ট ${phone.slice(-4)}`
   // 1. Resort owner applies from the public page.
   const owner = await freshPage(browser)
-  await owner.goto("/partner/resort")
+  await signUpAsPartner(owner, { name: "টেস্ট রিসোর্ট মালিক", phone, password: "resort123", category: /রিসোর্ট/ })
+
+  // 2. Admin approves the person; the owner logs in and adds the resort from the panel.
+  const admin = await freshPage(browser)
+  await loginWithPassword(admin, ADMIN)
+  await approvePartner(admin, phone)
+  await owner.goto("/login?tab=staff")
   await ready(owner)
-  await owner.fill('input[name="ownerName"]', "টেস্ট রিসোর্ট মালিক")
-  await owner.fill('input[name="phone"]', phone)
-  await owner.fill('input[name="password"]', "resort123")
+  await owner.fill("#identifier", phone)
+  await owner.fill("#password", "resort123")
+  await owner.getByRole("button", { name: "লগইন" }).click()
+  await owner.waitForURL(/\/worker/)
+  await owner.goto("/worker/stays/new")
+  await ready(owner)
   await owner.fill('input[name="name"]', "Test Resort")
   await owner.fill('input[name="nameBn"]', resortBn)
   await owner.fill('textarea[name="rooms"]', "Sea View Double | 2 | 5000 | 3 | AC, Balcony")
-  await owner.check('input[name="agree"]')
-  await owner.getByRole("button", { name: "আবেদন জমা দিন" }).click()
-  await expect(owner.getByText("আবেদন জমা হয়েছে")).toBeVisible()
+  await owner.getByRole("button", { name: "রিসোর্ট যোগ করুন" }).click()
+  await expect(owner.getByText("রিসোর্ট যোগ হয়েছে")).toBeVisible()
 
-  // 2. Admin approves.
-  const admin = await freshPage(browser)
-  await loginWithPassword(admin, ADMIN)
+  // The resort itself still needs the office's approval.
   await admin.goto("/admin/stays")
   await ready(admin)
   const card = admin.locator(".card", { hasText: resortBn }).first()
@@ -451,14 +483,11 @@ test("11. resorts: an owner applies, the admin approves, a customer books two ni
   await admin.getByRole("button", { name: "রিসোর্ট মালিকের কাছে পাঠান" }).click()
   await expect(admin.getByText("টেস্ট রিসোর্ট মালিক").first()).toBeVisible()
 
-  // 5. The owner logs in, sees it, and accepts.
-  await owner.goto("/login?tab=staff")
-  await ready(owner)
-  await owner.fill("#identifier", phone)
-  await owner.fill("#password", "resort123")
-  await owner.getByRole("button", { name: "লগইন" }).click()
-  await owner.waitForURL(/\/worker/)
-  await expect(owner.getByText(code).first()).toBeVisible()
+  // 5. The owner (already signed in) sees it on the dashboard and accepts.
+  await expect(async () => {
+    await owner.goto("/worker")
+    await expect(owner.getByText(code).first()).toBeVisible({ timeout: 2000 })
+  }).toPass()
   await owner.goto(`/worker/jobs/${code}`)
   await ready(owner)
   await owner.getByRole("button", { name: "বুকিং গ্রহণ করুন" }).click()

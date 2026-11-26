@@ -34,7 +34,7 @@ export default async function StoresPage() {
         sub={pick(locale, `${shop.nameBn} · ${live.length}টি চালু · ${pending.length}টি অনুমোদনের অপেক্ষায় · HANDYO প্রতিটা বিক্রির ১০% রাখে`, `${shop.name} · ${live.length} live · ${pending.length} waiting · HANDYO keeps 10% of each sale`)}
         action={<Link href="/admin/stores/new" className="btn-primary h-10 px-4 text-sm"><Plus className="size-4" /> {pick(locale, "নতুন দোকান", "Add store")}</Link>}
       />
-      {!stores.length ? <EmptyState title={pick(locale, "এখনো কোনো দোকান নেই", "No stores yet")} body={pick(locale, "HANDYO-র নিজের দোকান যোগ করুন, বা মালিকরা /partner/store থেকে আবেদন করলে এখানে দেখাবে।", "Add HANDYO's own store, or wait for owners to apply at /partner/store.")} href="/admin/stores/new" action={pick(locale, "নতুন দোকান", "Add store")} /> : null}
+      {!stores.length ? <EmptyState title={pick(locale, "এখনো কোনো দোকান নেই", "No stores yet")} body={pick(locale, "HANDYO-র নিজের দোকান যোগ করুন, বা মালিকরা /partner থেকে আবেদন করলে এখানে দেখাবে।", "Add HANDYO's own store, or wait for owners to apply at /partner.")} href="/admin/stores/new" action={pick(locale, "নতুন দোকান", "Add store")} /> : null}
       <Group title={pick(locale, "অনুমোদনের অপেক্ষায়", "Waiting for approval")} rows={pending} locale={locale} />
       <Group title={pick(locale, "চালু (সাইটে দেখাচ্ছে)", "Live on the site")} rows={live} locale={locale} />
       <Group title={pick(locale, "বন্ধ রাখা / বাতিল", "Paused / rejected")} rows={rest} locale={locale} />

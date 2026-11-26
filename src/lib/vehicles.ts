@@ -1,8 +1,6 @@
-import bcrypt from "bcryptjs"
 import { db } from "./db"
 import { AppError } from "./errors"
 import { notify, officeIds } from "./notify"
-import { normalisePhone } from "./format"
 import type { Locale } from "./format"
 
 export const VEHICLE_STATUS = ["PENDING", "APPROVED", "PAUSED", "REJECTED"] as const
@@ -166,34 +164,6 @@ function vehicleData(offeringId: string, input: VehicleInput) {
  * A vehicle owner signs up from the public page: one WORKER user (inactive until
  * approved), a PARTNER profile skilled in the rental category, and a PENDING vehicle.
  */
-export async function applyAsPartner(shopId: string, person: { name: string; phone: string; email: string; password: string }, input: VehicleInput, photos: string[]) {
-  const phone = normalisePhone(person.phone)
-  if (!phone) throw new AppError("সঠিক মোবাইল নম্বর দিন।", "Enter a valid mobile number.")
-  const email = person.email ? person.email.toLowerCase() : null
-  const offering = await rentalOffering(shopId, input.offeringId)
-  checkPrices(input)
-  const clash = await db.user.findFirst({ where: { OR: [{ phone }, ...(email ? [{ email }] : [])] } })
-  if (clash) {
-    throw new AppError(
-      "এই মোবাইল বা ইমেইলে আগেই অ্যাকাউন্ট আছে। লগইন করে “আমার গাড়ি” থেকে গাড়ি যোগ করুন।",
-      "That mobile or email already has an account. Log in and add the vehicle under “My vehicles”.",
-    )
-  }
-  const passwordHash = await bcrypt.hash(person.password, 10)
-  const vehicle = await db.$transaction(async (tx) => {
-    const user = await tx.user.create({ data: { name: person.name, phone, email, passwordHash, role: "WORKER", shopId, active: false } })
-    const worker = await tx.workerProfile.create({ data: { userId: user.id, shopId, kind: "PARTNER", approved: false, skills: { create: { categoryId: offering.categoryId } } } })
-    return tx.vehicle.create({ data: { ...vehicleData(offering.id, input), shopId, workerId: worker.id, photos: photos.join(","), status: "PENDING", routes: { create: parseRoutes(input.routes).map((r, i) => ({ ...r, sort: i })) } } })
-  })
-  await notify(await officeIds(shopId), {
-    kind: "SYSTEM",
-    title: "নতুন গাড়ির পার্টনার আবেদন",
-    body: `${person.name} · ${vehicle.titleBn} (${offering.nameBn})। অনুমোদন দিন।`,
-    link: "/admin/vehicles",
-  })
-  return vehicle
-}
-
 /** A logged-in partner adds another vehicle (goes PENDING) or edits one of theirs. */
 export async function savePartnerVehicle(worker: { id: string; shopId: string }, id: string | undefined, input: VehicleInput, photos: string[]) {
   const offering = await rentalOffering(worker.shopId, input.offeringId)
