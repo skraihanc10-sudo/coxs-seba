@@ -25,6 +25,19 @@ function sniff(bytes: Uint8Array) {
 
 /** Save the images from a form field. Returns stored names like "ab12cd.jpg". */
 export async function saveImages(files: FormDataEntryValue[], max = 6) {
+  return saveFiles(files, max, false)
+}
+
+/** Identity papers: photos or PDF scans. */
+export async function saveDocuments(files: FormDataEntryValue[], max = 2) {
+  return saveFiles(files, max, true)
+}
+
+function isPdf(bytes: Uint8Array) {
+  return bytes[0] === 0x25 && bytes[1] === 0x50 && bytes[2] === 0x44 && bytes[3] === 0x46
+}
+
+async function saveFiles(files: FormDataEntryValue[], max: number, pdfOk: boolean) {
   const images = files.filter((f): f is File => typeof f !== "string" && f.size > 0)
   if (images.length > max) throw new AppError(`একবারে সর্বোচ্চ ${max}টা ছবি দিন।`, `Upload up to ${max} photos at a time.`)
   const dir = uploadDir()
@@ -33,8 +46,8 @@ export async function saveImages(files: FormDataEntryValue[], max = 6) {
   for (const file of images) {
     if (file.size > MAX_BYTES) throw new AppError("প্রতিটা ছবি ৫ MB-এর কম হতে হবে।", "Each photo must be under 5 MB.")
     const bytes = new Uint8Array(await file.arrayBuffer())
-    const ext = sniff(bytes)
-    if (!ext) throw new AppError("শুধু JPG, PNG বা WebP ছবি দিন।", "Only JPG, PNG or WebP photos.")
+    const ext = sniff(bytes) ?? (pdfOk && isPdf(bytes) ? "pdf" : null)
+    if (!ext) throw new AppError(pdfOk ? "শুধু JPG, PNG, WebP ছবি বা PDF দিন।" : "শুধু JPG, PNG বা WebP ছবি দিন।", pdfOk ? "Only JPG, PNG, WebP photos or a PDF." : "Only JPG, PNG or WebP photos.")
     const name = `${randomBytes(12).toString("hex")}.${ext}`
     await writeFile(/*turbopackIgnore: true*/ path.join(/*turbopackIgnore: true*/ dir, name), bytes)
     names.push(name)
@@ -42,10 +55,10 @@ export async function saveImages(files: FormDataEntryValue[], max = 6) {
   return names
 }
 
-const TYPES: Record<string, string> = { jpg: "image/jpeg", png: "image/png", webp: "image/webp" }
+const TYPES: Record<string, string> = { jpg: "image/jpeg", png: "image/png", webp: "image/webp", pdf: "application/pdf" }
 
 export async function readImage(name: string) {
-  if (!/^[a-f0-9]{24}\.(jpg|png|webp)$/.test(name)) return null
+  if (!/^[a-f0-9]{24}\.(jpg|png|webp|pdf)$/.test(name)) return null
   try {
     // The upload folder is runtime config (the /data volume), so Turbopack must not trace it.
     const data = await readFile(/*turbopackIgnore: true*/ path.join(/*turbopackIgnore: true*/ uploadDir(), name))

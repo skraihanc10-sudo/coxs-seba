@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache"
 import { run, type ActionState } from "@/lib/action"
 import { actor, clientIp, getUser } from "@/lib/auth"
 import { limited } from "@/lib/rate-limit"
-import { saveImages } from "@/lib/uploads"
+import { saveDocuments } from "@/lib/uploads"
 import { currentShop } from "@/lib/shops"
 import { formObject, parse, partnerSignupSchema } from "@/lib/validation"
 import { AppError } from "@/lib/errors"
@@ -19,7 +19,7 @@ export async function partnerSignupAction(_prev: ActionState, form: FormData): P
     if (await getUser()) throw new AppError("আপনি লগইন করা আছেন। নতুন পার্টনার হতে আগে লগআউট করুন।", "You are signed in. Log out first to sign up as a partner.")
     const input = parse(partnerSignupSchema, formObject(form))
     const shop = await currentShop()
-    const idPhotos = await saveImages(form.getAll("idPhotos"), 2)
+    const idPhotos = await saveDocuments(form.getAll("idPhotos"), 2)
     await partnerSignup(shop.id, input, idPhotos)
     return "আবেদন জমা হয়েছে। HANDYO অফিস কাগজ দেখে অনুমোদন দিলে এই মোবাইল নম্বর ও পাসওয়ার্ড দিয়ে লগইন করে পণ্য/গাড়ি/রিসোর্ট যোগ করতে পারবেন।"
   })

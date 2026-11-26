@@ -11,6 +11,7 @@ import { partnerSignupAction } from "@/actions/partners"
 import { PageHeader } from "@/components/bits"
 import { CategoryIcon } from "@/components/category-icon"
 import { ActionForm, SubmitButton } from "@/components/forms"
+import { DocumentDrop } from "@/components/document-drop"
 import { breadcrumbs, JsonLd } from "@/components/seo/json-ld"
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -97,11 +98,14 @@ export default async function PartnerPage() {
               </div>
               <div><label className="label" htmlFor="idNumber">{pick(locale, "নম্বর", "Number")}</label><input id="idNumber" name="idNumber" className="field" required minLength={5} maxLength={40} inputMode="numeric" placeholder={pick(locale, "NID / পাসপোর্ট নম্বর", "NID / passport number")} /></div>
             </div>
-            <div>
-              <label className="label" htmlFor="idPhotos">{pick(locale, "পরিচয়পত্রের ছবি (সামনে ও পেছনে, সর্বোচ্চ ২টা)", "Photo of the ID (front and back, up to 2)")}</label>
-              <input id="idPhotos" type="file" name="idPhotos" accept="image/*" multiple required className="text-xs" />
-              <p className="mt-1 text-xs text-muted-foreground">{pick(locale, "শুধু HANDYO অফিস দেখবে; সাইটে কখনো দেখানো হয় না।", "Seen only by the HANDYO office; never shown on the site.")}</p>
-            </div>
+            <DocumentDrop
+              name="idPhotos"
+              label={pick(locale, "পরিচয়পত্রের ছবি বা PDF (সামনে ও পেছনে, সর্বোচ্চ ২টা)", "Photo or PDF of the ID (front and back, up to 2)")}
+              hint={pick(locale, "ছবি তুলুন বা ফাইল বেছে নিন · JPG, PNG বা PDF · প্রতিটা ৫ MB-এর কম", "Take a photo or choose a file · JPG, PNG or PDF · under 5 MB each")}
+              note={pick(locale, "শুধু HANDYO অফিস দেখবে; সাইটে কখনো দেখানো হয় না।", "Seen only by the HANDYO office; never shown on the site.")}
+              choose={pick(locale, "ছবি / PDF দিন", "Add photo / PDF")}
+              empty={pick(locale, "এখনো কোনো ফাইল নেই", "No file chosen yet")}
+            />
 
             <label className="flex items-start gap-2 rounded-xl bg-canvas px-3 py-3 text-sm text-ink">
               <input type="checkbox" name="agree" required className="mt-0.5 size-4 shrink-0 accent-[var(--brand)]" />

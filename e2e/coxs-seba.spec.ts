@@ -94,7 +94,11 @@ async function signUpAsPartner(page: Page, p: { name: string; phone: string; pas
   await page.fill('input[name="phone"]', p.phone)
   await page.fill('input[name="password"]', p.password)
   await page.fill('input[name="idNumber"]', "1234567890")
-  await page.setInputFiles('input[name="idPhotos"]', { name: "nid.png", mimeType: "image/png", buffer: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==", "base64") })
+  await page.setInputFiles('input[name="idPhotos"]', [
+    { name: "nid.png", mimeType: "image/png", buffer: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==", "base64") },
+    { name: "nid.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.4 1 0 obj<</Type/Catalog>>endobj trailer<</Root 1 0 R>> %%EOF") },
+  ])
+  await expect(page.getByText("nid.pdf")).toBeVisible()
   await page.check('input[name="agree"]')
   await page.getByRole("button", { name: "আবেদন জমা দিন" }).click()
   await expect(page.getByText("আবেদন জমা হয়েছে")).toBeVisible()

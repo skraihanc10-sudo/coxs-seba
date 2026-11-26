@@ -40,8 +40,10 @@ export default async function ApprovalsPage() {
                   <div className="flex gap-2">
                     {p.nidPhoto.split(",").filter(Boolean).map((f) => (
                       <a key={f} href={`/api/uploads/${f}`} target="_blank" rel="noopener" className="block overflow-hidden rounded-xl ring-1 ring-line">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={`/api/uploads/${f}`} alt={pick(locale, "পরিচয়পত্র", "ID")} className="h-20 w-28 object-cover" />
+                        {f.endsWith(".pdf") ? <span className="grid h-20 w-28 place-items-center bg-canvas text-xs font-extrabold text-brand">PDF ↗</span> : (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={`/api/uploads/${f}`} alt={pick(locale, "পরিচয়পত্র", "ID")} className="h-20 w-28 object-cover" />
+                        )}
                       </a>
                     ))}
                   </div>
