@@ -371,6 +371,8 @@ async function demo(coxs: { id: string }) {
   }
 
   // One open ticket and one customer-care conversation for the support inbox.
+  // Re-running the seed on a live database stops here: everything below already exists.
+  if (await db.ticket.findUnique({ where: { code: "TK-10001" } })) return
   const b7 = await db.serviceBooking.findUnique({ where: { code: "AC-10007" } })
   await db.ticket.create({
     data: {
