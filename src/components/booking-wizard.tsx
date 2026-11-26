@@ -215,7 +215,7 @@ export function BookingWizard({ locale, shop, category, offering, areas, slots, 
         )}
 
         {quantityJob ? (
-          <Counter label={pricing === "PER_ROOM" ? T("কত রুম?", "How many rooms?") : pricing === "PER_KG" ? T("আনুমানিক কত কেজি?", "Roughly how many kg?") : pricing === "PER_HOUR" ? T("কত ঘণ্টা?", "How many hours?") : pricing === "PER_DAY" ? T("কত দিন?", "How many days?") : T("কত পিস?", "How many items?")} value={quantity} min={minQty} max={200} onChange={setQuantity} hint={minQty > 1 ? T(`সর্বনিম্ন ${minQty}`, `Minimum ${minQty}`) : undefined} />
+          <Counter label={pricing === "PER_ROOM" ? T("কত রুম?", "How many rooms?") : pricing === "PER_PERSON" ? T("কত জনের টিকিট?", "Tickets for how many people?") : pricing === "PER_KG" ? T("আনুমানিক কত কেজি?", "Roughly how many kg?") : pricing === "PER_HOUR" ? T("কত ঘণ্টা?", "How many hours?") : pricing === "PER_DAY" ? T("কত দিন?", "How many days?") : T("কত পিস?", "How many items?")} value={quantity} min={minQty} max={200} onChange={setQuantity} hint={minQty > 1 ? T(`সর্বনিম্ন ${minQty}`, `Minimum ${minQty}`) : undefined} />
         ) : null}
         {team ? (
           <>

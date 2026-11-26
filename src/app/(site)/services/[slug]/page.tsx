@@ -15,7 +15,7 @@ import { StayMarket, type MarketProperty } from "@/components/stay-market"
 import { laundryRules, liveProducts, liveStores, shopGroups, shopRules } from "@/lib/shop"
 import { getSettings } from "@/lib/settings"
 import { ShopMarket } from "@/components/shop-market"
-import { clip, pageMeta } from "@/lib/seo"
+import { clip, pageMeta, categoryKeywords } from "@/lib/seo"
 import { CategoryIcon } from "@/components/category-icon"
 import { PageHeader } from "@/components/bits"
 import { breadcrumbs, JsonLd, serviceLd } from "@/components/seo/json-ld"
@@ -34,6 +34,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
     title: `${named(locale, category)}${price} · ${city}`,
     description: clip(`${locale === "bn" ? category.blurbBn : category.blurb} ${pick(locale, `${city} এলাকায় ${category.offerings.length}টা অপশন, দাম আগেই লেখা।`, `${category.offerings.length} options in ${city}, prices listed up front.`)}`),
     path: `/services/${category.slug}`,
+    keywords: categoryKeywords(category, { bn: shop.cityBn, en: shop.city }),
   })
 }
 

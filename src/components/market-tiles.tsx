@@ -6,6 +6,7 @@ import { pick } from "@/lib/i18n"
 import { marketVehicles, photosOf, photoUrl } from "@/lib/vehicles"
 import { marketProperties } from "@/lib/stays"
 import { liveProducts, liveStores } from "@/lib/shop"
+import { db } from "@/lib/db"
 import { CategoryIcon } from "@/components/category-icon"
 
 type Cat = { id: string; slug: string; name: string; nameBn: string; icon: string; image: string; flow: string }
@@ -33,7 +34,7 @@ const min = (xs: number[]) => (xs.length ? Math.min(...xs) : 0)
 export async function MarketTiles({ locale, shopId, categories }: { locale: Locale; shopId: string; categories: Cat[] }) {
   const bn = locale === "bn"
   const by = (slug: string) => categories.find((c) => c.slug === slug)
-  const [rental, stay, shutki, achar] = [by("rent-a-car"), by("resort-booking"), by("shutki"), by("achar")]
+  const [ship, rental, stay, shutki, achar] = [by("saint-martin-ship"), by("rent-a-car"), by("resort-booking"), by("shutki"), by("achar")]
   const [vehicles, properties, stores, shutkiProducts, acharProducts] = await Promise.all([
     rental ? marketVehicles() : [],
     stay ? marketProperties() : [],
@@ -43,6 +44,19 @@ export async function MarketTiles({ locale, shopId, categories }: { locale: Loca
   ])
 
   const tiles: Tile[] = []
+  if (ship) {
+    const offers = await db.serviceOffering.findMany({ where: { categoryId: ship.id, active: true }, select: { price: true, pricing: true } })
+    const perPerson = offers.filter((o) => o.pricing === "PER_PERSON" && o.price > 0).map((o) => o.price)
+    tiles.push({
+      cat: ship,
+      fact: pick(locale, `${num(offers.length, locale)} ধরনের টিকিট · কক্সবাজার ঘাট থেকে`, `${offers.length} ticket types · from Cox's Bazar jetty`),
+      price: perPerson.length ? pick(locale, `আসা-যাওয়া ${taka(min(perPerson), locale)}/জন থেকে · ই-টিকিট`, `round trip from ${taka(min(perPerson), locale)}/person · e-ticket`) : pick(locale, "টিকিট ও দাম দেখুন", "See tickets and prices"),
+      previews: [],
+      more: 0,
+      rating: null,
+      cta: pick(locale, "টিকিট বুক করুন", "Book tickets"),
+    })
+  }
   if (rental) {
     const types = new Set(vehicles.map((v) => v.offeringId))
     const hourly = vehicles.map((v) => v.pricePerHour).filter((p) => p > 0)

@@ -1,10 +1,11 @@
 import type { Locale } from "./format"
 
-export const PRICING = ["FIXED", "PER_KG", "PER_ITEM", "PER_HOUR", "PER_DAY", "PER_ROOM", "PER_NIGHT", "QUOTE"] as const
+export const PRICING = ["FIXED", "PER_PERSON", "PER_KG", "PER_ITEM", "PER_HOUR", "PER_DAY", "PER_ROOM", "PER_NIGHT", "QUOTE"] as const
 export type Pricing = (typeof PRICING)[number]
 
 export const PRICING_TEXT: Record<string, { bn: string; en: string; unitBn: string; unitEn: string }> = {
   FIXED: { bn: "নির্দিষ্ট দাম", en: "Fixed price", unitBn: "কাজ", unitEn: "job" },
+  PER_PERSON: { bn: "প্রতি জন", en: "Per person", unitBn: "জন", unitEn: "person" },
   PER_KG: { bn: "প্রতি কেজি", en: "Per kg", unitBn: "কেজি", unitEn: "kg" },
   PER_ITEM: { bn: "প্রতি পিস", en: "Per item", unitBn: "পিস", unitEn: "item" },
   PER_HOUR: { bn: "প্রতি ঘণ্টা", en: "Per hour", unitBn: "ঘণ্টা", unitEn: "hour" },
@@ -20,7 +21,7 @@ export function unitLabel(pricing: string, locale: Locale) {
 }
 
 export function usesQuantity(pricing: string) {
-  return ["PER_KG", "PER_ITEM", "PER_HOUR", "PER_DAY", "PER_ROOM", "PER_NIGHT"].includes(pricing)
+  return ["PER_PERSON", "PER_KG", "PER_ITEM", "PER_HOUR", "PER_DAY", "PER_ROOM", "PER_NIGHT"].includes(pricing)
 }
 
 export type EstimateInput = {

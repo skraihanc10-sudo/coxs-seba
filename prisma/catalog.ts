@@ -86,7 +86,7 @@ type Offer = {
   name: string
   detailBn: string
   detail: string
-  pricing: "FIXED" | "PER_KG" | "PER_ITEM" | "PER_HOUR" | "PER_DAY" | "PER_ROOM" | "PER_NIGHT" | "QUOTE"
+  pricing: "FIXED" | "PER_PERSON" | "PER_KG" | "PER_ITEM" | "PER_HOUR" | "PER_DAY" | "PER_ROOM" | "PER_NIGHT" | "QUOTE"
   price: number
   minQty?: number
   durationMin: number
@@ -105,6 +105,26 @@ export const CATEGORIES: Array<{
   codePrefix: string
   offerings: Offer[]
 }> = [
+  {
+    slug: "saint-martin-ship",
+    codePrefix: "SM",
+    nameBn: "সেন্ট মার্টিন শিপ টিকিট",
+    name: "Saint Martin ship tickets",
+    blurbBn: "কক্সবাজার (নুনিয়ারছড়া ঘাট) থেকে সেন্ট মার্টিন – কর্ণফুলী এক্সপ্রেস ও বে ওয়ান শিপের টিকিট। সিট বা কেবিন বেছে নিন, আমরা কনফার্ম করে ই-টিকিট হোয়াটসঅ্যাপে বা হোটেলে পৌঁছে দিই। মৌসুম: নভেম্বর–মার্চ।",
+    blurb: "Cox's Bazar (Nuniarchhara jetty) to Saint Martin on Karnafuly Express and Bay One. Pick a seat or cabin; we confirm and send the e-ticket on WhatsApp or to your hotel. Season: November to March.",
+    icon: "ship",
+    image: "/services/saint-martin.jpg",
+    flow: "STANDARD",
+    offerings: [
+      { slug: "karnafuly-economy", nameBn: "কর্ণফুলী এক্সপ্রেস · ইকোনমি সিট (আসা-যাওয়া)", name: "Karnafuly Express · Economy seat (round trip)", detailBn: "ল্যাভেন্ডার / মেরিগোল্ড ডেক, এসি। একমুখী ৳২,২০০। সকাল ৭টায় ছাড়ে, বিকেল ৩টায় ফেরে।", detail: "Lavender / Marigold deck, AC. One-way ৳2,200. Departs 7 am, returns 3 pm.", pricing: "PER_PERSON", price: 4200, durationMin: 600 },
+      { slug: "karnafuly-business", nameBn: "কর্ণফুলী এক্সপ্রেস · বিজনেস ক্লাস (আসা-যাওয়া)", name: "Karnafuly Express · Business class (round trip)", detailBn: "গ্ল্যাডিওলাস ডেক, চওড়া সিট, এসি, স্ন্যাকস।", detail: "Gladiolus deck, wide seats, AC, snacks.", pricing: "PER_PERSON", price: 5000, durationMin: 600 },
+      { slug: "karnafuly-lounge", nameBn: "কর্ণফুলী এক্সপ্রেস · লাউঞ্জ (আসা-যাওয়া)", name: "Karnafuly Express · Lounge (round trip)", detailBn: "ক্রিস্যান্থিমাম লাউঞ্জ, সোফা সিট, প্রিমিয়াম সার্ভিস।", detail: "Chrysanthemum lounge, sofa seating, premium service.", pricing: "PER_PERSON", price: 5800, durationMin: 600 },
+      { slug: "karnafuly-cabin", nameBn: "কর্ণফুলী এক্সপ্রেস · সিঙ্গেল কেবিন (আসা-যাওয়া)", name: "Karnafuly Express · Single cabin (round trip)", detailBn: "প্রাইভেট কেবিন, ১ জন। দাম প্রতি কেবিন।", detail: "Private cabin for one. Price per cabin.", pricing: "FIXED", price: 7000, durationMin: 600 },
+      { slug: "karnafuly-vvip-cabin", nameBn: "কর্ণফুলী এক্সপ্রেস · VVIP কেবিন (২ জন, আসা-যাওয়া)", name: "Karnafuly Express · VVIP cabin (2 people, round trip)", detailBn: "সবচেয়ে বড় কেবিন, ২ জন, ব্যক্তিগত বারান্দা। দাম প্রতি কেবিন।", detail: "Largest cabin for two with private balcony. Price per cabin.", pricing: "FIXED", price: 19000, durationMin: 600 },
+      { slug: "bay-one-economy", nameBn: "বে ওয়ান · ইকোনমি চেয়ার (আসা-যাওয়া)", name: "Bay One · Economy chair (round trip)", detailBn: "ডেক E/F, এসি চেয়ার। একমুখী ৳১,৭৫০। সময়সূচি কনফার্ম করে জানাই।", detail: "Deck E/F AC chair. One-way ৳1,750. We confirm the schedule with you.", pricing: "PER_PERSON", price: 3500, durationMin: 600 },
+      { slug: "bay-one-business", nameBn: "বে ওয়ান · বিজনেস চেয়ার (আসা-যাওয়া)", name: "Bay One · Business chair (round trip)", detailBn: "ডেক D, চওড়া চেয়ার, এসি।", detail: "Deck D, wide AC chair.", pricing: "PER_PERSON", price: 4000, durationMin: 600 },
+    ],
+  },
   {
     slug: "shutki",
     codePrefix: "SH",

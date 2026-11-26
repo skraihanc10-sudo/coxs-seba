@@ -40,7 +40,7 @@ export default async function HomePage() {
   const t = words(locale)
   const bn = locale === "bn"
   const rental = categories.find((c) => c.slug === "rent-a-car")
-  const MARKET_SLUGS = ["rent-a-car", "resort-booking", "shutki", "achar"]
+  const MARKET_SLUGS = ["saint-martin-ship", "rent-a-car", "resort-booking", "shutki", "achar"]
   const markets = MARKET_SLUGS.map((slug) => categories.find((c) => c.slug === slug)).filter((c): c is NonNullable<typeof c> => Boolean(c))
   const homeServices = categories.filter((c) => !MARKET_SLUGS.includes(c.slug))
   const stay = categories.find((c) => c.slug === "resort-booking")
@@ -55,42 +55,26 @@ export default async function HomePage() {
       <JsonLd data={[organization(), localBusiness(shop, settings, areas), ...(faqs.length ? [faqLd(faqs.map((f) => ({ question: bn ? f.questionBn : f.question, answer: bn ? f.answerBn : f.answer })))] : [])]} />
 
       {/* Hero + search */}
-      <section aria-labelledby="hero-title" className="navy-glow rounded-[2rem] px-5 py-8 shadow-[0_28px_70px_rgba(7,26,58,0.3)] ring-1 ring-cyan/20 md:px-10 md:py-14 lg:grid lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:gap-10">
+      <section aria-labelledby="hero-title" className="navy-glow rounded-[1.6rem] px-4 py-6 shadow-[0_28px_70px_rgba(7,26,58,0.3)] ring-1 ring-cyan/20 md:rounded-[2rem] md:px-10 md:py-14 lg:grid lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:gap-x-10">
         <div className="pointer-events-none absolute inset-0 opacity-[0.1] [background-image:radial-gradient(rgba(255,255,255,0.9)_1px,transparent_1px)] [background-size:22px_22px]" aria-hidden />
         <div className="pointer-events-none absolute top-1/2 left-1/2 size-[520px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-cyan/10 blur-3xl" aria-hidden />
         <div className="relative">
-        <p className="pill glass inline-flex items-center gap-1 text-white"><MapPin className="size-3.5" aria-hidden /> {coverageText(shop, locale)}</p>
-        <h1 id="hero-title" className="display mt-4 max-w-2xl text-[2rem] font-extrabold leading-tight md:text-[3.4rem]">
-          {bn ? settings.heroBn : settings.heroEn}
-        </h1>
-        <p className="mt-3 max-w-xl text-[15px] text-white/80 md:text-lg">{bn ? settings.bannerBn : settings.bannerEn}</p>
-        <div className="mt-6"><SearchBox locale={locale} variant="hero" buttonText={t.search} /></div>
-        <div className="mt-5 -mx-5 scroll-x px-5 md:mx-0 md:flex-wrap md:px-0" aria-label={pick(locale, "জনপ্রিয় সেবা", "Popular services")}>
-          {quick.map((c) => (
-            <Link key={c.id} href={`/services/${c.slug}`} className="glass inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-[13px] font-bold text-white transition hover:bg-white hover:text-ink">
-              <CategoryIcon name={c.icon} className="size-3.5" /> {named(locale, c)}
-            </Link>
-          ))}
+          <p className="pill glass inline-flex items-center gap-1 text-[11px] text-white md:text-xs"><MapPin className="size-3.5" aria-hidden /> {coverageText(shop, locale)}</p>
+          <h1 id="hero-title" className="display mt-3 max-w-2xl text-[1.55rem] font-extrabold leading-tight md:mt-4 md:text-[3.4rem]">
+            {bn ? settings.heroBn : settings.heroEn}
+          </h1>
+          <p className="mt-2 max-w-xl text-[13px] leading-relaxed text-white/80 md:mt-3 md:text-lg">{bn ? settings.bannerBn : settings.bannerEn}</p>
+          <div className="mt-4 md:mt-6"><SearchBox locale={locale} variant="hero" buttonText={t.search} /></div>
+          <div className="mt-3 -mx-4 scroll-x px-4 md:mx-0 md:mt-5 md:flex-wrap md:px-0" aria-label={pick(locale, "জনপ্রিয় সেবা", "Popular services")}>
+            {quick.map((c) => (
+              <Link key={c.id} href={`/services/${c.slug}`} className="glass inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full px-3 text-[12px] font-bold text-white transition hover:bg-white hover:text-ink md:h-9 md:px-3.5 md:text-[13px]">
+                <CategoryIcon name={c.icon} className="size-3.5" /> {named(locale, c)}
+              </Link>
+            ))}
+          </div>
         </div>
-        <ul className="mt-6 grid max-w-xl grid-cols-3 gap-2 text-left" aria-label={pick(locale, "আমাদের প্রতিশ্রুতি", "Our promises")}>
-          {[
-            [ShieldCheck, pick(locale, "যাচাই করা", "Verified"), pick(locale, "কর্মী ও পার্টনার", "team & partners")],
-            [BadgeCheck, pick(locale, "দাম আগেই", "Price up front"), pick(locale, "লুকানো চার্জ নেই", "no hidden charges")],
-            [Clock3, pick(locale, "দ্রুত সেবা", "Fast service"), pick(locale, "ক্যাশ / বিকাশ / নগদ", "cash / bKash / Nagad")],
-          ].map(([Icon, title, body]) => {
-            const I = Icon as typeof ShieldCheck
-            return (
-              <li key={title as string} className="glass rounded-2xl px-3 py-2.5">
-                <I className="size-4 text-cyan" aria-hidden />
-                <p className="mt-1.5 text-[13px] font-extrabold leading-tight">{title as string}</p>
-                <p className="text-[11px] text-white/70">{body as string}</p>
-              </li>
-            )
-          })}
-        </ul>
-        </div>
-        {/* Featured-services board: rotating illustrated cards, one per category. */}
-        <div className="relative mt-7 lg:mt-0">
+        {/* Featured-services board: rotating illustrated cards, one per category. On phones it sits right under the search, before the promises. */}
+        <div className="relative mt-4 lg:row-span-2 lg:mt-0">
           <HeroShowcase
             locale={locale}
             items={categories
@@ -107,6 +91,24 @@ export default async function HomePage() {
               })}
           />
         </div>
+        <ul className="relative mt-4 grid max-w-xl grid-cols-3 gap-1.5 text-left md:mt-6 md:gap-2" aria-label={pick(locale, "আমাদের প্রতিশ্রুতি", "Our promises")}>
+          {[
+            [ShieldCheck, pick(locale, "যাচাই করা", "Verified"), pick(locale, "কর্মী ও পার্টনার", "team & partners")],
+            [BadgeCheck, pick(locale, "দাম আগেই", "Price up front"), pick(locale, "লুকানো চার্জ নেই", "no hidden charges")],
+            [Clock3, pick(locale, "দ্রুত সেবা", "Fast service"), pick(locale, "ক্যাশ / বিকাশ / নগদ", "cash / bKash / Nagad")],
+          ].map(([Icon, title, body]) => {
+            const I = Icon as typeof ShieldCheck
+            return (
+              <li key={title as string} className="glass flex items-center gap-2 rounded-xl px-2 py-1.5 md:block md:rounded-2xl md:px-3 md:py-2.5">
+                <I className="size-3.5 shrink-0 text-cyan md:size-4" aria-hidden />
+                <span className="min-w-0">
+                  <span className="block truncate text-[11px] font-extrabold leading-tight md:mt-1.5 md:text-[13px]">{title as string}</span>
+                  <span className="block truncate text-[10px] text-white/70 md:text-[11px]">{body as string}</span>
+                </span>
+              </li>
+            )
+          })}
+        </ul>
       </section>
 
       {/* Marketplaces: the four photo tiles */}

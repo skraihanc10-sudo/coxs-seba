@@ -28,8 +28,90 @@ export const SITE_KEYWORDS = [
   "bike rental Cox's Bazar",
   "Marine Drive jeep tour",
   "home services Dhaka",
+  "সেন্ট মার্টিন শিপ টিকিট",
+  "সেন্ট মার্টিন জাহাজ টিকিট দাম",
+  "কর্ণফুলী এক্সপ্রেস টিকিট",
+  "বে ওয়ান শিপ টিকিট",
+  "কক্সবাজার টু সেন্ট মার্টিন শিপ",
+  "রিসোর্ট বুকিং কক্সবাজার",
+  "হোটেল বুকিং কক্সবাজার",
+  "কক্সবাজার হোটেল",
+  "কটেজ ভাড়া কক্সবাজার",
+  "কক্সবাজারের শুঁটকি",
+  "শুঁটকি অনলাইন অর্ডার",
+  "লইট্টা শুঁটকি",
+  "ছুরি শুঁটকি",
+  "বালাচাও",
+  "আচার অনলাইন",
+  "বার্মিজ আচার",
+  "চান্দের গাড়ি ভাড়া",
+  "চান্দের গাড়ি কক্সবাজার",
+  "রেন্ট এ কার কক্সবাজার",
+  "স্কুটার ভাড়া কক্সবাজার",
+  "লন্ড্রি সার্ভিস",
+  "ড্রাই ক্লিনিং কক্সবাজার",
+  "এসি মেরামত",
+  "ফ্রিজ মেরামত",
+  "ইলেকট্রিশিয়ান",
+  "প্লাম্বার",
+  "বাসা পরিষ্কার",
+  "কাজের লোক",
+  "দৈনিক শ্রমিক",
+  "কক্সবাজার সার্ভিস",
+  "কক্সবাজার অনলাইন সার্ভিস",
+  "পার্টনার হোন",
+  "Saint Martin ship ticket",
+  "Saint Martin ship ticket price",
+  "Karnafuly Express ticket",
+  "Bay One ship ticket",
+  "Cox's Bazar to Saint Martin ship",
+  "resort booking Cox's Bazar",
+  "hotel booking Cox's Bazar",
+  "Cox's Bazar hotels",
+  "cottage rental Cox's Bazar",
+  "Cox's Bazar dried fish",
+  "shutki online order",
+  "loitta shutki",
+  "churi shutki",
+  "balachao",
+  "pickle online Bangladesh",
+  "Burmese achar",
+  "chander gari rent",
+  "chander gari Cox's Bazar",
+  "scooter rental Cox's Bazar",
+  "laundry service",
+  "dry cleaning Cox's Bazar",
+  "AC repair Cox's Bazar",
+  "fridge repair Cox's Bazar",
+  "house cleaning Cox's Bazar",
+  "day labour Cox's Bazar",
+  "Cox's Bazar services",
+  "Cox's Bazar online service",
+  "become a partner",
   "HANDYO",
+  "Handyo BD",
+  "handyo.bd",
 ]
+
+/** Keywords for one service category page: its names, every offering, and the city in both languages. */
+export function categoryKeywords(category: { name: string; nameBn: string; offerings: Array<{ name: string; nameBn: string }> }, city: { bn: string; en: string }) {
+  const out = new Set<string>()
+  for (const n of [category.nameBn, category.name]) {
+    out.add(n)
+    out.add(`${n} ${city.bn}`)
+    out.add(`${n} ${city.en}`)
+    out.add(`${n} দাম`)
+    out.add(`${n} price`)
+    out.add(`${n} online`)
+  }
+  for (const o of category.offerings) {
+    out.add(o.nameBn)
+    out.add(o.name)
+    out.add(`${o.nameBn} দাম`)
+    out.add(`${o.name} price`)
+  }
+  return [...out, ...SITE_KEYWORDS]
+}
 
 export function absoluteUrl(path = "/") {
   return new URL(path, `${SITE_URL}/`).toString()
