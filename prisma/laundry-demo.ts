@@ -28,6 +28,18 @@ export const LAUNDRY_ITEMS: Item[] = [
   { slug: "towel", name: "Bath towel", nameBn: "টাওয়েল", wash: 40 },
   { slug: "blanket", name: "Blanket / quilt", nameBn: "কম্বল / লেপ", wash: 350, dry: 500 },
   { slug: "curtain", name: "Curtain (per panel)", nameBn: "পর্দা (প্রতি পিস)", wash: 250, dry: 400 },
+  { slug: "salwar-kameez", name: "Salwar kameez (set)", nameBn: "সালোয়ার কামিজ (সেট)", wash: 110, iron: 40, dry: 300 },
+  { slug: "kurti", name: "Kurti / tops", nameBn: "কুর্তি / টপস", wash: 60, iron: 20, dry: 160 },
+  { slug: "sweater", name: "Sweater / cardigan", nameBn: "সোয়েটার / কার্ডিগান", wash: 120, dry: 250 },
+  { slug: "hoodie", name: "Hoodie / sweatshirt", nameBn: "হুডি / সোয়েটশার্ট", wash: 100, iron: 30 },
+  { slug: "shorts", name: "Shorts", nameBn: "হাফপ্যান্ট / শর্টস", wash: 40, iron: 15 },
+  { slug: "kids", name: "Kids' clothes (per piece)", nameBn: "বাচ্চাদের পোশাক (প্রতি পিস)", wash: 35, iron: 10 },
+  { slug: "scarf", name: "Scarf / hijab / orna", nameBn: "ওড়না / হিজাব / স্কার্ফ", wash: 40, iron: 15 },
+  { slug: "pillow-cover", name: "Pillow cover (pair)", nameBn: "বালিশের কভার (জোড়া)", wash: 40, iron: 15 },
+  { slug: "sofa-cover", name: "Sofa cover (set)", nameBn: "সোফা কভার (সেট)", wash: 400, dry: 600 },
+  { slug: "mosquito-net", name: "Mosquito net", nameBn: "মশারি", wash: 120 },
+  { slug: "bag", name: "Bag / backpack", nameBn: "ব্যাগ / ব্যাকপ্যাক", wash: 150, dry: 250 },
+  { slug: "shoes", name: "Shoe cleaning (pair)", nameBn: "জুতা ক্লিনিং (জোড়া)", wash: 200 },
 ]
 
 export function laundryVariants(it: Item) {

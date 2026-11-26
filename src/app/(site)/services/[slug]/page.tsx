@@ -226,8 +226,40 @@ export default async function CategoryPage({ params }: { params: Params }) {
           )}
         </section>
       ) : null}
+      {/* Tickets: a price list, one line per class, grouped by ship. */}
+      {ticket ? (
+        <div className="space-y-4">
+          {Array.from(new Map(offerings.map((o) => [named(locale, o).split(" · ")[0], true])).keys()).map((ship) => (
+            <section key={ship} className="card overflow-hidden">
+              <h2 className="flex items-center gap-2 bg-navy px-4 py-2.5 text-sm font-extrabold text-white"><CategoryIcon name={category.icon} className="size-4 text-cyan" /> {ship}</h2>
+              <ul className="divide-y divide-line">
+                {offerings.filter((o) => named(locale, o).split(" · ")[0] === ship).map((o) => {
+                  const n = left && left.has(o.id) ? (left.get(o.id) ?? 0) : null
+                  const out = n !== null && n <= 0
+                  const label = named(locale, o).split(" · ").slice(1).join(" · ") || named(locale, o)
+                  return (
+                    <li key={o.id} className={`grid grid-cols-[1fr_auto] items-center gap-x-3 gap-y-1 px-4 py-3 sm:grid-cols-[1fr_auto_auto_auto] ${out ? "opacity-60" : ""}`}>
+                      <div className="min-w-0">
+                        <p className="font-extrabold text-ink">{label}</p>
+                        <p className="text-xs text-muted-foreground">{bn ? o.detailBn : o.detail}</p>
+                      </div>
+                      <p className="text-right text-base font-extrabold text-ink sm:text-lg">{taka(o.price, locale)}<span className="text-[11px] font-semibold text-muted-foreground">/{unitLabel(o.pricing, locale)}</span></p>
+                      <span className={`pill col-start-1 w-fit sm:col-start-auto ${n === null ? "bg-emerald-100 text-emerald-800" : out ? "bg-rose-100 text-rose-700" : n <= 10 ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-800"}`}>{n === null ? pick(locale, "টিকিট আছে", "Available") : out ? pick(locale, "স্টক আউট", "Stock out") : pick(locale, `${num(n, locale)}টা আছে`, `${n} left`)}</span>
+                      {out ? (
+                        <span className="btn-ghost col-start-2 h-9 px-3 text-xs opacity-70 sm:col-start-auto">{pick(locale, "শিগগির আবার", "Back soon")}</span>
+                      ) : (
+                        <Link href={`/book/${category.slug}/${o.slug}`} className="btn-primary col-start-2 h-9 px-4 text-xs sm:col-start-auto">{t.bookNow}</Link>
+                      )}
+                    </li>
+                  )
+                })}
+              </ul>
+            </section>
+          ))}
+        </div>
+      ) : null}
       {/* Rentals book a real vehicle from the marketplace above, never a bare type. */}
-      <div className={rental || stay || shopFlow ? "hidden" : "grid gap-3 md:grid-cols-2"}>
+      <div className={rental || stay || shopFlow || ticket ? "hidden" : "grid gap-3 md:grid-cols-2"}>
         {offerings.map((o) => {
           const n = left && left.has(o.id) ? (left.get(o.id) ?? 0) : null
           const out = n !== null && n <= 0

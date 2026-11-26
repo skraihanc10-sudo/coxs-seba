@@ -71,9 +71,15 @@ export function ShopMarket({ locale, groups, stores, products, rules, partnerHre
         </div>
       ) : null}
       {!list.length ? <p className="rounded-2xl bg-canvas px-4 py-3 text-sm text-muted-foreground">{T("এখনো কোনো পণ্য নেই।", "No products yet.")}</p> : null}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-        {list.map((p) => <ProductCard key={p.id} p={p} locale={locale} laundry={laundry} onAdd={(v) => add(v.id, p.id, 1)} onStore={() => { setStoreId(p.storeId ?? ""); setGroupId("") }} />)}
-      </div>
+      {laundry ? (
+        <div className="card divide-y divide-line overflow-hidden">
+          {list.map((p) => <LaundryLine key={p.id} p={p} locale={locale} onAdd={(v) => add(v.id, p.id, 1)} />)}
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          {list.map((p) => <ProductCard key={p.id} p={p} locale={locale} laundry={laundry} onAdd={(v) => add(v.id, p.id, 1)} onStore={() => { setStoreId(p.storeId ?? ""); setGroupId("") }} />)}
+        </div>
+      )}
 
       {laundry ? null : (
         <Link href={partnerHref} className="card mt-6 flex items-center justify-between gap-3 bg-brand-soft p-4 transition hover:ring-brand/40">
@@ -96,6 +102,39 @@ export function ShopMarket({ locale, groups, stores, products, rules, partnerHre
           </div>
         </div>
       ) : null}
+    </div>
+  )
+}
+
+/** One laundry item per line: small photo, name, service picker, price, add button. */
+function LaundryLine({ p, locale, onAdd }: { p: MarketProduct; locale: Locale; onAdd: (v: MarketVariant) => void }) {
+  const bn = locale === "bn"
+  const T = (b: string, e: string) => (bn ? b : e)
+  const [variantId, setVariantId] = useState(p.variants[0]?.id ?? "")
+  const [added, setAdded] = useState(false)
+  const v = p.variants.find((x) => x.id === variantId) ?? p.variants[0]
+  const soldOut = !v || v.stock === 0
+  return (
+    <div className="grid grid-cols-[52px_1fr_auto] items-center gap-x-3 gap-y-1.5 px-3 py-2.5 sm:grid-cols-[56px_1fr_12rem_5rem_auto] sm:px-4">
+      <span className="row-span-2 block size-13 overflow-hidden rounded-xl bg-canvas ring-1 ring-line sm:row-span-1 sm:size-14">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        {p.cover ? <img src={p.cover} alt={p.name} className="h-full w-full object-cover" loading="lazy" /> : null}
+      </span>
+      <p className="min-w-0 truncate text-[15px] font-extrabold text-ink">{p.name}{p.badge ? <span className="ml-1.5 rounded-full bg-rose-100 px-1.5 py-0.5 text-[10px] font-bold text-rose-700">{p.badge}</span> : null}</p>
+      <p className="text-right text-base font-extrabold text-brand sm:order-4">{v ? taka(v.price, locale) : "—"}</p>
+      {p.variants.length > 1 ? (
+        <select value={variantId} onChange={(e) => setVariantId(e.target.value)} className="field col-start-2 h-9 text-xs sm:order-3 sm:col-start-auto" aria-label={T("সার্ভিস", "Service")}>
+          {p.variants.map((x) => <option key={x.id} value={x.id}>{x.label} · {taka(x.price, locale)}</option>)}
+        </select>
+      ) : <p className="col-start-2 text-xs font-semibold text-muted-foreground sm:order-3 sm:col-start-auto">{v?.label}</p>}
+      <button
+        type="button"
+        disabled={soldOut}
+        onClick={() => { if (v) { onAdd(v); setAdded(true); window.setTimeout(() => setAdded(false), 1200) } }}
+        className={`col-start-3 h-9 justify-center rounded-xl px-3 text-xs font-extrabold transition sm:order-5 sm:col-start-auto ${soldOut ? "bg-canvas text-muted-foreground" : added ? "bg-ok text-white" : "btn-soft ring-1 ring-brand/30"}`}
+      >
+        {soldOut ? T("নেই", "Out") : added ? T("✓ যোগ হয়েছে", "✓ Added") : T("+ কার্টে", "+ Add")}
+      </button>
     </div>
   )
 }
