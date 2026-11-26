@@ -566,7 +566,7 @@ test("13. ship tickets: an agent signs up, adds stock, the office approves, a cu
   await loginWithPassword(customer, CUSTOMER)
   await customer.goto("/services/saint-martin-ship")
   // Other agents may stock the same type (earlier runs), so read the total and check it moves by 2.
-  const leftOf = async () => Number((await customer.locator(".card", { hasText: "লাউঞ্জ" }).first().locator(".pill").first().innerText()).replace(/[^০-৯0-9]/g, "").replace(/[০-৯]/g, (d) => String("০১২৩৪৫৬৭৮৯".indexOf(d))))
+  const leftOf = async () => Number((await customer.locator("li", { hasText: "লাউঞ্জ" }).first().locator(".pill").first().innerText()).replace(/[^০-৯0-9]/g, "").replace(/[০-৯]/g, (d) => String("০১২৩৪৫৬৭৮৯".indexOf(d))))
   const before = await leftOf()
   expect(before).toBeGreaterThanOrEqual(500)
 
