@@ -24,7 +24,7 @@ export function ShopMarket({ locale, groups, stores, products, rules, partnerHre
   const T = (b: string, e: string) => (bn ? b : e)
   const [groupId, setGroupId] = useState("")
   const [storeId, setStoreId] = useState("")
-  const { cart, add, count } = useCart()
+  const { cart, add, setQty, count } = useCart()
   const byStore = storeId ? products.filter((p) => p.storeId === storeId) : products
   const used = groups.filter((g) => byStore.some((p) => p.groupId === g.id))
   const list = groupId && used.some((g) => g.id === groupId) ? byStore.filter((p) => p.groupId === groupId) : byStore
@@ -73,7 +73,7 @@ export function ShopMarket({ locale, groups, stores, products, rules, partnerHre
       {!list.length ? <p className="rounded-2xl bg-canvas px-4 py-3 text-sm text-muted-foreground">{T("এখনো কোনো পণ্য নেই।", "No products yet.")}</p> : null}
       {laundry ? (
         <div className="card divide-y divide-line overflow-hidden">
-          {list.map((p) => <LaundryLine key={p.id} p={p} locale={locale} onAdd={(v) => add(v.id, p.id, 1)} />)}
+          {list.map((p) => <LaundryLine key={p.id} p={p} locale={locale} inCart={(id) => cart.find((c) => c.variantId === id)?.qty ?? 0} onAdd={(v) => add(v.id, p.id, 1)} onQty={(v, q) => setQty(v.id, q)} />)}
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
@@ -92,13 +92,13 @@ export function ShopMarket({ locale, groups, stores, products, rules, partnerHre
       )}
 
       {count > 0 ? (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-paper/95 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur md:bottom-0">
+        <div className="fixed inset-x-0 bottom-[calc(3.6rem+env(safe-area-inset-bottom))] z-40 border-t border-line bg-paper/95 px-4 py-2.5 shadow-[0_-8px_24px_rgba(7,26,58,0.08)] backdrop-blur md:bottom-0 md:pt-3 md:pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
           <div className="mx-auto flex max-w-6xl items-center gap-3">
             <div className="min-w-0 flex-1">
               <p className="text-[11px] font-bold text-muted-foreground uppercase">{T(`কার্টে ${count}টা পণ্য`, `${count} item${count > 1 ? "s" : ""} in cart`)}</p>
               <p className="text-lg font-extrabold text-ink">{taka(subtotal, locale)}{subtotal < rules.minOrder ? <span className="ml-2 text-xs font-semibold text-amber-700">{T(`ন্যূনতম ${taka(rules.minOrder, locale)}`, `min ${taka(rules.minOrder, locale)}`)}</span> : null}</p>
             </div>
-            <Link href="/shop/checkout" className="btn-primary h-12 px-6"><ShoppingBag className="size-4" /> {T("অর্ডার করুন", "Checkout")}</Link>
+            <Link href="/shop/checkout" className="btn-primary h-11 px-5 md:h-12 md:px-6"><ShoppingBag className="size-4" /> {T("অর্ডার করুন", "Checkout")}</Link>
           </div>
         </div>
       ) : null}
@@ -107,13 +107,13 @@ export function ShopMarket({ locale, groups, stores, products, rules, partnerHre
 }
 
 /** One laundry item per line: small photo, name, service picker, price, add button. */
-function LaundryLine({ p, locale, onAdd }: { p: MarketProduct; locale: Locale; onAdd: (v: MarketVariant) => void }) {
+function LaundryLine({ p, locale, inCart, onAdd, onQty }: { p: MarketProduct; locale: Locale; inCart: (variantId: string) => number; onAdd: (v: MarketVariant) => void; onQty: (v: MarketVariant, qty: number) => void }) {
   const bn = locale === "bn"
   const T = (b: string, e: string) => (bn ? b : e)
   const [variantId, setVariantId] = useState(p.variants[0]?.id ?? "")
-  const [added, setAdded] = useState(false)
   const v = p.variants.find((x) => x.id === variantId) ?? p.variants[0]
   const soldOut = !v || v.stock === 0
+  const qty = v ? inCart(v.id) : 0
   return (
     <div className="grid grid-cols-[52px_1fr_auto] items-center gap-x-3 gap-y-1.5 px-3 py-2.5 sm:grid-cols-[56px_1fr_12rem_5rem_auto] sm:px-4">
       <span className="row-span-2 block size-13 overflow-hidden rounded-xl bg-canvas ring-1 ring-line sm:row-span-1 sm:size-14">
@@ -127,14 +127,22 @@ function LaundryLine({ p, locale, onAdd }: { p: MarketProduct; locale: Locale; o
           {p.variants.map((x) => <option key={x.id} value={x.id}>{x.label} · {taka(x.price, locale)}</option>)}
         </select>
       ) : <p className="col-start-2 text-xs font-semibold text-muted-foreground sm:order-3 sm:col-start-auto">{v?.label}</p>}
-      <button
-        type="button"
-        disabled={soldOut}
-        onClick={() => { if (v) { onAdd(v); setAdded(true); window.setTimeout(() => setAdded(false), 1200) } }}
-        className={`col-start-3 h-9 justify-center rounded-xl px-3 text-xs font-extrabold transition sm:order-5 sm:col-start-auto ${soldOut ? "bg-canvas text-muted-foreground" : added ? "bg-ok text-white" : "btn-soft ring-1 ring-brand/30"}`}
-      >
-        {soldOut ? T("নেই", "Out") : added ? T("✓ যোগ হয়েছে", "✓ Added") : T("+ কার্টে", "+ Add")}
-      </button>
+      {qty > 0 && v ? (
+        <div className="col-start-3 inline-flex h-9 items-center overflow-hidden rounded-xl bg-brand text-white sm:order-5 sm:col-start-auto" aria-label={T("পরিমাণ", "Quantity")}>
+          <button type="button" onClick={() => onQty(v, qty - 1)} className="h-9 w-9 text-lg font-extrabold hover:bg-white/15" aria-label={T("একটা কমান", "Remove one")}>−</button>
+          <span className="min-w-7 text-center text-sm font-extrabold tabular-nums">{qty}</span>
+          <button type="button" onClick={() => onQty(v, qty + 1)} className="h-9 w-9 text-lg font-extrabold hover:bg-white/15" aria-label={T("একটা বাড়ান", "Add one")}>+</button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          disabled={soldOut}
+          onClick={() => { if (v) onAdd(v) }}
+          className={`col-start-3 h-9 justify-center rounded-xl px-3 text-xs font-extrabold transition sm:order-5 sm:col-start-auto ${soldOut ? "bg-canvas text-muted-foreground" : "btn-soft ring-1 ring-brand/30"}`}
+        >
+          {soldOut ? T("নেই", "Out") : T("+ কার্টে", "+ Add")}
+        </button>
+      )}
     </div>
   )
 }

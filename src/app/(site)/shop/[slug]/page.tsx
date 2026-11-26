@@ -10,6 +10,7 @@ import { photoUrl, photosOf } from "@/lib/vehicles"
 import { priceRange, productBySlug, productName, shopRules } from "@/lib/shop"
 import { clip, pageMeta } from "@/lib/seo"
 import { PageHeader, TrustStrip } from "@/components/bits"
+import { PhotoGallery } from "@/components/photo-gallery"
 import { ProductBuyBox } from "@/components/product-buy-box"
 import { breadcrumbs, JsonLd } from "@/components/seo/json-ld"
 
@@ -46,21 +47,7 @@ export default async function ProductPage({ params }: { params: Params }) {
       <PageHeader back={`/services/${backSlug}`} title={name} sub={`${named(locale, p.group)}${p.store ? ` · ${named(locale, p.store)}` : ""}`} />
       <div className="grid gap-5 md:grid-cols-2">
         <div>
-          <div className="relative overflow-hidden rounded-3xl bg-canvas">
-            {photos[0] ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={photoUrl(photos[0])} alt={name} className="aspect-square w-full object-cover" />
-            ) : null}
-            {p.badge ? <span className="absolute top-3 left-3 rounded-full bg-rose-600 px-3 py-1 text-xs font-bold text-white">{p.badge}</span> : null}
-          </div>
-          {photos.length > 1 ? (
-            <div className="mt-2 grid grid-cols-4 gap-2">
-              {photos.slice(1, 5).map((ph) => (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img key={ph} src={photoUrl(ph)} alt="" className="aspect-square w-full rounded-xl object-cover" loading="lazy" />
-              ))}
-            </div>
-          ) : null}
+          <PhotoGallery photos={photos.map(photoUrl)} alt={name} aspect="aspect-square" badge={p.badge || undefined} />
         </div>
         <div className="space-y-4">
           <ProductBuyBox locale={locale} productId={p.id} variants={p.variants.filter((v) => v.active).map((v) => ({ id: v.id, label: v.label, price: v.price, oldPrice: v.oldPrice, stock: v.stock }))} />

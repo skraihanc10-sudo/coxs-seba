@@ -10,6 +10,7 @@ import { photoUrl, photosOf } from "@/lib/vehicles"
 import { kindText, listOf, liveProperty, propertyName } from "@/lib/stays"
 import { clip, pageMeta } from "@/lib/seo"
 import { PageHeader, TrustStrip } from "@/components/bits"
+import { PhotoGallery } from "@/components/photo-gallery"
 import { breadcrumbs, JsonLd } from "@/components/seo/json-ld"
 
 type Params = Promise<{ id: string }>
@@ -50,22 +51,12 @@ export default async function StayPage({ params }: { params: Params }) {
 
       <div className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
         <div>
-          <div className="relative overflow-hidden rounded-3xl bg-canvas">
-            {cover ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={cover} alt={name} className="aspect-[16/10] w-full object-cover" />
-            ) : null}
-            <span className="absolute top-3 left-3 rounded-full bg-black/70 px-3 py-1 text-xs font-bold text-white">{kindText(p.kind, locale)}</span>
-            {p.worker && p.worker.ratingCount > 0 ? <span className="absolute top-3 right-3 inline-flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-xs font-bold text-amber-600"><Star className="size-3.5 fill-current" aria-hidden /> {p.worker.rating.toFixed(1)}</span> : null}
-          </div>
-          {photos.length > 1 ? (
-            <div className="mt-2 grid grid-cols-4 gap-2">
-              {photos.slice(1, 5).map((ph) => (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img key={ph} src={photoUrl(ph)} alt="" className="aspect-[4/3] w-full rounded-xl object-cover" loading="lazy" />
-              ))}
-            </div>
-          ) : null}
+          <PhotoGallery
+            photos={photos.map(photoUrl)}
+            alt={name}
+            badge={kindText(p.kind, locale)}
+            corner={p.worker && p.worker.ratingCount > 0 ? <span className="inline-flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-xs font-bold text-amber-600"><Star className="size-3.5 fill-current" aria-hidden /> {p.worker.rating.toFixed(1)}</span> : null}
+          />
           {detail ? <p className="mt-4 text-[15px] text-muted-foreground">{detail}</p> : null}
           <p className="mt-3 inline-flex items-center gap-1 text-sm font-bold text-ink"><MapPin className="size-4 text-brand" aria-hidden /> {bn ? p.addressBn || p.address : p.address || p.addressBn || named(locale, p.area)}</p>
           {listOf(p.amenities).length ? (

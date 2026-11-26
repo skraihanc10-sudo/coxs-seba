@@ -10,6 +10,7 @@ import { photosOf, photoUrl, specsOf, vehicleById, vehicleName } from "@/lib/veh
 import { clip, pageMeta } from "@/lib/seo"
 import { PageHeader, TrustStrip } from "@/components/bits"
 import { breadcrumbs, JsonLd } from "@/components/seo/json-ld"
+import { PhotoGallery } from "@/components/photo-gallery"
 
 type Params = Promise<{ id: string }>
 
@@ -59,25 +60,12 @@ export default async function VehiclePage({ params }: { params: Params }) {
 
       <div className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
         <div>
-          <div className="relative overflow-hidden rounded-3xl bg-canvas">
-            {cover ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={cover} alt={name} className="aspect-[16/10] w-full object-cover" />
-            ) : category.image ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={category.image} alt="" className="aspect-[16/10] w-full object-cover" />
-            ) : null}
-            <span className="absolute top-3 left-3 rounded-full bg-black/70 px-3 py-1 text-xs font-bold text-white">{named(locale, v.offering)}</span>
-            {v.worker && v.worker.ratingCount > 0 ? <span className="absolute top-3 right-3 inline-flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-xs font-bold text-amber-600"><Star className="size-3.5 fill-current" aria-hidden /> {v.worker.rating.toFixed(1)}</span> : null}
-          </div>
-          {photos.length > 1 ? (
-            <div className="mt-2 grid grid-cols-4 gap-2">
-              {photos.slice(1, 5).map((p) => (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img key={p} src={photoUrl(p)} alt="" className="aspect-[4/3] w-full rounded-xl object-cover" loading="lazy" />
-              ))}
-            </div>
-          ) : null}
+          <PhotoGallery
+            photos={cover ? photos.map(photoUrl) : category.image ? [category.image] : []}
+            alt={name}
+            badge={named(locale, v.offering)}
+            corner={v.worker && v.worker.ratingCount > 0 ? <span className="inline-flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-xs font-bold text-amber-600"><Star className="size-3.5 fill-current" aria-hidden /> {v.worker.rating.toFixed(1)}</span> : null}
+          />
           {detail ? <p className="mt-4 text-[15px] text-muted-foreground">{detail}</p> : null}
           <div className="mt-3 flex flex-wrap gap-1.5 text-xs font-bold text-ink">
             <span className="inline-flex items-center gap-1 rounded-full bg-canvas px-3 py-1.5"><Users className="size-3.5" aria-hidden /> {pick(locale, `${v.seats} সিট`, `${v.seats} seats`)}</span>

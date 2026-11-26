@@ -16,6 +16,11 @@ import { LAUNDRY_GROUP, LAUNDRY_ITEMS, LAUNDRY_STORE, laundryVariants } from "./
 
 const db = new PrismaClient()
 
+/** "a,b" → the bundled demo vehicle photos that exist, comma-joined. */
+function demoPhotos(keys: string) {
+  return keys.split(",").map((k) => bundled(`/demo/vehicles/${k.trim()}.jpg`)).filter(Boolean).join(",")
+}
+
 /** A bundled illustration under public/, or "" when none ships for that path. */
 function bundled(path: string) {
   return existsSync(join(process.cwd(), "public", path)) ? path : ""
@@ -147,6 +152,11 @@ async function demo(coxs: { id: string }) {
     { key: "scooter", photo: "scooter-rayzr", type: "bike", owner: "partner.rony@needcoxs.test", title: "Yamaha Ray ZR scooter", titleBn: "ইয়ামাহা রে ZR স্কুটার", plate: "Cox-Ha-21-7788", seats: 2, hour: 150, day: 800, half: 500, specs: "125cc, Automatic, 2 helmets", minHours: 2, detail: "Self-drive, two helmets, licence required. Fuel extra.", detailBn: "নিজে চালাবেন, দুইটা হেলমেট, লাইসেন্স লাগবে। তেল আলাদা।", status: "APPROVED" },
     { key: "premio", photo: "car-premio", type: "car", owner: "partner.rony@needcoxs.test", title: "Toyota Premio 2016 (AC)", titleBn: "টয়োটা প্রিমিও ২০১৬ (এসি)", plate: "Cox-Ga-14-9911", seats: 4, hour: 500, day: 3500, half: 2000, specs: "AC, 4 seats, Driver included", minHours: 2, detail: "AC sedan with driver and fuel, inside town.", detailBn: "এসি সেডান, ড্রাইভার ও তেলসহ, শহরের মধ্যে।", status: "APPROVED" },
     { key: "hiace", photo: "micro-hiace-2", type: "bus", owner: "partner.rony@needcoxs.test", title: "Toyota Hiace microbus (11 seats)", titleBn: "টয়োটা হাইয়েস মাইক্রোবাস (১১ সিট)", plate: "Cox-Cha-11-3344", seats: 11, hour: 900, day: 6500, minHours: 3, detail: "For groups: Teknaf, Inani, Ramu day tours.", detailBn: "গ্রুপের জন্য: টেকনাফ, ইনানী, রামু ডে ট্যুর।", status: "PENDING" },
+    { key: "stylo", photo: "scooter-stylo", type: "bike", owner: "partner.rony@needcoxs.test", title: "Honda Stylo 160 scooter", titleBn: "হোন্ডা স্টাইলো ১৬০ স্কুটার", plate: "Cox-Ha-22-1190", seats: 2, hour: 200, day: 1000, half: 600, specs: "160cc, Automatic, Retro look, 2 helmets", minHours: 2, detail: "Comfortable retro scooter, self-drive with two helmets. Licence required, fuel extra.", detailBn: "আরামের রেট্রো স্কুটার, নিজে চালাবেন, দুইটা হেলমেট। লাইসেন্স লাগবে, তেল আলাদা।", status: "APPROVED" },
+    { key: "dio", photo: "scooter-dio,scooter-dio-2", type: "bike", owner: null, title: "Honda Dio scooter", titleBn: "হোন্ডা ডিও স্কুটার", plate: "Cox-Ha-19-3307", seats: 2, hour: 150, day: 800, half: 500, specs: "110cc, Automatic, Light & easy, 2 helmets", minHours: 2, detail: "Light automatic scooter for the beach road and Marine Drive. Two helmets, fuel extra.", detailBn: "হালকা অটোমেটিক স্কুটার, বিচ রোড আর মেরিন ড্রাইভের জন্য। দুইটা হেলমেট, তেল আলাদা।", status: "APPROVED" },
+    { key: "cg-red", photo: "chander-gari-red", type: "chander-gari", owner: "partner.rony@needcoxs.test", title: "Chander gari, red (Toyota Land Cruiser pickup)", titleBn: "চান্দের গাড়ি, লাল (টয়োটা ল্যান্ড ক্রুজার পিকআপ)", plate: "Cox-Tha-15-2210", seats: 10, hour: 0, day: 4500, half: 2800, specs: "Open roof, 7–10 people, Driver included, Route packages", minHours: 1, detail: "Classic red chander gari with driver: Himchari, Inani, Patuartek along Marine Drive.", detailBn: "ক্লাসিক লাল চান্দের গাড়ি, ড্রাইভারসহ: হিমছড়ি, ইনানী, পাটুয়ারটেক মেরিন ড্রাইভ ধরে।", status: "APPROVED" },
+    { key: "cg-long-yellow", photo: "chander-gari-long-yellow", type: "chander-gari", owner: null, title: "Long chander gari, yellow (13 seats)", titleBn: "লম্বা চান্দের গাড়ি, হলুদ (১৩ সিট)", plate: "Cox-Tha-17-6601", seats: 13, hour: 0, day: 6000, half: 3500, specs: "Long body, Open roof, 10–13 people, Driver included, Route packages", minHours: 1, detail: "Long-bed Land Cruiser for big groups: up to 13 people, Teknaf and Shah Porir Dwip day trips.", detailBn: "বড় গ্রুপের জন্য লম্বা বডির ল্যান্ড ক্রুজার: ১৩ জন পর্যন্ত, টেকনাফ ও শাহপরীর দ্বীপ ডে ট্রিপ।", status: "APPROVED" },
+    { key: "cg-long-blue", photo: "chander-gari-long-blue,chander-gari-long-blue-2", type: "chander-gari", owner: "partner.rony@needcoxs.test", title: "Long chander gari, blue (13 seats)", titleBn: "লম্বা চান্দের গাড়ি, নীল (১৩ সিট)", plate: "Cox-Tha-18-7742", seats: 13, hour: 0, day: 6000, half: 3500, specs: "Long body, Open roof, 10–13 people, Driver included, Route packages", minHours: 1, detail: "Blue long-bed chander gari with shade frame, driver included. Marine Drive to Sonaichari or Teknaf.", detailBn: "নীল লম্বা চান্দের গাড়ি, ছাউনির ফ্রেমসহ, ড্রাইভারসহ। মেরিন ড্রাইভ থেকে সোনাইছড়ি বা টেকনাফ।", status: "APPROVED" },
   ]
   for (const [i, v] of vehicles.entries()) {
     const offering = rentalOfferings[v.type]
@@ -155,7 +165,7 @@ async function demo(coxs: { id: string }) {
     if (existing) {
       // Older rows: fill the newer marketplace fields once, never overwrite edits.
       if (!existing.specs && !existing.pricePerHalfDay) await db.vehicle.update({ where: { id: existing.id }, data: { specs: v.specs ?? "", pricePerHalfDay: v.half ?? 0 } })
-      if (!existing.photos && bundled(`/demo/vehicles/${v.photo}.jpg`)) await db.vehicle.update({ where: { id: existing.id }, data: { photos: `/demo/vehicles/${v.photo}.jpg` } })
+      if (!existing.photos && demoPhotos(v.photo)) await db.vehicle.update({ where: { id: existing.id }, data: { photos: demoPhotos(v.photo) } })
       continue
     }
     await db.vehicle.create({
@@ -167,7 +177,7 @@ async function demo(coxs: { id: string }) {
         titleBn: v.titleBn,
         plate: v.plate,
         seats: v.seats,
-        photos: bundled(`/demo/vehicles/${v.photo}.jpg`),
+        photos: demoPhotos(v.photo),
         pricePerHour: v.hour,
         pricePerDay: v.day,
         pricePerHalfDay: v.half ?? 0,
