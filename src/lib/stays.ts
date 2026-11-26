@@ -71,7 +71,7 @@ export async function stayCategory(shopId: string) {
   })
 }
 
-const liveWhere = { status: "APPROVED", shop: { active: true }, OR: [{ workerId: null }, { worker: { approved: true, user: { active: true } } }] } satisfies Prisma.PropertyWhereInput
+const liveWhere = { status: { in: ["APPROVED", "PAUSED"] }, shop: { active: true }, OR: [{ workerId: null }, { worker: { approved: true, user: { active: true } } }] } satisfies Prisma.PropertyWhereInput
 
 /** Every live property of every branch: the public marketplace. */
 export async function marketProperties() {

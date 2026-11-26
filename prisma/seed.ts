@@ -81,10 +81,10 @@ async function catalogFor(shopId: string, areas: typeof AREAS, categories: typeo
   // Company rule since 2026-11-24: HANDYO keeps 10 % of every partner business, so partners get 90 %.
   await db.setting.updateMany({ where: { shopId, key: "partnerShare", value: "85" }, data: { value: "90" } })
   // Hero text rewritten 2026-11-24 for the wider company; only rows still holding the old default move.
-  await db.setting.updateMany({ where: { shopId, key: "heroBn", value: "আপনি নিশ্চিন্তে থাকুন, কাজটা আমরা করে দিই।" }, data: { value: SETTING_DEFAULTS.heroBn } })
-  await db.setting.updateMany({ where: { shopId, key: "heroEn", value: "You relax. We get it done." }, data: { value: SETTING_DEFAULTS.heroEn } })
-  await db.setting.updateMany({ where: { shopId, key: "bannerBn", value: "ঘরে বসেই সব সেবা: লন্ড্রি, ইলেকট্রিশিয়ান, প্লাম্বার, ক্লিনিং আর আরও অনেক কিছু।" }, data: { value: SETTING_DEFAULTS.bannerBn } })
-  await db.setting.updateMany({ where: { shopId, key: "bannerEn", value: "Every home service at your door: laundry, electricians, plumbers, cleaning and more." }, data: { value: SETTING_DEFAULTS.bannerEn } })
+  await db.setting.updateMany({ where: { shopId, key: "heroBn", value: { in: ["আপনি নিশ্চিন্তে থাকুন, কাজটা আমরা করে দিই।", "কক্সবাজারে যা দরকার, সব HANDYO-তে।"] } }, data: { value: SETTING_DEFAULTS.heroBn } })
+  await db.setting.updateMany({ where: { shopId, key: "heroEn", value: { in: ["You relax. We get it done.", "Everything you need in Cox's Bazar, on HANDYO."] } }, data: { value: SETTING_DEFAULTS.heroEn } })
+  await db.setting.updateMany({ where: { shopId, key: "bannerBn", value: { in: ["ঘরে বসেই সব সেবা: লন্ড্রি, ইলেকট্রিশিয়ান, প্লাম্বার, ক্লিনিং আর আরও অনেক কিছু।", "ঘরের সেবা, গাড়ি-বাইক ভাড়া, রিসোর্ট বুকিং আর কক্সবাজারের শুঁটকি-আচার – এক অ্যাপে, দাম আগেই জানা।"] } }, data: { value: SETTING_DEFAULTS.bannerBn } })
+  await db.setting.updateMany({ where: { shopId, key: "bannerEn", value: { in: ["Every home service at your door: laundry, electricians, plumbers, cleaning and more.", "Home services, car & bike rental, resort booking and Cox's Bazar dried fish & pickles: one app, prices up front."] } }, data: { value: SETTING_DEFAULTS.bannerEn } })
 }
 
 async function catalog() {

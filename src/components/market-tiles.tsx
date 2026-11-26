@@ -36,8 +36,8 @@ export async function MarketTiles({ locale, shopId, categories }: { locale: Loca
   const by = (slug: string) => categories.find((c) => c.slug === slug)
   const [ship, rental, stay, shutki, achar] = [by("saint-martin-ship"), by("rent-a-car"), by("resort-booking"), by("shutki"), by("achar")]
   const [vehicles, properties, stores, shutkiProducts, acharProducts] = await Promise.all([
-    rental ? marketVehicles() : [],
-    stay ? marketProperties() : [],
+    rental ? marketVehicles().then((xs) => xs.filter((v) => v.status === "APPROVED")) : [],
+    stay ? marketProperties().then((xs) => xs.filter((p) => p.status === "APPROVED")) : [],
     shutki || achar ? liveStores(shopId) : [],
     shutki ? liveProducts(shopId, shutki.id) : [],
     achar ? liveProducts(shopId, achar.id) : [],

@@ -10,7 +10,7 @@ export default async function WorkerLayout({ children }: { children: React.React
   const partner = user.worker?.kind === "PARTNER"
   const items: NavItem[] = [
     { href: "/worker", label: partner ? pick(locale, "ড্যাশবোর্ড ও অর্ডার", "Dashboard & orders") : pick(locale, "আজকের জব", "Jobs"), icon: partner ? "dashboard" : "list", exact: true, badge: messages },
-    ...(partner ? [{ href: "/worker/store", label: pick(locale, "আমার দোকান", "My store"), icon: "store" } satisfies NavItem, { href: "/worker/vehicles", label: pick(locale, "আমার গাড়ি", "My vehicles"), icon: "car" } satisfies NavItem, { href: "/worker/stays", label: pick(locale, "আমার রিসোর্ট", "My resorts"), icon: "building" } satisfies NavItem] : []),
+    ...(partner ? [{ href: "/worker/store", label: pick(locale, "আমার দোকান", "My store"), icon: "store" } satisfies NavItem, { href: "/worker/vehicles", label: pick(locale, "আমার গাড়ি", "My vehicles"), icon: "car" } satisfies NavItem, { href: "/worker/stays", label: pick(locale, "আমার রিসোর্ট", "My resorts"), icon: "building" } satisfies NavItem, { href: "/worker/tickets", label: pick(locale, "টিকিট স্টক", "Ticket stock"), icon: "tag" } satisfies NavItem] : []),
     { href: "/worker/earnings", label: partner ? pick(locale, "হিসাব", "Ledger") : pick(locale, "আয়", "Earnings"), icon: "wallet" },
     ...(partner && !user.isHelper ? [{ href: "/worker/helpers", label: pick(locale, "হেল্পার", "Helpers"), icon: "users" } satisfies NavItem] : []),
     { href: "/worker/notifications", label: pick(locale, "নোটিশ", "Alerts"), icon: "bell", badge: notices },

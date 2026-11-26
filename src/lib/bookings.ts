@@ -8,6 +8,7 @@ import { billFor, estimate, usesQuantity } from "./pricing"
 import { quoteCoupon } from "./coupons"
 import { paymentProvider } from "./payments"
 import type { Role } from "./roles"
+import { isTicketCategory, release, reserve } from "./tickets"
 import { outsideMessage } from "./shops"
 import { staffCanSee } from "./shops-shared"
 import {
@@ -196,6 +197,15 @@ export async function createBooking(customer: { id: string; name: string }, inpu
     if (vehicle.worker?.autoAssign) direct = { id: vehicle.worker.id, userId: vehicle.worker.userId, name: vehicle.worker.user.name }
   }
   const quantity = usesQuantity(pricing) ? Math.max(minQty, input.quantity) : 1
+  // Tickets come out of an agent's stock; that agent gets the order directly.
+  let ticketStockId: string | null = null
+  if (isTicketCategory(offering.category)) {
+    const stock = await reserve(offering.id, quantity)
+    if (stock) {
+      ticketStockId = stock.id
+      direct = { id: stock.worker.id, userId: stock.worker.userId, name: stock.worker.user.name }
+    }
+  }
   const team = offering.category.flow === "TEAM"
   const days = team ? Math.min(30, Math.max(1, input.days)) : 1
   const teamSize = team ? Math.min(20, Math.max(1, input.teamSize)) : 1
@@ -223,6 +233,7 @@ export async function createBooking(customer: { id: string; name: string }, inpu
       pricing,
       unitPrice,
       vehicleId,
+      ticketStockId,
       routeId: route?.id ?? null,
       routeName: route?.name ?? "",
       quantity,
@@ -327,6 +338,7 @@ export async function moveBooking(user: Viewer & { role: Role }, code: string, t
       link: `/bookings/${booking.code}`,
     }, user.id)
   }
+  if (to === "CANCELLED") await release(booking)
   if (to === "CANCELLED" && booking.worker) {
     await notify([booking.worker.userId], { kind: "JOB", title: "জব বাতিল", body: `${booking.code} বাতিল হয়েছে।`, link: `/worker` }, user.id)
   }

@@ -14,10 +14,10 @@ export const SETTING_DEFAULTS: Record<string, string> = {
   officeHoursEn: "Every day, 8 am – 10 pm",
   address: brand.addressBn,
   addressEn: brand.address,
-  heroBn: "কক্সবাজারে যা দরকার, সব HANDYO-তে।",
-  heroEn: "Everything you need in Cox's Bazar, on HANDYO.",
-  bannerBn: "ঘরের সেবা, গাড়ি-বাইক ভাড়া, রিসোর্ট বুকিং আর কক্সবাজারের শুঁটকি-আচার – এক অ্যাপে, দাম আগেই জানা।",
-  bannerEn: "Home services, car & bike rental, resort booking and Cox's Bazar dried fish & pickles: one app, prices up front.",
+  heroBn: "যা দরকার, ভরসায় বুক করুন।",
+  heroEn: "Book what you need, with confidence.",
+  bannerBn: "শিপ টিকিট, গাড়ি-রিসোর্ট বুকিং, ঘরের সেবা আর শুঁটকি-আচার – যাচাই করা পার্টনার, দাম আগেই, সারা দেশে।",
+  bannerEn: "Ship tickets, car and resort booking, home services and dried fish: verified partners, prices up front, nationwide.",
   /** Share of the final bill paid to the worker who did the job, in percent. */
   workerShare: "40",
   /** Share of a partner's bill (vehicle, resort, store) paid to the partner; HANDYO keeps the rest (10 %). */

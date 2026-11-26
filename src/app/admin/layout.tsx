@@ -13,7 +13,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const shop = await officeShop(user)
   const owner = user.role === "OWNER"
   const approvalScope = owner ? {} : { shopId: shop.id }
-  const [waiting, pendingVehicles, pendingStays, pendingStores, unread, shops, pendingRequests, pendingHelpers, pendingPartners] = await Promise.all([
+  const [waiting, pendingVehicles, pendingStays, pendingStores, unread, shops, pendingRequests, pendingHelpers, pendingPartners, pendingStock] = await Promise.all([
     db.serviceBooking.count({ where: { shopId: shop.id, status: "REQUESTED" } }),
     db.vehicle.count({ where: { shopId: shop.id, status: "PENDING" } }),
     db.property.count({ where: { shopId: shop.id, status: "PENDING" } }),
@@ -23,6 +23,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     db.changeRequest.count({ where: { status: "PENDING", ...approvalScope } }),
     db.user.count({ where: { helperStatus: "PENDING", ...approvalScope } }),
     db.workerProfile.count({ where: { kind: "PARTNER", approved: false, ...approvalScope } }),
+    db.ticketStock.count({ where: { status: "PENDING", ...approvalScope } }),
   ])
   const items: NavItem[] = [
     { href: "/admin", label: pick(locale, "ড্যাশবোর্ড", "Dashboard"), icon: "dashboard", exact: true },
@@ -30,6 +31,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     { href: "/admin/approvals", label: pick(locale, "অনুমোদন", "Approvals"), icon: "inbox", badge: pendingRequests + pendingHelpers + pendingPartners },
     { href: "/admin/partners", label: pick(locale, "পার্টনার ও হিসাব", "Partners & ledger"), icon: "users" },
     { href: "/admin/workers", label: pick(locale, "কর্মী", "Workers"), icon: "workers" },
+    { href: "/admin/tickets", label: pick(locale, "টিকিট স্টক", "Ticket stock"), icon: "tag", badge: pendingStock },
     { href: "/admin/vehicles", label: pick(locale, "গাড়ি", "Vehicles"), icon: "car", badge: pendingVehicles },
     { href: "/admin/stays", label: pick(locale, "রিসোর্ট", "Resorts"), icon: "building", badge: pendingStays },
     { href: "/admin/stores", label: pick(locale, "দোকান", "Stores"), icon: "store", badge: pendingStores },

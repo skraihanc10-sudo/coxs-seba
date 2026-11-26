@@ -27,6 +27,8 @@ export type MarketVehicle = {
   /** Vehicle detail page (gallery, specs, route packages). */
   detailHref: string
   routeCount: number
+  /** Owner marked it unavailable: shown with a "stock out" badge, not bookable. */
+  paused?: boolean
   /** Cheapest route package, for vehicles sold by route only. */
   fromRoute: number
 }
@@ -70,6 +72,7 @@ export function VehicleMarket({ locale, vehicles, types, fallback }: { locale: L
                 </span>
               )}
               <span className="absolute top-3 left-3 rounded-full bg-black/70 px-3 py-1 text-xs font-bold text-white">{v.type}</span>
+              {v.paused ? <span className="absolute inset-x-3 bottom-3 rounded-full bg-rose-600/95 px-3 py-1.5 text-center text-xs font-extrabold text-white shadow">{T("এখন খালি নেই · স্টক আউট", "Not available · stock out")}</span> : null}
               {v.city ? <span className="absolute top-3 right-3 inline-flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-bold text-ink"><MapPin className="size-3" aria-hidden /> {v.city}</span> : null}
             </Link>
             <div className="flex flex-1 flex-col gap-2 px-1 pt-4 pb-1">
@@ -103,7 +106,11 @@ export function VehicleMarket({ locale, vehicles, types, fallback }: { locale: L
                 {v.owner ? T(`পার্টনার: ${v.owner}`, `Partner: ${v.owner}`) : T("HANDYO-র নিজের গাড়ি", "HANDYO fleet")}
                 {v.routeCount ? <> · <Link href={v.detailHref} className="font-bold text-brand">{T(`${v.routeCount}টা রুট প্যাকেজ →`, `${v.routeCount} route package${v.routeCount > 1 ? "s" : ""} →`)}</Link></> : null}
               </p>
-              <Link href={v.routeCount && !v.pricePerHour && !v.pricePerDay && !v.pricePerHalfDay ? v.detailHref : v.href} className="btn-soft mt-2 h-11 w-full justify-center text-sm font-extrabold ring-1 ring-brand/30">{T(`${v.name} বুক করুন`, `Book ${v.name}`)}</Link>
+              {v.paused ? (
+                <span className="btn-ghost mt-2 h-11 w-full justify-center text-sm font-extrabold opacity-70">{T("স্টক আউট · শিগগির আবার", "Stock out · back soon")}</span>
+              ) : (
+                <Link href={v.routeCount && !v.pricePerHour && !v.pricePerDay && !v.pricePerHalfDay ? v.detailHref : v.href} className="btn-soft mt-2 h-11 w-full justify-center text-sm font-extrabold ring-1 ring-brand/30">{T(`${v.name} বুক করুন`, `Book ${v.name}`)}</Link>
+              )}
             </div>
           </article>
         ))}

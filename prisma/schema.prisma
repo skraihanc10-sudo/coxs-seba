@@ -37,6 +37,7 @@ model Shop {
 
   users       User[]
   workers     WorkerProfile[]
+  ticketStocks TicketStock[]
   areas       ServiceArea[]
   categories  ServiceCategory[]
   bookings    ServiceBooking[]
@@ -155,6 +156,7 @@ model WorkerProfile {
   properties Property[]
   stores     Store[]
   helpers    User[]   @relation("Helpers")
+  ticketStocks TicketStock[]
 
   @@index([shopId])
 }
@@ -476,6 +478,7 @@ model ServiceOffering {
   active      Boolean         @default(true)
   bookings    ServiceBooking[]
   vehicles    Vehicle[]
+  ticketStocks TicketStock[]
 
   @@unique([categoryId, slug])
 }
@@ -585,6 +588,9 @@ model ServiceBooking {
   @@index([areaId])
   @@index([vehicleId])
   @@index([couponId])
+  /// Ticket orders: the agent stock the tickets came from.
+  ticketStockId String?
+  ticketStock   TicketStock? @relation(fields: [ticketStockId], references: [id], onDelete: SetNull)
 }
 
 /// Every status change: who, when, from what, to what.
@@ -846,4 +852,29 @@ model ChangeRequest {
 
   @@index([shopId, status])
   @@index([bookingId])
+}
+
+/// Tickets an agent (partner) holds for one offering. `sold` counts booked tickets; left = qty - sold.
+model TicketStock {
+  id         String   @id @default(cuid())
+  shopId     String
+  shop       Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  workerId   String
+  worker     WorkerProfile @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  offeringId String
+  offering   ServiceOffering @relation(fields: [offeringId], references: [id], onDelete: Cascade)
+  qty        Int      @default(0)
+  sold       Int      @default(0)
+  note       String   @default("")
+  photos     String   @default("")
+  /// PENDING → APPROVED (office); PAUSED = agent marked stock out; REJECTED.
+  status     String   @default("PENDING")
+  rejectNote String   @default("")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  bookings   ServiceBooking[]
+
+  @@index([shopId, status])
+  @@index([offeringId, status])
+  @@index([workerId])
 }

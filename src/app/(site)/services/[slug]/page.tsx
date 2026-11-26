@@ -6,7 +6,7 @@ import { getLocale } from "@/lib/auth"
 import { categoryBySlug, fromPrice } from "@/lib/catalog"
 import { currentShop } from "@/lib/shops"
 import { named, pick, words } from "@/lib/i18n"
-import { taka } from "@/lib/format"
+import { taka, num } from "@/lib/format"
 import { PRICING_TEXT, unitLabel } from "@/lib/pricing"
 import { marketVehicles, photoUrl, photosOf, specsOf, vehicleName } from "@/lib/vehicles"
 import { VehicleMarket, type MarketVehicle } from "@/components/vehicle-market"
@@ -14,6 +14,7 @@ import { fromNight, kindText, listOf, marketProperties, propertyName } from "@/l
 import { StayMarket, type MarketProperty } from "@/components/stay-market"
 import { laundryRules, liveProducts, liveStores, shopGroups, shopRules } from "@/lib/shop"
 import { getSettings } from "@/lib/settings"
+import { availability, isTicketCategory } from "@/lib/tickets"
 import { ShopMarket } from "@/components/shop-market"
 import { clip, pageMeta, categoryKeywords } from "@/lib/seo"
 import { CategoryIcon } from "@/components/category-icon"
@@ -51,6 +52,8 @@ export default async function CategoryPage({ params }: { params: Params }) {
   const [products, groups, settings, stores] = shopFlow || laundryFlow ? await Promise.all([liveProducts(shop.id, category.id, laundryFlow), shopGroups(shop.id, true, category.id), getSettings(shop.id), liveStores(shop.id)]) : [[], [], null, []]
   // The hidden per-piece offering only exists for the item orders; it is not a wizard card.
   const offerings = category.offerings.filter((o) => !(laundryFlow && o.slug === "by-item"))
+  const ticket = isTicketCategory(category)
+  const left = ticket ? await availability(offerings.map((o) => o.id)) : null
   const stays: MarketProperty[] = stay
     ? (await marketProperties()).map((p) => {
         const cover = photosOf(p)[0]
@@ -68,6 +71,7 @@ export default async function CategoryPage({ params }: { params: Params }) {
           roomCount: p.rooms.filter((r) => r.active).length,
           city: p.shopId === shop.id ? null : bn ? p.shop.cityBn : p.shop.city,
           href: `/stays/${p.id}`,
+          paused: p.status === "PAUSED",
         }
       })
     : []
@@ -97,6 +101,7 @@ export default async function CategoryPage({ params }: { params: Params }) {
             href: `/book/${category.slug}/${v.offering.slug}?vehicle=${v.id}`,
             detailHref: `/vehicles/${v.id}`,
             routeCount: v.routes.length,
+            paused: v.status === "PAUSED",
             fromRoute: v.routes.length ? Math.min(...v.routes.map((r) => r.price)) : 0,
           }
         })
@@ -223,8 +228,12 @@ export default async function CategoryPage({ params }: { params: Params }) {
       ) : null}
       {/* Rentals book a real vehicle from the marketplace above, never a bare type. */}
       <div className={rental || stay || shopFlow ? "hidden" : "grid gap-3 md:grid-cols-2"}>
-        {offerings.map((o) => (
-          <Link key={o.id} href={`/book/${category.slug}/${o.slug}`} className="card card-lift flex gap-3 overflow-hidden p-3 md:gap-4 md:p-4">
+        {offerings.map((o) => {
+          const n = left && left.has(o.id) ? (left.get(o.id) ?? 0) : null
+          const out = n !== null && n <= 0
+          return (
+          <Link key={o.id} href={out ? "#" : `/book/${category.slug}/${o.slug}`} aria-disabled={out} className={`card card-lift relative flex gap-3 overflow-hidden p-3 md:gap-4 md:p-4 ${out ? "opacity-70 grayscale-[0.4] pointer-events-none" : ""}`}>
+
             {o.image ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={o.image} alt="" loading="lazy" className="size-24 shrink-0 rounded-2xl object-cover ring-1 ring-line md:size-28" />
@@ -243,13 +252,24 @@ export default async function CategoryPage({ params }: { params: Params }) {
             <p className="line-clamp-2 text-[13px] text-muted-foreground md:text-sm">{bn ? o.detailBn : o.detail}</p>
             <div className="mt-auto flex items-center justify-between gap-2 pt-1 text-xs font-bold text-muted-foreground">
               <span className="inline-flex items-center gap-1"><Clock3 className="size-3.5" aria-hidden /> {minutes(o.durationMin)}</span>
+              {n !== null ? <span className={`pill ${out ? "bg-rose-100 text-rose-700" : n <= 10 ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-800"}`}>{out ? pick(locale, "স্টক আউট", "Stock out") : pick(locale, `${num(n, locale)}টা টিকিট আছে`, `${n} tickets left`)}</span> : null}
               {o.pricing === "QUOTE" && o.price > 0 ? <span>{pick(locale, `পরিদর্শন ফি ${taka(o.price, locale)}`, `Inspection ${taka(o.price, locale)}`)}</span> : null}
-              <span className="text-brand">{t.bookNow} →</span>
+              <span className="text-brand">{out ? pick(locale, "শিগগির আবার", "Back soon") : `${t.bookNow} →`}</span>
             </div>
             </div>
           </Link>
-        ))}
+          )
+        })}
       </div>
+      {ticket ? (
+        <Link href="/partner" className="card mt-6 flex items-center justify-between gap-3 bg-brand-soft p-4 transition hover:ring-brand/40">
+          <div>
+            <p className="font-extrabold text-ink">{pick(locale, "শিপের টিকিট বিক্রি করেন? HANDYO এজেন্ট হোন", "Sell ship tickets? Become a HANDYO agent")}</p>
+            <p className="text-sm text-muted-foreground">{pick(locale, "কত টিকিট আছে লিখে দিন; অর্ডার সরাসরি আপনার প্যানেলে, স্টক শেষ হলে নিজে থেকেই “স্টক আউট”।", "Enter how many tickets you hold; orders land in your panel and it shows “stock out” when they run out.")}</p>
+          </div>
+          <span className="shrink-0 font-extrabold text-brand">{pick(locale, "এজেন্ট হোন →", "Become an agent →")}</span>
+        </Link>
+      ) : null}
       {rental ? (
         <Link href="/partner" className="card mt-6 flex items-center justify-between gap-3 bg-brand-soft p-4 transition hover:ring-brand/40">
           <div>

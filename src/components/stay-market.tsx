@@ -21,6 +21,8 @@ export type MarketProperty = {
   /** Branch city when the property belongs to another branch than the one browsed. */
   city: string | null
   href: string
+  /** Owner marked it full: shown with a "stock out" badge, not bookable. */
+  paused?: boolean
 }
 
 /**
@@ -73,6 +75,7 @@ export function StayMarket({ locale, properties, fallback }: { locale: Locale; p
                 </span>
               )}
               <span className="absolute top-3 left-3 rounded-full bg-black/70 px-3 py-1 text-xs font-bold text-white">{p.kindText}</span>
+              {p.paused ? <span className="absolute inset-x-3 bottom-3 rounded-full bg-rose-600/95 px-3 py-1.5 text-center text-xs font-extrabold text-white shadow">{T("রুম খালি নেই · স্টক আউট", "No rooms · stock out")}</span> : null}
               {p.fromNight ? <span className="absolute right-3 bottom-3 rounded-full bg-white/95 px-3 py-1 text-xs font-extrabold text-ink shadow">{T("রাতপ্রতি", "from")} {taka(p.fromNight, locale)}{T(" থেকে", "/night")}</span> : null}
             </Link>
             <div className="flex flex-1 flex-col gap-2 px-1 pt-4 pb-1">
@@ -85,7 +88,11 @@ export function StayMarket({ locale, properties, fallback }: { locale: Locale; p
                 <span className="inline-flex items-center gap-1 rounded-full bg-canvas px-2.5 py-1"><BedDouble className="size-3" aria-hidden /> {T(`${p.roomCount} ধরনের রুম`, `${p.roomCount} room type${p.roomCount > 1 ? "s" : ""}`)}</span>
                 {p.amenities.map((a) => <span key={a} className="rounded-full bg-canvas px-2.5 py-1">{a}</span>)}
               </div>
-              <Link href={p.href} className="btn-soft mt-2 h-11 w-full justify-center text-sm font-extrabold ring-1 ring-brand/30">{T("রুম ও দাম দেখুন", "See rooms & prices")}</Link>
+              {p.paused ? (
+                <span className="btn-ghost mt-2 h-11 w-full justify-center text-sm font-extrabold opacity-70">{T("স্টক আউট · শিগগির আবার", "Stock out · back soon")}</span>
+              ) : (
+                <Link href={p.href} className="btn-soft mt-2 h-11 w-full justify-center text-sm font-extrabold ring-1 ring-brand/30">{T("রুম ও দাম দেখুন", "See rooms & prices")}</Link>
+              )}
             </div>
           </article>
         ))}

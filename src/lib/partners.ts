@@ -10,6 +10,7 @@ import { partnerShare } from "./vehicles"
 import { bookingFor, moveBooking, partnerOwns } from "./bookings"
 import type { Role } from "./roles"
 import type { PartnerSignupInput } from "./validation"
+import { TICKET_SLUGS } from "./tickets"
 
 /**
  * Partners (store owners, vehicle owners, resort owners) and what the office
@@ -42,7 +43,7 @@ export async function partnerSignup(shopId: string, input: PartnerSignupInput, i
   const phone = normalisePhone(input.phone)
   if (!phone) throw new AppError("সঠিক মোবাইল নম্বর দিন।", "Enter a valid mobile number.")
   const email = input.email ? input.email.toLowerCase() : null
-  const category = await db.serviceCategory.findFirst({ where: { id: input.categoryId, shopId, active: true, flow: { in: PARTNER_FLOWS } } })
+  const category = await db.serviceCategory.findFirst({ where: { id: input.categoryId, shopId, active: true, OR: [{ flow: { in: PARTNER_FLOWS } }, { slug: { in: TICKET_SLUGS } }] } })
   if (!category) throw new AppError("এই ক্যাটাগরিতে পার্টনার নেওয়া হচ্ছে না।", "That category is not open to partners.")
   if (!idPhotos.length) throw new AppError("পরিচয়পত্রের ছবি দিন।", "Upload a photo of the ID.")
   const clash = await db.user.findFirst({ where: { OR: [{ phone }, ...(email ? [{ email }] : [])] } })

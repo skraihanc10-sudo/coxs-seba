@@ -89,7 +89,7 @@ export async function bookableVehicles(shopId: string, offeringId?: string) {
  */
 export async function marketVehicles() {
   return db.vehicle.findMany({
-    where: { status: "APPROVED", shop: { active: true }, offering: { active: true, category: { active: true } }, OR: [{ workerId: null }, { worker: { approved: true, user: { active: true } } }] },
+    where: { status: { in: ["APPROVED", "PAUSED"] }, shop: { active: true }, offering: { active: true, category: { active: true } }, OR: [{ workerId: null }, { worker: { approved: true, user: { active: true } } }] },
     include: vehicleInclude,
     orderBy: [{ sort: "asc" }, { pricePerDay: "asc" }, { createdAt: "asc" }],
   })

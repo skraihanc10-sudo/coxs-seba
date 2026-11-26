@@ -531,3 +531,63 @@ test("12. shop: a customer adds dried fish to the cart, checks out with cash on 
   await admin.getByRole("button", { name: "অর্ডার কনফার্ম করুন" }).click()
   await expect(admin.getByText("অর্ডার কনফার্ম").first()).toBeVisible()
 })
+
+test("13. ship tickets: an agent signs up, adds stock, the office approves, a customer books 2 and the stock counts down; cancelling gives them back", async ({ browser }) => {
+  const phone = `0161${String(Date.now()).slice(-7)}`
+  const agent = await freshPage(browser)
+  await signUpAsPartner(agent, { name: "টেস্ট টিকিট এজেন্ট", phone, password: "agent123", category: /সেন্ট মার্টিন/ })
+  const admin = await freshPage(browser)
+  await loginWithPassword(admin, ADMIN)
+  await approvePartner(admin, phone)
+
+  // The agent logs in and says they hold 500 lounge tickets.
+  await agent.goto("/login?tab=staff")
+  await ready(agent)
+  await agent.fill("#identifier", phone)
+  await agent.fill("#password", "agent123")
+  await agent.getByRole("button", { name: "লগইন" }).click()
+  await agent.waitForURL(/\/worker/)
+  await agent.goto("/worker/tickets")
+  await ready(agent)
+  const lounge = agent.locator('select[name="offeringId"] option', { hasText: "লাউঞ্জ" }).first()
+  await agent.selectOption('select[name="offeringId"]', (await lounge.getAttribute("value"))!)
+  await agent.fill('input[name="qty"]', "500")
+  await agent.getByRole("button", { name: /স্টক জমা দিন/ }).click()
+  await expect(agent.getByText("স্টক জমা হয়েছে")).toBeVisible()
+
+  // Office approves the stock; the ticket page now shows 5 left.
+  await admin.goto("/admin/tickets")
+  await ready(admin)
+  const card = admin.locator(".card", { hasText: phone }).first()
+  await expect(card).toBeVisible()
+  await card.getByRole("button", { name: "অনুমোদন দিন" }).click()
+  await expect(admin.locator(".card", { hasText: phone }).first().getByText("চালু").first()).toBeVisible()
+  const customer = await freshPage(browser)
+  await loginWithPassword(customer, CUSTOMER)
+  await customer.goto("/services/saint-martin-ship")
+  // Other agents may stock the same type (earlier runs), so read the total and check it moves by 2.
+  const leftOf = async () => Number((await customer.locator(".card", { hasText: "লাউঞ্জ" }).first().locator(".pill").first().innerText()).replace(/[^০-৯0-9]/g, "").replace(/[০-৯]/g, (d) => String("০১২৩৪৫৬৭৮৯".indexOf(d))))
+  const before = await leftOf()
+  expect(before).toBeGreaterThanOrEqual(500)
+
+  // Customer books 2 lounge tickets; the order lands on the agent, stock shows 3 left.
+  const code = await book(customer, "/book/saint-martin-ship/karnafuly-lounge", { quantity: 2 })
+  expect(code.startsWith("SM-")).toBeTruthy()
+  await expect(customer.getByText(/৳১১,৬০০|৳11,600/).first()).toBeVisible()
+  // The order goes straight to the agent holding the most of that stock (every test agent shares this name).
+  await admin.goto(`/admin/bookings/${code}`)
+  await ready(admin)
+  await expect(admin.getByText("টেস্ট টিকিট এজেন্ট").first()).toBeVisible()
+  await customer.goto("/services/saint-martin-ship")
+  expect(await leftOf()).toBe(before - 2)
+
+  // The office cancels the order; the 2 tickets go back to the agent's stock.
+  await admin.goto(`/admin/bookings/${code}`)
+  await ready(admin)
+  const cancel = admin.locator("form", { has: admin.locator('input[name="to"][value="CANCELLED"]') }).first()
+  await cancel.locator('input[name="note"]').fill("টেস্ট বাতিল")
+  await cancel.getByRole("button", { name: "বাতিল" }).click()
+  await expect(admin.getByText("বাতিলের কারণ: টেস্ট বাতিল")).toBeVisible()
+  await customer.goto("/services/saint-martin-ship")
+  expect(await leftOf()).toBe(before)
+})

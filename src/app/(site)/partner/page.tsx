@@ -5,6 +5,7 @@ import { getLocale } from "@/lib/auth"
 import { currentShop } from "@/lib/shops"
 import { activeCategories } from "@/lib/catalog"
 import { ID_TYPES, PARTNER_FLOWS } from "@/lib/partners"
+import { TICKET_SLUGS } from "@/lib/tickets"
 import { named, pick } from "@/lib/i18n"
 import { pageMeta } from "@/lib/seo"
 import { partnerSignupAction } from "@/actions/partners"
@@ -35,7 +36,7 @@ export async function generateMetadata(): Promise<Metadata> {
  */
 export default async function PartnerPage() {
   const [locale, shop] = await Promise.all([getLocale(), currentShop()])
-  const categories = (await activeCategories(shop.id)).filter((c) => PARTNER_FLOWS.includes(c.flow))
+  const categories = (await activeCategories(shop.id)).filter((c) => PARTNER_FLOWS.includes(c.flow) || TICKET_SLUGS.includes(c.slug))
   const bn = locale === "bn"
   const steps = [
     { icon: FileCheck, title: pick(locale, "১. অ্যাকাউন্ট খুলুন", "1. Open an account"), body: pick(locale, "নাম, মোবাইল, পাসওয়ার্ড, পরিচয়পত্র (NID / পাসপোর্ট) আর কী দেবেন সেটা বেছে নিন। ২ মিনিট।", "Name, mobile, password, your ID (NID / passport) and what you will offer. Two minutes.") },
@@ -46,7 +47,7 @@ export default async function PartnerPage() {
   return (
     <div className="mx-auto max-w-2xl">
       <JsonLd data={breadcrumbs([{ name: "HANDYO", path: "/" }, { name: pick(locale, "পার্টনার হোন", "Become a partner"), path: "/partner" }])} />
-      <PageHeader back="/" title={pick(locale, "HANDYO পার্টনার হোন", "Become a HANDYO partner")} sub={pick(locale, `${shop.cityBn}-এ আপনার দোকান, গাড়ি, রিসোর্ট বা লন্ড্রি HANDYO-তে। আপনি দাম ঠিক করেন, বিক্রির ৯০% আপনার।`, `Your store, vehicle, resort or laundry in ${shop.city}, on HANDYO. You set the prices and keep 90% of every sale.`)} />
+      <PageHeader back="/" title={pick(locale, "HANDYO পার্টনার হোন", "Become a HANDYO partner")} sub={pick(locale, `আপনার দোকান, গাড়ি, রিসোর্ট, লন্ড্রি বা শিপ টিকিটের এজেন্সি HANDYO-তে। আপনি দাম ও স্টক ঠিক করেন, বিক্রির ৯০% আপনার।`, `Your store, vehicle, resort or laundry in ${shop.city}, on HANDYO. You set the prices and keep 90% of every sale.`)} />
 
       <ol className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {steps.map((s) => (

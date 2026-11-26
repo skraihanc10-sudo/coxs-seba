@@ -125,7 +125,7 @@ function tokensOf(parts: string[]) {
 }
 
 async function buildIndex(shopId: string): Promise<Entry[]> {
-  const [categories, products, vehicles, properties] = await Promise.all([activeCategories(shopId), liveProducts(shopId), marketVehicles(), marketProperties()])
+  const [categories, products, vehicles, properties] = await Promise.all([activeCategories(shopId), liveProducts(shopId), marketVehicles().then((xs) => xs.filter((v) => v.status === "APPROVED")), marketProperties().then((xs) => xs.filter((p) => p.status === "APPROVED"))])
   const rows: Entry[] = []
   for (const c of categories) {
     rows.push({

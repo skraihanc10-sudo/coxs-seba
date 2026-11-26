@@ -105,7 +105,7 @@ export { staffCanSee } from "./shops-shared"
 
 /** "কক্সবাজার সদর" / "Cox's Bazar Sadar" style coverage line. */
 export function coverageText(shop: { cityBn: string; city: string }, locale: "bn" | "en") {
-  return locale === "bn" ? `${shop.cityBn} · সারা দেশে ডেলিভারি` : `${shop.city} · nationwide delivery`
+  return locale === "bn" ? `${shop.cityBn} শাখা · সারা বাংলাদেশে সেবা ও ডেলিভারি` : `${shop.city} branch · serving all Bangladesh`
 }
 
 export function outsideMessage(shop: { cityBn: string; city: string }) {

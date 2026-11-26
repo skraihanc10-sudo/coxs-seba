@@ -39,15 +39,18 @@ export default async function WorkerHome() {
           db.vehicle.count({ where: { workerId: user.worker.id } }),
           db.property.count({ where: { workerId: user.worker.id } }),
           db.product.count({ where: { store: { workerId: user.worker.id }, active: true } }),
-          db.workerSkill.findMany({ where: { workerId: user.worker.id }, select: { category: { select: { flow: true } } } }),
+          db.workerSkill.findMany({ where: { workerId: user.worker.id }, select: { category: { select: { flow: true, slug: true } } } }),
+          db.ticketStock.count({ where: { workerId: user.worker.id, status: { in: ["APPROVED", "PAUSED", "PENDING"] } } }),
         ]),
         partnerLedger(user.worker, 400),
       ])
-    : [[0, 0, 0, 0, []], null]
-  const [stores, vehicles, properties, products, skills] = listings
-  const flows = new Set((skills as Array<{ category: { flow: string } }>).map((s) => s.category.flow))
-  const firstHref = flows.has("RENTAL") ? "/worker/vehicles/new" : flows.has("STAY") ? "/worker/stays/new" : "/worker/store"
-  const firstLabel = flows.has("RENTAL") ? pick(locale, "প্রথম গাড়ি যোগ করুন", "Add your first vehicle") : flows.has("STAY") ? pick(locale, "রিসোর্ট যোগ করুন", "Add your resort") : pick(locale, "দোকান খুলে পণ্য যোগ করুন", "Open your store and add items")
+    : [[0, 0, 0, 0, [], 0], null]
+  const [stores, vehicles, properties, products, skills, tickets] = listings
+  const skillRows = skills as Array<{ category: { flow: string; slug: string } }>
+  const flows = new Set(skillRows.map((s) => s.category.flow))
+  const agent = skillRows.some((s) => s.category.slug === "saint-martin-ship")
+  const firstHref = agent ? "/worker/tickets" : flows.has("RENTAL") ? "/worker/vehicles/new" : flows.has("STAY") ? "/worker/stays/new" : "/worker/store"
+  const firstLabel = agent ? pick(locale, "টিকিট স্টক দিন", "Add ticket stock") : flows.has("RENTAL") ? pick(locale, "প্রথম গাড়ি যোগ করুন", "Add your first vehicle") : flows.has("STAY") ? pick(locale, "রিসোর্ট যোগ করুন", "Add your resort") : pick(locale, "দোকান খুলে পণ্য যোগ করুন", "Open your store and add items")
   const month = today.slice(0, 7)
   const monthTotal = ledger ? ledger.rows.filter((r) => r.day.startsWith(month)).reduce((n, r) => n + r.partner, 0) : 0
 
@@ -97,8 +100,9 @@ export default async function WorkerHome() {
           <div className="mb-6 grid grid-cols-2 gap-2 sm:grid-cols-4">
             {stores ? <Link href="/worker/store" className="card flex items-center gap-2 p-3 text-sm font-bold text-ink hover:ring-brand/40"><Store className="size-4 text-brand" /> {pick(locale, `দোকান · ${products} পণ্য`, `Store · ${products} items`)}</Link> : null}
             {vehicles ? <Link href="/worker/vehicles" className="card flex items-center gap-2 p-3 text-sm font-bold text-ink hover:ring-brand/40"><Car className="size-4 text-brand" /> {pick(locale, `${vehicles}টা গাড়ি`, `${vehicles} vehicles`)}</Link> : null}
+            {tickets ? <Link href="/worker/tickets" className="card flex items-center gap-2 p-3 text-sm font-bold text-ink hover:ring-brand/40"><ClipboardCheck className="size-4 text-brand" /> {pick(locale, `${tickets} ধরনের টিকিট`, `${tickets} ticket types`)}</Link> : null}
             {properties ? <Link href="/worker/stays" className="card flex items-center gap-2 p-3 text-sm font-bold text-ink hover:ring-brand/40"><Building2 className="size-4 text-brand" /> {pick(locale, `${properties}টা রিসোর্ট`, `${properties} resorts`)}</Link> : null}
-            {!stores && !vehicles && !properties ? <Link href={firstHref} className="card flex items-center gap-2 bg-brand-soft p-3 text-sm font-bold text-brand ring-brand/30 hover:ring-brand/60"><Store className="size-4" /> {firstLabel}</Link> : null}
+            {!stores && !vehicles && !properties && !tickets ? <Link href={firstHref} className="card flex items-center gap-2 bg-brand-soft p-3 text-sm font-bold text-brand ring-brand/30 hover:ring-brand/60"><Store className="size-4" /> {firstLabel}</Link> : null}
             <Link href="/worker/earnings" className="card flex items-center gap-2 p-3 text-sm font-bold text-ink hover:ring-brand/40"><Wallet className="size-4 text-brand" /> {pick(locale, "হিসাব", "Ledger")}</Link>
             {!user.isHelper ? <Link href="/worker/helpers" className="card flex items-center gap-2 p-3 text-sm font-bold text-ink hover:ring-brand/40"><Users className="size-4 text-brand" /> {pick(locale, "হেল্পার", "Helpers")}</Link> : null}
           </div>

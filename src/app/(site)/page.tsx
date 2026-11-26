@@ -60,10 +60,10 @@ export default async function HomePage() {
         <div className="pointer-events-none absolute top-1/2 left-1/2 size-[520px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-cyan/10 blur-3xl" aria-hidden />
         <div className="relative">
           <p className="pill glass inline-flex items-center gap-1 text-[11px] text-white md:text-xs"><MapPin className="size-3.5" aria-hidden /> {coverageText(shop, locale)}</p>
-          <h1 id="hero-title" className="display mt-3 max-w-2xl text-[1.55rem] font-extrabold leading-tight md:mt-4 md:text-[3.4rem]">
+          <h1 id="hero-title" className="display mt-3 max-w-2xl text-[1.4rem] font-extrabold leading-tight md:mt-4 md:text-[2.6rem]">
             {bn ? settings.heroBn : settings.heroEn}
           </h1>
-          <p className="mt-2 max-w-xl text-[13px] leading-relaxed text-white/80 md:mt-3 md:text-lg">{bn ? settings.bannerBn : settings.bannerEn}</p>
+          <p className="mt-2 max-w-xl text-[12.5px] leading-relaxed text-white/80 md:mt-3 md:text-base">{bn ? settings.bannerBn : settings.bannerEn}</p>
           <div className="mt-4 md:mt-6"><SearchBox locale={locale} variant="hero" buttonText={t.search} /></div>
           <div className="mt-3 -mx-4 scroll-x px-4 md:mx-0 md:mt-5 md:flex-wrap md:px-0" aria-label={pick(locale, "জনপ্রিয় সেবা", "Popular services")}>
             {quick.map((c) => (
