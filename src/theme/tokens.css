@@ -6,24 +6,29 @@
 
 :root,
 [data-theme="default"] {
-  --brand: #1259e8;
-  --brand-hover: #0f4fd0;
-  --brand-deep: #0a3fb0;
-  --brand-soft: #eaf1ff;
-  --brand-softer: #f5f7fb;
-  --brand-ink: #0b1f3a;
-  --brand-muted: #66748f;
-  --accent: #0ea5a0;
+  --brand: #1d4ed8;
+  --brand-hover: #1a45c2;
+  --brand-deep: #1230a3;
+  --brand-soft: #e8efff;
+  --brand-softer: #f4f7fd;
+  --brand-ink: #071a3a;
+  --navy: #071a3a;
+  --navy-2: #0b2a5c;
+  --brand-muted: #5f6f8c;
+  --cyan: #22d3ee;
+  --cyan-deep: #06b6d4;
+  --cyan-soft: #e0fbff;
+  --accent: #14b8a6;
   --accent-ink: #0b6f6b;
-  --teal: #0ea5a0;
-  --teal-soft: #e1f7f4;
+  --teal: #14b8a6;
+  --teal-soft: #dcfaf4;
   --amber: #e8a93a;
   --amber-soft: #fdf3e0;
   --violet: #7c5cfc;
   --violet-soft: #efeaff;
   --paper: #ffffff;
-  --canvas: #f5f7fb;
-  --line: #e7ebf3;
+  --canvas: #f3f6fc;
+  --line: #e3e9f4;
   --danger: #e23f4f;
   --danger-soft: #fce9eb;
   --ok: #12b886;
@@ -53,7 +58,7 @@
   --chart-3: var(--ok);
   --chart-4: var(--amber);
   --chart-5: var(--danger);
-  --sidebar: var(--brand-ink);
+  --sidebar: var(--navy);
   --sidebar-foreground: #f5f8ff;
   --sidebar-primary: var(--brand);
   --sidebar-primary-foreground: #ffffff;

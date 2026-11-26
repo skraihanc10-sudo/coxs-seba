@@ -55,13 +55,12 @@ export default async function HomePage() {
       <JsonLd data={[organization(), localBusiness(shop, settings, areas), ...(faqs.length ? [faqLd(faqs.map((f) => ({ question: bn ? f.questionBn : f.question, answer: bn ? f.answerBn : f.answer })))] : [])]} />
 
       {/* Hero + search */}
-      <section aria-labelledby="hero-title" className="relative overflow-hidden rounded-[2rem] bg-[linear-gradient(135deg,#0b1f3a_0%,#0a3fb0_55%,#1259e8_100%)] px-5 py-8 text-white shadow-[0_24px_60px_rgba(11,31,58,0.25)] md:px-10 md:py-12 lg:grid lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:gap-10">
-        <div className="pointer-events-none absolute inset-0 opacity-[0.12] [background-image:radial-gradient(rgba(255,255,255,0.9)_1px,transparent_1px)] [background-size:22px_22px]" aria-hidden />
-        <div className="pointer-events-none absolute -top-24 -right-24 size-80 rounded-full bg-[#38bdf8]/30 blur-3xl" aria-hidden />
-        <div className="pointer-events-none absolute -bottom-32 -left-20 size-72 rounded-full bg-[#7c5cfc]/30 blur-3xl" aria-hidden />
+      <section aria-labelledby="hero-title" className="navy-glow rounded-[2rem] px-5 py-8 shadow-[0_28px_70px_rgba(7,26,58,0.3)] ring-1 ring-cyan/20 md:px-10 md:py-14 lg:grid lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:gap-10">
+        <div className="pointer-events-none absolute inset-0 opacity-[0.1] [background-image:radial-gradient(rgba(255,255,255,0.9)_1px,transparent_1px)] [background-size:22px_22px]" aria-hidden />
+        <div className="pointer-events-none absolute top-1/2 left-1/2 size-[520px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-cyan/10 blur-3xl" aria-hidden />
         <div className="relative">
         <p className="pill glass inline-flex items-center gap-1 text-white"><MapPin className="size-3.5" aria-hidden /> {coverageText(shop, locale)}</p>
-        <h1 id="hero-title" className="display mt-4 max-w-2xl text-3xl font-extrabold leading-tight md:text-5xl">
+        <h1 id="hero-title" className="display mt-4 max-w-2xl text-[2rem] font-extrabold leading-tight md:text-[3.4rem]">
           {bn ? settings.heroBn : settings.heroEn}
         </h1>
         <p className="mt-3 max-w-xl text-[15px] text-white/80 md:text-lg">{bn ? settings.bannerBn : settings.bannerEn}</p>
@@ -82,7 +81,7 @@ export default async function HomePage() {
             const I = Icon as typeof ShieldCheck
             return (
               <li key={title as string} className="glass rounded-2xl px-3 py-2.5">
-                <I className="size-4 text-[#7dd3fc]" aria-hidden />
+                <I className="size-4 text-cyan" aria-hidden />
                 <p className="mt-1.5 text-[13px] font-extrabold leading-tight">{title as string}</p>
                 <p className="text-[11px] text-white/70">{body as string}</p>
               </li>
@@ -157,30 +156,39 @@ export default async function HomePage() {
       {/* Three promo panels */}
       <section aria-label={pick(locale, "বিশেষ অফার", "Highlights")} className="grid gap-3 md:grid-cols-3 md:gap-4">
         {rental ? (
-          <Link href={`/services/${rental.slug}`} className="card-lift relative overflow-hidden rounded-3xl bg-[linear-gradient(135deg,#0f766e,#14b8a6)] p-5 text-white md:p-6">
-            <Car className="pointer-events-none absolute -right-5 -bottom-5 size-32 text-white/10" aria-hidden />
+          <Link href={`/services/${rental.slug}`} className="promo p-5 md:p-6">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/services/rent-a-car.jpg" alt="" loading="lazy" />
+            <span className="promo-shade" aria-hidden />
+            <Car className="pointer-events-none absolute -right-5 -bottom-5 size-32 text-cyan/15" aria-hidden />
             <p className="pill glass text-white">{named(locale, rental)}</p>
             <h2 className="display mt-3 text-xl font-extrabold leading-tight md:text-2xl">{pick(locale, "মেরিন ড্রাইভে চান্দের গাড়ি, কার বা বাইক", "Chander gari, car or bike for Marine Drive")}</h2>
             <p className="mt-2 text-sm text-white/85">{pick(locale, "ছবি ও রুট-প্যাকেজ দেখে বুক করুন। ড্রাইভারসহ অপশন আছে।", "See photos and route packages, then book. Driver options included.")}</p>
-            <span className="mt-4 inline-flex items-center gap-1 text-sm font-extrabold">{pick(locale, "গাড়ি দেখুন", "See vehicles")} <ArrowRight className="size-4" aria-hidden /></span>
+            <span className="mt-4 inline-flex items-center gap-1 rounded-full bg-white/12 px-3 py-1.5 text-sm font-extrabold ring-1 ring-white/20">{pick(locale, "গাড়ি দেখুন", "See vehicles")} <ArrowRight className="size-4 text-cyan" aria-hidden /></span>
           </Link>
         ) : null}
         {stay ? (
-          <Link href={`/services/${stay.slug}`} className="card-lift relative overflow-hidden rounded-3xl bg-[linear-gradient(135deg,#1e3a8a,#3b82f6)] p-5 text-white md:p-6">
-            <Building2 className="pointer-events-none absolute -right-5 -bottom-5 size-32 text-white/10" aria-hidden />
+          <Link href={`/services/${stay.slug}`} className="promo p-5 md:p-6">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/services/resort-booking.jpg" alt="" loading="lazy" />
+            <span className="promo-shade" aria-hidden />
+            <Building2 className="pointer-events-none absolute -right-5 -bottom-5 size-32 text-cyan/15" aria-hidden />
             <p className="pill glass text-white">{named(locale, stay)}</p>
             <h2 className="display mt-3 text-xl font-extrabold leading-tight md:text-2xl">{pick(locale, "সৈকতের পাশে রিসোর্ট, হোটেল ও কটেজ", "Resorts, hotels and cottages by the beach")}</h2>
             <p className="mt-2 text-sm text-white/85">{pick(locale, "পার্টনার রিসোর্টের রুম ও রাতপ্রতি দাম এক জায়গায়। তারিখ দিন, বুক হয়ে যাবে।", "Partner resorts' rooms and nightly prices in one place. Pick dates and book.")}</p>
-            <span className="mt-4 inline-flex items-center gap-1 text-sm font-extrabold">{pick(locale, "রুম দেখুন", "See rooms")} <ArrowRight className="size-4" aria-hidden /></span>
+            <span className="mt-4 inline-flex items-center gap-1 rounded-full bg-white/12 px-3 py-1.5 text-sm font-extrabold ring-1 ring-white/20">{pick(locale, "রুম দেখুন", "See rooms")} <ArrowRight className="size-4 text-cyan" aria-hidden /></span>
           </Link>
         ) : null}
         {shutki ? (
-          <Link href={`/services/${shutki.slug}`} className="card-lift relative overflow-hidden rounded-3xl bg-[linear-gradient(135deg,#9a3412,#f97316)] p-5 text-white md:p-6">
-            <Fish className="pointer-events-none absolute -right-5 -bottom-5 size-32 text-white/10" aria-hidden />
+          <Link href={`/services/${shutki.slug}`} className="promo p-5 md:p-6">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/services/achar.jpg" alt="" loading="lazy" />
+            <span className="promo-shade" aria-hidden />
+            <Fish className="pointer-events-none absolute -right-5 -bottom-5 size-32 text-cyan/15" aria-hidden />
             <p className="pill glass text-white">{pick(locale, "শুঁটকি ও আচার", "Dried fish & pickles")}</p>
             <h2 className="display mt-3 text-xl font-extrabold leading-tight md:text-2xl">{pick(locale, "কক্সবাজারের শুঁটকি, সারা দেশে ডেলিভারি", "Cox's Bazar dried fish, delivered nationwide")}</h2>
             <p className="mt-2 text-sm text-white/85">{pick(locale, "বিসমিল্লাহ, মহেশখালী আর অর্গানিক দোকানের পণ্য কার্টে নিন; দোকান অনুযায়ী আলাদা পার্সেল।", "Products from partner stores in one cart; a separate parcel per store.")}</p>
-            <span className="mt-4 inline-flex items-center gap-1 text-sm font-extrabold">{pick(locale, "দোকানে যান", "Shop now")} <ArrowRight className="size-4" aria-hidden /></span>
+            <span className="mt-4 inline-flex items-center gap-1 rounded-full bg-white/12 px-3 py-1.5 text-sm font-extrabold ring-1 ring-white/20">{pick(locale, "দোকানে যান", "Shop now")} <ArrowRight className="size-4 text-cyan" aria-hidden /></span>
           </Link>
         ) : null}
       </section>

@@ -105,7 +105,7 @@ export function PanelShell({
   const tabs = items.length <= 5
   return (
     <div className="min-h-dvh md:grid md:grid-cols-[256px_1fr]">
-      <aside className="hidden bg-ink text-white md:sticky md:top-0 md:flex md:h-dvh md:flex-col">
+      <aside className="hidden bg-[linear-gradient(180deg,var(--navy)_0%,var(--navy-2)_100%)] text-white shadow-[inset_-1px_0_0_rgba(34,211,238,0.18)] md:sticky md:top-0 md:flex md:h-dvh md:flex-col">
         <div className="px-5 pt-6 pb-4">
           <Logo light bn={locale === "bn"} />
           <p className="mt-3 text-[11px] font-bold tracking-wider text-white/40 uppercase">{title}</p>

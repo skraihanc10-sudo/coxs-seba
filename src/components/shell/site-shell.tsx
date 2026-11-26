@@ -49,10 +49,10 @@ export async function SiteShell({ children }: { children: React.ReactNode }) {
   const shopOptions = shops.map((s) => ({ slug: s.slug, name: s.name, nameBn: s.nameBn, city: s.city, cityBn: s.cityBn }))
   return (
     <div className="flex min-h-dvh flex-col">
-      <header className="sticky top-0 z-30 border-b border-line bg-paper/90 backdrop-blur">
+      <header className="site-header">
         <div className="mx-auto flex h-16 max-w-6xl items-center gap-2 px-3 sm:gap-3 sm:px-4 md:gap-4 md:px-6">
           <Link href="/" aria-label={`${brand.name} ${pick(locale, "হোম", "home")}`}>
-            <Logo bn={bn} short />
+            <Logo bn={bn} short light />
           </Link>
           <nav aria-label={pick(locale, "প্রধান মেনু", "Main menu")} className="ml-4 hidden items-center gap-6 md:flex">
             <TopNav
@@ -65,14 +65,14 @@ export async function SiteShell({ children }: { children: React.ReactNode }) {
             />
           </nav>
           <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
-            <ShopSwitch shops={shopOptions} current={shop.slug} locale={locale} />
-            <Link href="/partner" className="hidden items-center gap-1.5 rounded-full bg-brand-soft px-3.5 py-2 text-xs font-extrabold text-brand transition hover:bg-brand hover:text-white lg:inline-flex">
+            <ShopSwitch shops={shopOptions} current={shop.slug} locale={locale} light />
+            <Link href="/partner" className="btn-cyan hidden h-9 items-center gap-1.5 rounded-full px-3.5 text-xs lg:inline-flex">
               <Handshake className="size-3.5" aria-hidden /> {pick(locale, "পার্টনার হোন", "Become a partner")}
             </Link>
-            <a href={telHref(helpline)} className="grid size-10 place-items-center rounded-full bg-brand-soft text-brand md:hidden" aria-label={`${t.call} ${helpline}`}>
+            <a href={telHref(helpline)} className="grid size-10 place-items-center rounded-full bg-white/10 text-white ring-1 ring-white/15 md:hidden" aria-label={`${t.call} ${helpline}`}>
               <Phone className="size-4" aria-hidden />
             </a>
-            <LocaleSwitch locale={locale} />
+            <LocaleSwitch locale={locale} light />
             {user ? (
               <Link href={customer ? "/profile" : homeFor(user.role)} className="hidden items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-bold ring-1 ring-line md:inline-flex">
                 <UserRound className="size-4" aria-hidden /> {user.name.split(" ")[0]}
@@ -88,7 +88,7 @@ export async function SiteShell({ children }: { children: React.ReactNode }) {
 
       <main id="main" className="mx-auto w-full max-w-6xl flex-1 px-4 pt-5 pb-10 md:px-6 md:pt-8 md:pb-16">{children}</main>
 
-      <footer className="mt-10 bg-ink text-white" aria-label={pick(locale, "ফুটার", "Footer")}>
+      <footer className="navy-glow mt-10 rounded-none" aria-label={pick(locale, "ফুটার", "Footer")}>
         <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 md:grid-cols-[1.4fr_1fr_1.2fr] md:px-6 md:py-14">
           <div>
             <Logo bn={bn} light />
