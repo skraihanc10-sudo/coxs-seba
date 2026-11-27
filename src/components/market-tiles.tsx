@@ -13,6 +13,8 @@ type Cat = { id: string; slug: string; name: string; nameBn: string; icon: strin
 
 type Tile = {
   cat: Cat
+  /** Where the tile goes; defaults to the category page. */
+  href?: string
   /** "২৪টা গাড়ি · ৩ ধরন" style fact line. */
   fact: string
   /** "৳৫০০/ঘণ্টা থেকে" style price line. */
@@ -91,13 +93,17 @@ export async function MarketTiles({ locale, shopId, categories }: { locale: Loca
       cta: pick(locale, "রুম দেখুন", "See rooms"),
     })
   }
-  for (const [cat, products] of [[shutki, shutkiProducts], [achar, acharProducts]] as Array<[Cat | undefined, typeof shutkiProducts]>) {
-    if (!cat) continue
+  // Dried fish and pickles are one shop: every partner store, what each sells.
+  const shopCat = shutki ?? achar
+  if (shopCat) {
+    const seen = new Set<string>()
+    const products = [...shutkiProducts, ...acharProducts].filter((p) => !seen.has(p.id) && seen.add(p.id))
     const prices = products.flatMap((p) => p.variants.filter((v) => v.active).map((v) => v.price)).filter((p) => p > 0)
     const storeIds = new Set(products.map((p) => p.storeId).filter(Boolean))
     const previews = products.map((p) => photosOf(p)[0]).filter(Boolean).slice(0, 3).map(photoUrl)
     tiles.push({
-      cat,
+      cat: { ...shopCat, slug: "shop", name: "Shop: dried fish, pickles & more", nameBn: "দোকান: শুঁটকি, আচার ও আরও" },
+      href: "/shop",
       fact: pick(locale, `${num(products.length, locale)}টা পণ্য · ${num(storeIds.size || stores.length, locale)}টা দোকান`, `${products.length} products · ${storeIds.size || stores.length} stores`),
       price: prices.length ? pick(locale, `${taka(min(prices), locale)} থেকে · সারা দেশে ডেলিভারি`, `from ${taka(min(prices), locale)} · delivered nationwide`) : pick(locale, "সারা দেশে ডেলিভারি", "Delivered nationwide"),
       previews,
@@ -109,13 +115,13 @@ export async function MarketTiles({ locale, shopId, categories }: { locale: Loca
   if (!tiles.length) return null
 
   return (
-    <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
+    <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4" data-tiles={tiles.length}>
       {tiles.map((t, i) => {
         const big = i === 0
         return (
           <Link
             key={t.cat.id}
-            href={`/services/${t.cat.slug}`}
+            href={t.href ?? `/services/${t.cat.slug}`}
             className={`tile group ${big ? "col-span-2 min-h-64 md:col-span-2 md:row-span-2 md:min-h-[26rem]" : "min-h-52 md:min-h-48"}`}
             aria-label={`${bn ? t.cat.nameBn : t.cat.name} · ${t.fact}`}
           >

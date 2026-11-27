@@ -10,6 +10,9 @@ export const SETTING_DEFAULTS: Record<string, string> = {
   /** Social links shown in the footer; leave empty to hide the icon. */
   facebook: "https://facebook.com/handyobd",
   youtube: "https://youtube.com/@handyobd",
+  /** Home page: YouTube links of customer video reviews (one per line) and uploaded review screenshots (file names). */
+  reviewVideos: "",
+  reviewShots: "",
   officeHours: "প্রতিদিন সকাল ৮টা – রাত ১০টা",
   officeHoursEn: "Every day, 8 am – 10 pm",
   address: brand.addressBn,
@@ -20,7 +23,7 @@ export const SETTING_DEFAULTS: Record<string, string> = {
   bannerEn: "Ship tickets, car and resort booking, home services and dried fish: verified partners, prices up front, nationwide.",
   /** Share of the final bill paid to the worker who did the job, in percent. */
   workerShare: "40",
-  /** Share of a partner's bill (vehicle, resort, store) paid to the partner; HANDYO keeps the rest (10 %). */
+  /** Share of a partner's bill (vehicle, resort, store) paid to the partner. */
   partnerShare: "90",
   /** Product shop: flat delivery charge, free-delivery threshold (0 = never), minimum order. */
   shopDelivery: "130",

@@ -8,7 +8,7 @@ import { FileText, ImagePlus, X } from "lucide-react"
  * two photos or PDFs, see what you picked, remove one. The real <input> stays
  * in the form so the server action receives the files as usual.
  */
-export function DocumentDrop({ name, label, hint, note, choose, empty, max = 2 }: { name: string; label: string; hint: string; note: string; choose: string; empty: string; max?: number }) {
+export function DocumentDrop({ name, label, hint, note, choose, empty, max = 2, required = true }: { name: string; label: string; hint: string; note: string; choose: string; empty: string; max?: number; required?: boolean }) {
   const input = useRef<HTMLInputElement>(null)
   const [files, setFiles] = useState<File[]>([])
 
@@ -23,7 +23,7 @@ export function DocumentDrop({ name, label, hint, note, choose, empty, max = 2 }
   return (
     <div>
       <p className="label">{label}</p>
-      <input ref={input} type="file" name={name} accept="image/*,application/pdf" multiple required className="sr-only" tabIndex={-1} onChange={(e) => sync([...files, ...Array.from(e.target.files ?? [])])} />
+      <input ref={input} type="file" name={name} accept="image/*,application/pdf" multiple required={required} className="sr-only" tabIndex={-1} onChange={(e) => sync([...files, ...Array.from(e.target.files ?? [])])} />
       <button
         type="button"
         onClick={() => input.current?.click()}

@@ -1,18 +1,20 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { ArrowRight, BadgeCheck, Building2, Car, Clock3, Fish, Handshake, MapPin, MapPinned, MessageCircle, Phone, ShieldCheck, Star } from "lucide-react"
+import { ArrowRight, BadgeCheck, Building2, Car, Clock3, Fish, Handshake, MapPin, MessageCircle, Phone, ShieldCheck, Sparkles, Star, Store } from "lucide-react"
 import { getLocale } from "@/lib/auth"
 import { getSettings } from "@/lib/settings"
 import { activeAreas, activeCategories, activeFaqs, categoryPriceLine, publishedReviews } from "@/lib/catalog"
-import { activeShops, coverageText, currentShop } from "@/lib/shops"
+import { coverageText, currentShop } from "@/lib/shops"
 import { named, pick, words } from "@/lib/i18n"
 import { taka, telHref, whatsappHref } from "@/lib/format"
 import { unitLabel } from "@/lib/pricing"
 import { clip, pageMeta } from "@/lib/seo"
-import { ofBn } from "@/lib/bangla"
 import { CategoryIcon } from "@/components/category-icon"
 import { HeroShowcase } from "@/components/hero-showcase"
 import { MarketTiles } from "@/components/market-tiles"
+import { VideoReviews } from "@/components/video-reviews"
+import { ReviewShots } from "@/components/review-shots"
+import { youtubeIds } from "@/lib/youtube"
 import { SearchBox } from "@/components/search-box"
 import { faqLd, JsonLd, localBusiness, organization } from "@/components/seo/json-ld"
 import { brand } from "@/theme/brand"
@@ -35,7 +37,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function HomePage() {
-  const [locale, shop, shops, faqs] = await Promise.all([getLocale(), currentShop(), activeShops(), activeFaqs()])
+  const [locale, shop, faqs] = await Promise.all([getLocale(), currentShop(), activeFaqs()])
   const [settings, categories, reviews, areas] = await Promise.all([getSettings(shop.id), activeCategories(shop.id), publishedReviews(shop.id), activeAreas(shop.id)])
   const t = words(locale)
   const bn = locale === "bn"
@@ -45,17 +47,33 @@ export default async function HomePage() {
   const homeServices = categories.filter((c) => !MARKET_SLUGS.includes(c.slug))
   const stay = categories.find((c) => c.slug === "resort-booking")
   const shutki = categories.find((c) => c.slug === "shutki")
-  const quick = [...markets, ...homeServices.slice(0, 3)]
-  const areaCount = areas.length
-  const firstArea = areas[0]
-  const lastArea = areas[areas.length - 1]
+  // Dried fish and pickles are one shop; home and resort cleaning are one door.
+  const CLEANING = ["home-cleaning", "resort-cleaning"]
+  const shopChip = shutki ? { key: "shop", href: "/shop", icon: "store", label: pick(locale, "দোকান", "Shop") } : null
+  const quick = [
+    ...markets.filter((c) => c.slug !== "shutki" && c.slug !== "achar").map((c) => ({ key: c.id, href: `/services/${c.slug}`, icon: c.icon, label: named(locale, c) })),
+    ...(shopChip ? [shopChip] : []),
+    ...homeServices.filter((c) => !CLEANING.includes(c.slug)).slice(0, 3).map((c) => ({ key: c.id, href: `/services/${c.slug}`, icon: c.icon, label: named(locale, c) })),
+  ]
+  const cleaning = homeServices.filter((c) => CLEANING.includes(c.slug))
+  type HomeTile = { key: string; href: string; image: string; icon: string; name: string; price: string }
+  const homeList: HomeTile[] = []
+  for (const c of homeServices) {
+    if (CLEANING.includes(c.slug)) {
+      if (c.slug === cleaning[0]?.slug) homeList.push({ key: "cleaning", href: "/services/cleaning", image: c.image, icon: c.icon, name: pick(locale, "ক্লিনিং (বাসা ও রিসোর্ট)", "Cleaning (home & resort)"), price: pick(locale, "কথা বলে দাম ঠিক হয়", "Price agreed with you") })
+      continue
+    }
+    homeList.push({ key: c.id, href: `/services/${c.slug}`, image: c.image, icon: c.icon, name: named(locale, c), price: categoryPriceLine(c, locale, taka, unitLabel) })
+  }
+  const videoIds = youtubeIds(settings.reviewVideos ?? "")
+  const shots = (settings.reviewShots ?? "").split(",").map((f) => f.trim()).filter(Boolean).map((f) => `/api/uploads/${f}`)
 
   return (
     <div className="space-y-10 md:space-y-14">
       <JsonLd data={[organization(), localBusiness(shop, settings, areas), ...(faqs.length ? [faqLd(faqs.map((f) => ({ question: bn ? f.questionBn : f.question, answer: bn ? f.answerBn : f.answer })))] : [])]} />
 
       {/* Hero + search */}
-      <section aria-labelledby="hero-title" className="navy-glow rounded-[1.6rem] px-4 py-6 shadow-[0_28px_70px_rgba(7,26,58,0.3)] ring-1 ring-cyan/20 md:rounded-[2rem] md:px-10 md:py-14 lg:grid lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:gap-x-10">
+      <section aria-labelledby="hero-title" className="navy-glow flex flex-col rounded-[1.6rem] px-4 py-5 shadow-[0_28px_70px_rgba(7,26,58,0.3)] ring-1 ring-cyan/20 md:rounded-[2rem] md:px-10 md:py-14 lg:grid lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:gap-x-10">
         <div className="pointer-events-none absolute inset-0 opacity-[0.1] [background-image:radial-gradient(rgba(255,255,255,0.9)_1px,transparent_1px)] [background-size:22px_22px]" aria-hidden />
         <div className="pointer-events-none absolute top-1/2 left-1/2 size-[520px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-cyan/10 blur-3xl" aria-hidden />
         <div className="relative">
@@ -67,14 +85,14 @@ export default async function HomePage() {
           <div className="mt-4 md:mt-6"><SearchBox locale={locale} variant="hero" buttonText={t.search} /></div>
           <div className="mt-3 -mx-4 scroll-x px-4 md:mx-0 md:mt-5 md:flex-wrap md:px-0" aria-label={pick(locale, "জনপ্রিয় সেবা", "Popular services")}>
             {quick.map((c) => (
-              <Link key={c.id} href={`/services/${c.slug}`} className="glass inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full px-3 text-[12px] font-bold text-white transition hover:bg-white hover:text-ink md:h-9 md:px-3.5 md:text-[13px]">
-                <CategoryIcon name={c.icon} className="size-3.5" /> {named(locale, c)}
+              <Link key={c.key} href={c.href} className="glass inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full px-3 text-[12px] font-bold text-white transition hover:bg-white hover:text-ink md:h-9 md:px-3.5 md:text-[13px]">
+                {c.icon === "store" ? <Store className="size-3.5" aria-hidden /> : <CategoryIcon name={c.icon} className="size-3.5" />} {c.label}
               </Link>
             ))}
           </div>
         </div>
-        {/* Featured-services board: rotating illustrated cards, one per category. On phones it sits right under the search, before the promises. */}
-        <div className="relative mt-4 lg:row-span-2 lg:mt-0">
+        {/* Featured-services board: rotating illustrated cards, one per category. On phones it is the first thing on screen, above the search. */}
+        <div className="relative order-first mb-4 lg:order-none lg:row-span-2 lg:mb-0">
           <HeroShowcase
             locale={locale}
             items={categories
@@ -136,18 +154,18 @@ export default async function HomePage() {
             <Link href="/services" className="text-sm font-bold text-brand">{t.seeAll} →</Link>
           </div>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-            {homeServices.map((c) => (
-              <Link key={c.id} href={`/services/${c.slug}`} className="card card-lift group flex flex-col overflow-hidden">
+            {homeList.map((c) => (
+              <Link key={c.key} href={c.href} className="card card-lift group flex flex-col overflow-hidden">
                 {c.image ? (
                   <span className="relative block aspect-[5/3] w-full overflow-hidden bg-brand-soft">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={c.image} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105" />
-                    <span className="absolute top-2 left-2 grid size-8 place-items-center rounded-xl bg-white/90 text-brand shadow" aria-hidden><CategoryIcon name={c.icon} className="size-4" /></span>
+                    <span className="absolute top-2 left-2 grid size-8 place-items-center rounded-xl bg-white/90 text-brand shadow" aria-hidden>{c.key === "cleaning" ? <Sparkles className="size-4" /> : <CategoryIcon name={c.icon} className="size-4" />}</span>
                   </span>
                 ) : null}
                 <span className="flex flex-1 flex-col gap-1 p-3.5">
-                  <span className="text-[15px] font-extrabold leading-snug text-ink">{named(locale, c)}</span>
-                  <span className="mt-auto text-xs font-bold text-brand">{categoryPriceLine(c, locale, taka, unitLabel)}</span>
+                  <span className="text-[15px] font-extrabold leading-snug text-ink">{c.name}</span>
+                  <span className="mt-auto text-xs font-bold text-brand">{c.price}</span>
                 </span>
               </Link>
             ))}
@@ -182,14 +200,14 @@ export default async function HomePage() {
           </Link>
         ) : null}
         {shutki ? (
-          <Link href={`/services/${shutki.slug}`} className="promo p-5 md:p-6">
+          <Link href="/shop" className="promo p-5 md:p-6">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/services/achar.jpg" alt="" loading="lazy" />
             <span className="promo-shade" aria-hidden />
             <Fish className="pointer-events-none absolute -right-5 -bottom-5 size-32 text-cyan/15" aria-hidden />
-            <p className="pill glass text-white">{pick(locale, "শুঁটকি ও আচার", "Dried fish & pickles")}</p>
-            <h2 className="display mt-3 text-xl font-extrabold leading-tight md:text-2xl">{pick(locale, "কক্সবাজারের শুঁটকি, সারা দেশে ডেলিভারি", "Cox's Bazar dried fish, delivered nationwide")}</h2>
-            <p className="mt-2 text-sm text-white/85">{pick(locale, "বিসমিল্লাহ, মহেশখালী আর অর্গানিক দোকানের পণ্য কার্টে নিন; দোকান অনুযায়ী আলাদা পার্সেল।", "Products from partner stores in one cart; a separate parcel per store.")}</p>
+            <p className="pill glass text-white">{pick(locale, "দোকান", "Shop")}</p>
+            <h2 className="display mt-3 text-xl font-extrabold leading-tight md:text-2xl">{pick(locale, "শুঁটকি, আচার ও আরও, সারা দেশে ডেলিভারি", "Dried fish, pickles and more, delivered nationwide")}</h2>
+            <p className="mt-2 text-sm text-white/85">{pick(locale, "সব পার্টনার দোকান এক জায়গায়; দোকান বেছে দেখুন কে কী বিক্রি করে, এক কার্টে নিন।", "Every partner store in one place; pick a store to see what it sells, one cart for all.")}</p>
             <span className="mt-4 inline-flex items-center gap-1 rounded-full bg-white/12 px-3 py-1.5 text-sm font-extrabold ring-1 ring-white/20">{pick(locale, "দোকানে যান", "Shop now")} <ArrowRight className="size-4 text-cyan" aria-hidden /></span>
           </Link>
         ) : null}
@@ -225,18 +243,11 @@ export default async function HomePage() {
       <section aria-labelledby="why-title">
         <p className="eyebrow">{pick(locale, "ভরসা", "Trust")}</p>
         <h2 id="why-title" className="display mt-1 text-2xl font-extrabold text-ink md:text-3xl">{pick(locale, "কেন HANDYO", "Why HANDYO")}</h2>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-4 grid gap-3 sm:grid-cols-3">
           {[
             [ShieldCheck, pick(locale, "যাচাই করা কর্মী", "Verified workers"), pick(locale, "প্রতিটা কর্মীর NID যাচাই করা, আমাদের নিজের টিম।", "Every worker is NID-checked and on our own team.")],
             [BadgeCheck, pick(locale, "নির্দিষ্ট দাম", "Fixed prices"), pick(locale, "দাম আগেই লেখা। লুকানো চার্জ নেই।", "Prices are listed up front. No hidden charges.")],
             [Clock3, pick(locale, "দ্রুত আসি", "We come fast"), pick(locale, "আজকেরটা আজই, বেশিরভাগ কাজ ২ ঘণ্টার স্লটে।", "Same-day for most jobs, in 2-hour slots.")],
-            [
-              MapPinned,
-              pick(locale, `${ofBn(shop.cityBn)} সব এলাকায়`, `All of ${shop.city}`),
-              areaCount && firstArea && lastArea
-                ? pick(locale, `${named(locale, firstArea)} থেকে ${named(locale, lastArea)}, ${ofBn(shop.cityBn)} ${areaCount}টা এলাকায়।`, `${named(locale, firstArea)} to ${named(locale, lastArea)}: all ${areaCount} ${shop.city} areas.`)
-                : pick(locale, `${ofBn(shop.cityBn)} সব এলাকায় সেবা দিই।`, `We serve every area of ${shop.city}.`),
-            ],
           ].map(([Icon, title, body]) => {
             const I = Icon as typeof ShieldCheck
             return (
@@ -250,24 +261,21 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Where we are */}
-      {shops.length > 1 ? (
-        <section aria-labelledby="where-title">
-          <div className="section-head">
-            <h2 id="where-title" className="display text-2xl font-extrabold text-ink md:text-3xl">{pick(locale, "আমরা যেখানে আছি", "Where we are")}</h2>
-            <Link href="/branches" className="text-sm font-bold text-brand">{pick(locale, "সব শাখা", "All branches")} →</Link>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {shops.map((s) => (
-              <Link key={s.id} href={`/branches/${s.slug}`} className={`card card-lift flex items-start gap-3 p-4 ${s.id === shop.id ? "ring-brand/50" : ""}`}>
-                <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-soft text-brand" aria-hidden><MapPin className="size-5" /></span>
-                <span className="min-w-0">
-                  <span className="block font-extrabold text-ink">{bn ? s.cityBn : s.city}</span>
-                  <span className="block truncate text-xs text-muted-foreground">{bn ? s.nameBn : s.name}{s.id === shop.id ? ` · ${pick(locale, "এখন দেখছেন", "viewing now")}` : ""}</span>
-                </span>
-              </Link>
-            ))}
-          </div>
+      {/* Video reviews from our YouTube channel */}
+      {videoIds.length ? (
+        <section aria-labelledby="video-title">
+          <p className="eyebrow">{pick(locale, "ভিডিও রিভিউ", "Video reviews")}</p>
+          <h2 id="video-title" className="display mt-1 text-2xl font-extrabold text-ink md:text-3xl">{pick(locale, "কাস্টমাররা নিজেরাই বলছেন", "Customers in their own words")}</h2>
+          <div className="mt-4"><VideoReviews ids={videoIds} locale={locale} /></div>
+        </section>
+      ) : null}
+
+      {/* Screenshots of reviews from our Facebook page and YouTube */}
+      {shots.length ? (
+        <section aria-labelledby="shots-title">
+          <p className="eyebrow">{pick(locale, "ফেসবুক ও ইউটিউব থেকে", "From Facebook & YouTube")}</p>
+          <h2 id="shots-title" className="display mt-1 text-2xl font-extrabold text-ink md:text-3xl">{pick(locale, "আমাদের পেজে যা লিখেছেন", "What people wrote on our page")}</h2>
+          <div className="mt-4"><ReviewShots photos={shots} label={pick(locale, "রিভিউ স্ক্রিনশট", "Review screenshot")} /></div>
         </section>
       ) : null}
 
@@ -278,14 +286,14 @@ export default async function HomePage() {
           <h2 id="reviews-title" className="display mt-1 text-2xl font-extrabold text-ink md:text-3xl">{pick(locale, "কাস্টমাররা যা বলেন", "What customers say")}</h2>
           <div className="mt-4 flex gap-3 overflow-x-auto pb-2 md:grid md:grid-cols-3 md:overflow-visible">
             {reviews.map((r) => (
-              <figure key={r.id} className="card card-lift w-72 shrink-0 p-5 md:w-auto">
-                <div className="flex gap-0.5 text-amber-400" aria-label={pick(locale, `${r.rating} তারা`, `${r.rating} stars`)} role="img">
-                  {Array.from({ length: r.rating }).map((_, i) => <Star key={i} className="size-4 fill-current" aria-hidden />)}
-                </div>
-                <blockquote className="mt-3 text-[15px] text-ink">“{r.comment}”</blockquote>
+              <figure key={r.id} className="card card-lift flex w-72 shrink-0 flex-col p-5 md:w-auto">
+                <blockquote className="text-[15px] text-ink">“{r.comment}”</blockquote>
                 <figcaption className="mt-3 text-xs text-muted-foreground">
                   <span className="font-bold text-ink">{r.customer.name}</span> · {named(locale, r.booking.offering)} · {named(locale, r.booking.area)}
                 </figcaption>
+                <div className="mt-auto flex gap-0.5 pt-3 text-amber-400" aria-label={pick(locale, `${r.rating} তারা`, `${r.rating} stars`)} role="img">
+                  {Array.from({ length: r.rating }).map((_, i) => <Star key={i} className="size-4 fill-current" aria-hidden />)}
+                </div>
               </figure>
             ))}
           </div>
@@ -300,13 +308,13 @@ export default async function HomePage() {
           <div>
             <p className="pill glass inline-flex items-center gap-1 text-white"><Handshake className="size-3.5" aria-hidden /> {pick(locale, "পার্টনার হোন", "Become a partner")}</p>
             <h2 id="partner-title" className="display mt-3 text-2xl font-extrabold leading-tight md:text-3xl">{pick(locale, "আপনার গাড়ি, রিসোর্ট বা দোকান HANDYO-তে আনুন", "Bring your vehicle, resort or store to HANDYO")}</h2>
-            <p className="mt-2 max-w-lg text-sm text-white/75 md:text-base">{pick(locale, "আপনি দাম ঠিক করেন, অর্ডার-চ্যাট-পেমেন্ট আমরা সামলাই। প্রতিটা অর্ডারের ৯০% আপনার, HANDYO রাখে মাত্র ১০%।", "You set the price; we handle orders, chat and payment. You keep 90% of every order, HANDYO keeps only 10%.")}</p>
+            <p className="mt-2 max-w-lg text-sm text-white/75 md:text-base">{pick(locale, "আপনি দাম ও স্টক ঠিক করেন; অর্ডার, চ্যাট আর পেমেন্ট আমরা সামলাই। ফ্রি সাইন-আপ, অফিস যাচাই করে চালু করে।", "You set prices and stock; we handle orders, chat and payment. Free to sign up; the office verifies and switches you on.")}</p>
           </div>
           <div className="grid gap-2">
             {[
               ["/partner", Car, pick(locale, "গাড়ি ভাড়া দিন", "Rent out your vehicle"), pick(locale, "বাইক, কার, চান্দের গাড়ি, বাস", "Bike, car, chander gari, bus")],
               ["/partner", Building2, pick(locale, "রিসোর্ট যুক্ত করুন", "List your resort"), pick(locale, "রুম ও রাতপ্রতি দাম আপনার হাতে", "Rooms and nightly prices, your call")],
-              ["/partner", Fish, pick(locale, "দোকান খুলুন", "Open a store"), pick(locale, "শুঁটকি বা আচার, সারা দেশে অর্ডার", "Dried fish or pickles, orders nationwide")],
+              ["/partner", Fish, pick(locale, "দোকান খুলুন", "Open a store"), pick(locale, "শুঁটকি, আচার, লন্ড্রি: সারা দেশে অর্ডার", "Dried fish, pickles, laundry: orders nationwide")],
             ].map(([href, Icon, title, body]) => {
               const I = Icon as typeof Car
               return (

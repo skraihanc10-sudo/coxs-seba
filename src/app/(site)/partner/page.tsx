@@ -10,9 +10,9 @@ import { named, pick } from "@/lib/i18n"
 import { pageMeta } from "@/lib/seo"
 import { partnerSignupAction } from "@/actions/partners"
 import { PageHeader } from "@/components/bits"
-import { CategoryIcon } from "@/components/category-icon"
 import { ActionForm, SubmitButton } from "@/components/forms"
 import { DocumentDrop } from "@/components/document-drop"
+import { PartnerCategoryPicker } from "@/components/partner-category-picker"
 import { breadcrumbs, JsonLd } from "@/components/seo/json-ld"
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -39,7 +39,7 @@ export default async function PartnerPage() {
   const categories = (await activeCategories(shop.id)).filter((c) => PARTNER_FLOWS.includes(c.flow) || TICKET_SLUGS.includes(c.slug))
   const bn = locale === "bn"
   const steps = [
-    { icon: FileCheck, title: pick(locale, "১. অ্যাকাউন্ট খুলুন", "1. Open an account"), body: pick(locale, "নাম, মোবাইল, পাসওয়ার্ড, পরিচয়পত্র (NID / পাসপোর্ট) আর কী দেবেন সেটা বেছে নিন। ২ মিনিট।", "Name, mobile, password, your ID (NID / passport) and what you will offer. Two minutes.") },
+    { icon: FileCheck, title: pick(locale, "১. অ্যাকাউন্ট খুলুন", "1. Open an account"), body: pick(locale, "নাম, মোবাইল, পাসওয়ার্ড, পরিচয়পত্র (NID / পাসপোর্ট), থাকলে ট্রেড লাইসেন্স, আর কী দেবেন সেটা বেছে নিন। ২ মিনিট।", "Name, mobile, password, your ID (NID / passport), a trade licence if you have one, and what you will offer. Two minutes.") },
     { icon: ShieldCheck, title: pick(locale, "২. অফিস যাচাই করে", "2. The office verifies"), body: pick(locale, "HANDYO অফিস কাগজ দেখে অনুমোদন দেয়; তারপর এই নম্বর আর পাসওয়ার্ড দিয়ে লগইন।", "The HANDYO office checks the papers and approves; then log in with this number and password.") },
     { icon: Upload, title: pick(locale, "৩. ছবি আর দাম দিয়ে যোগ করুন", "3. Add with photos and prices"), body: pick(locale, "নিজের প্যানেলে ক্যাটাগরি অনুযায়ী পণ্য, গাড়ি, রুম বা কাপড়ের দাম তুলুন; অফিস অনুমোদন দিলেই সাইটে দেখাবে।", "In your panel, list products, vehicles, rooms or laundry prices; each goes live once the office approves.") },
     { icon: LayoutDashboard, title: pick(locale, "৪. অর্ডার, চ্যাট, হিসাব", "4. Orders, chat, ledger"), body: pick(locale, "অর্ডার আপনার প্যানেলে আর নোটিশে আসে; কাস্টমারের সাথে চ্যাট; হিসাব দেখুন; ২ জন হেল্পার রাখুন।", "Orders arrive in your panel and as alerts; chat with customers; see your ledger; keep two helpers.") },
@@ -47,7 +47,7 @@ export default async function PartnerPage() {
   return (
     <div className="mx-auto max-w-2xl">
       <JsonLd data={breadcrumbs([{ name: "HANDYO", path: "/" }, { name: pick(locale, "পার্টনার হোন", "Become a partner"), path: "/partner" }])} />
-      <PageHeader back="/" title={pick(locale, "HANDYO পার্টনার হোন", "Become a HANDYO partner")} sub={pick(locale, `আপনার দোকান, গাড়ি, রিসোর্ট, লন্ড্রি বা শিপ টিকিটের এজেন্সি HANDYO-তে। আপনি দাম ও স্টক ঠিক করেন, বিক্রির ৯০% আপনার।`, `Your store, vehicle, resort or laundry in ${shop.city}, on HANDYO. You set the prices and keep 90% of every sale.`)} />
+      <PageHeader back="/" title={pick(locale, "HANDYO পার্টনার হোন", "Become a HANDYO partner")} sub={pick(locale, `আপনার দোকান, গাড়ি, রিসোর্ট, লন্ড্রি বা শিপ টিকিটের এজেন্সি HANDYO-তে। সাইন-আপ ফ্রি; আপনি দাম ও স্টক ঠিক করেন।`, `Your store, vehicle, resort, laundry or ship-ticket agency on HANDYO. Free to sign up; you set the prices and stock.`)} />
 
       <ol className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {steps.map((s) => (
@@ -70,15 +70,11 @@ export default async function PartnerPage() {
         ) : (
           <ActionForm action={partnerSignupAction} resetOnSuccess={false} className="card space-y-3 p-4 md:p-5">
             <h3 className="text-xs font-extrabold text-muted-foreground uppercase">{pick(locale, "কী দেবেন", "What you will offer")}</h3>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4" role="radiogroup" aria-label={pick(locale, "ক্যাটাগরি", "Category")}>
-              {categories.map((c, i) => (
-                <label key={c.id} className="card flex cursor-pointer flex-col items-center gap-1.5 px-2 py-3 text-center text-xs font-extrabold text-ink transition has-[:checked]:bg-brand has-[:checked]:text-white has-[:checked]:ring-brand hover:ring-brand/40">
-                  <input type="radio" name="categoryId" value={c.id} defaultChecked={i === 0} className="sr-only" required />
-                  <CategoryIcon name={c.icon} className="size-6" />
-                  {named(locale, c)}
-                </label>
-              ))}
-            </div>
+            <PartnerCategoryPicker
+              direct={categories.filter((c) => c.flow !== "SHOP" && c.flow !== "LAUNDRY").map((c) => ({ id: c.id, label: named(locale, c), icon: c.icon }))}
+              shop={categories.filter((c) => c.flow === "SHOP" || c.flow === "LAUNDRY").map((c) => ({ id: c.id, label: named(locale, c), icon: c.icon }))}
+              labels={{ group: pick(locale, "ক্যাটাগরি", "Category"), shopTile: pick(locale, "দোকান", "Shop"), shopKind: pick(locale, "দোকানে কী বিক্রি করবেন?", "What will the shop sell?") }}
+            />
             <div><label className="label" htmlFor="businessName">{pick(locale, "ব্যবসা / দোকানের নাম (ঐচ্ছিক)", "Business / store name (optional)")}</label><input id="businessName" name="businessName" className="field" maxLength={100} placeholder={pick(locale, "যেমন: সাগর শুঁটকি ঘর", "e.g. Sagor Dried Fish House")} /></div>
 
             <h3 className="pt-2 text-xs font-extrabold text-muted-foreground uppercase">{pick(locale, "আপনার তথ্য", "About you")}</h3>
@@ -107,10 +103,19 @@ export default async function PartnerPage() {
               choose={pick(locale, "ছবি / PDF দিন", "Add photo / PDF")}
               empty={pick(locale, "এখনো কোনো ফাইল নেই", "No file chosen yet")}
             />
+            <DocumentDrop
+              name="tradeLicense"
+              required={false}
+              label={pick(locale, "ট্রেড লাইসেন্স (ঐচ্ছিক; দোকান, লন্ড্রি বা এজেন্সির জন্য থাকলে দিন)", "Trade licence (optional; add it if your store, laundry or agency has one)")}
+              hint={pick(locale, "ছবি বা PDF · সর্বোচ্চ ২টা · প্রতিটা ৫ MB-এর কম", "Photo or PDF · up to 2 · under 5 MB each")}
+              note={pick(locale, "না থাকলে খালি রাখুন; অফিস দরকার হলে পরে চাইবে।", "Leave empty if you have none; the office will ask later if it is needed.")}
+              choose={pick(locale, "লাইসেন্স দিন", "Add licence")}
+              empty={pick(locale, "এখনো কোনো ফাইল নেই", "No file chosen yet")}
+            />
 
             <label className="flex items-start gap-2 rounded-xl bg-canvas px-3 py-3 text-sm text-ink">
               <input type="checkbox" name="agree" required className="mt-0.5 size-4 shrink-0 accent-[var(--brand)]" />
-              <span>{pick(locale, "আমি সম্মত: HANDYO প্রতিটা বিক্রি বা ভাড়া থেকে ১০% রাখে, কাস্টমার HANDYO-র মাধ্যমে বুক করে ও টাকা দেয়, আর আমার দেওয়া তথ্য ও কাগজ সঠিক।", "I agree: HANDYO keeps 10% of every sale or rental, customers book and pay through HANDYO, and the details and papers I give are genuine.")}</span>
+              <span>{pick(locale, "আমি সম্মত: কাস্টমার HANDYO-র মাধ্যমে বুক করে ও টাকা দেয়, অর্ডার সময়মতো দিই, আর আমার দেওয়া তথ্য ও কাগজ সঠিক।", "I agree: customers book and pay through HANDYO, I deliver orders on time, and the details and papers I give are genuine.")}</span>
             </label>
             <SubmitButton><BadgeCheck className="size-4" /> {pick(locale, "আবেদন জমা দিন", "Submit application")}</SubmitButton>
             <p className="text-center text-xs text-muted-foreground">

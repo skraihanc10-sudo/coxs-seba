@@ -85,7 +85,7 @@ export function ShopMarket({ locale, groups, stores, products, rules, partnerHre
         <Link href={partnerHref} className="card mt-6 flex items-center justify-between gap-3 bg-brand-soft p-4 transition hover:ring-brand/40">
           <div>
             <p className="font-extrabold text-ink">{T("আপনার শুঁটকি বা আচারের দোকান HANDYO-তে আনুন", "Bring your dried-fish or pickle store to HANDYO")}</p>
-            <p className="text-sm text-muted-foreground">{T("নিজের দোকানের নামে পণ্য দিন, সারা দেশের অর্ডার পান; HANDYO মাত্র ১০% রাখে।", "List under your own store name, get orders nationwide; HANDYO keeps only 10%.")}</p>
+            <p className="text-sm text-muted-foreground">{T("নিজের দোকানের নামে পণ্য দিন, সারা দেশের অর্ডার পান; সাইন-আপ ফ্রি।", "List under your own store name, get orders nationwide; free to sign up.")}</p>
           </div>
           <span className="shrink-0 font-extrabold text-brand">{T("দোকান খুলুন →", "Open a store →")}</span>
         </Link>

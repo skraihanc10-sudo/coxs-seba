@@ -20,7 +20,8 @@ export async function partnerSignupAction(_prev: ActionState, form: FormData): P
     const input = parse(partnerSignupSchema, formObject(form))
     const shop = await currentShop()
     const idPhotos = await saveDocuments(form.getAll("idPhotos"), 2)
-    await partnerSignup(shop.id, input, idPhotos)
+    const tradeLicense = await saveDocuments(form.getAll("tradeLicense"), 2)
+    await partnerSignup(shop.id, input, idPhotos, tradeLicense)
     return "আবেদন জমা হয়েছে। HANDYO অফিস কাগজ দেখে অনুমোদন দিলে এই মোবাইল নম্বর ও পাসওয়ার্ড দিয়ে লগইন করে পণ্য/গাড়ি/রিসোর্ট যোগ করতে পারবেন।"
   })
 }

@@ -37,15 +37,18 @@ export default async function ApprovalsPage() {
                     </p>
                     <p className="mt-2 text-sm text-ink">{bn ? ID_TYPES[p.idType]?.bn : ID_TYPES[p.idType]?.en}: <span className="font-mono font-bold">{p.nid}</span> <span className="text-muted-foreground">· {formatWhen(p.joinedAt, locale)}</span></p>
                   </div>
-                  <div className="flex gap-2">
-                    {p.nidPhoto.split(",").filter(Boolean).map((f) => (
+                  <div className="flex flex-wrap gap-2">
+                    {[...p.nidPhoto.split(","), ...p.tradeLicense.split(",").map((f) => (f ? `${f}#tl` : ""))].filter(Boolean).map((tagged) => { const f = tagged.replace(/#tl$/, ""); const tl = tagged.endsWith("#tl"); return (
+                      <span key={tagged} className="relative">
+                        {tl ? <span className="absolute -top-1.5 left-1 z-10 rounded-full bg-amber-500 px-1.5 text-[9px] font-extrabold text-white">{pick(locale, "ট্রেড লাইসেন্স", "Trade licence")}</span> : null}
                       <a key={f} href={`/api/uploads/${f}`} target="_blank" rel="noopener" className="block overflow-hidden rounded-xl ring-1 ring-line">
                         {f.endsWith(".pdf") ? <span className="grid h-20 w-28 place-items-center bg-canvas text-xs font-extrabold text-brand">PDF ↗</span> : (
                           // eslint-disable-next-line @next/next/no-img-element
-                          <img src={`/api/uploads/${f}`} alt={pick(locale, "পরিচয়পত্র", "ID")} className="h-20 w-28 object-cover" />
+                          <img src={`/api/uploads/${f}`} alt={tl ? pick(locale, "ট্রেড লাইসেন্স", "Trade licence") : pick(locale, "পরিচয়পত্র", "ID")} className="h-20 w-28 object-cover" />
                         )}
                       </a>
-                    ))}
+                      </span>
+                    ) })}
                   </div>
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2">

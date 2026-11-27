@@ -39,7 +39,7 @@ export const PARTNER_FLOWS = ["RENTAL", "STAY", "SHOP", "LAUNDRY"]
  * (store, vehicles, resort, laundry items) are added from the panel afterwards
  * and get their own approval.
  */
-export async function partnerSignup(shopId: string, input: PartnerSignupInput, idPhotos: string[]) {
+export async function partnerSignup(shopId: string, input: PartnerSignupInput, idPhotos: string[], tradeLicense: string[] = []) {
   const phone = normalisePhone(input.phone)
   if (!phone) throw new AppError("সঠিক মোবাইল নম্বর দিন।", "Enter a valid mobile number.")
   const email = input.email ? input.email.toLowerCase() : null
@@ -52,7 +52,7 @@ export async function partnerSignup(shopId: string, input: PartnerSignupInput, i
   const worker = await db.$transaction(async (tx) => {
     const user = await tx.user.create({ data: { name: input.name, phone, email, passwordHash, role: "WORKER", shopId, active: false } })
     return tx.workerProfile.create({
-      data: { userId: user.id, shopId, kind: "PARTNER", approved: false, idType: input.idType, nid: input.idNumber, nidPhoto: idPhotos.join(","), businessName: input.businessName, skills: { create: { categoryId: category.id } } },
+      data: { userId: user.id, shopId, kind: "PARTNER", approved: false, idType: input.idType, nid: input.idNumber, nidPhoto: idPhotos.join(","), tradeLicense: tradeLicense.join(","), businessName: input.businessName, skills: { create: { categoryId: category.id } } },
     })
   })
   await notify(await officeIds(shopId), { kind: "SYSTEM", title: "নতুন পার্টনার আবেদন", body: `${input.name} · ${category.nameBn}${input.businessName ? ` · ${input.businessName}` : ""}। কাগজ দেখে অনুমোদন দিন।`, link: "/admin/approvals" })

@@ -64,6 +64,31 @@ export default async function SettingsPage() {
               <p className="mt-2 text-xs text-muted-foreground">{pick(locale, `SMS: ${sms.live ? "লাইভ" : "ডেমো (OTP 123456)"} · আসল SMS চালু করতে .env-এ SMS_PROVIDER আর key বসান।`, `SMS: ${sms.live ? "live" : "demo (OTP 123456)"} · set SMS_PROVIDER and keys in .env to go live.`)}</p>
             </div>
           </div>
+        </Section>
+        <Section title={pick(locale, "হোমপেজ রিভিউ (ভিডিও ও স্ক্রিনশট)", "Homepage reviews (video & screenshots)")}>
+          <input type="hidden" name="shotsForm" value="1" />
+          <div className="grid gap-3">
+            <div>
+              <label className="label" htmlFor="reviewVideos">{pick(locale, "ইউটিউব ভিডিও লিংক (প্রতি লাইনে একটা; প্রথমটা হোমপেজে অটো চলবে)", "YouTube video links (one per line; the first plays on the homepage)")}</label>
+              <textarea id="reviewVideos" name="reviewVideos" defaultValue={s.reviewVideos} className="field min-h-24 font-mono text-xs" placeholder="https://youtu.be/XXXXXXXXXXX" />
+            </div>
+            <div>
+              <p className="label">{pick(locale, "রিভিউ স্ক্রিনশট (ফেসবুক/ইউটিউব কমেন্ট) · টিক তুলে দিলে বাদ যাবে", "Review screenshots (Facebook/YouTube) · untick to remove")}</p>
+              {s.reviewShots ? (
+                <div className="mb-2 flex flex-wrap gap-2">
+                  {s.reviewShots.split(",").filter(Boolean).map((f) => (
+                    <label key={f} className="relative block cursor-pointer">
+                      <input type="checkbox" name="keepShot" value={f} defaultChecked className="absolute top-1 left-1 z-10 size-4 accent-[var(--brand)]" />
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={`/api/uploads/${f}`} alt="" className="h-28 w-20 rounded-xl object-cover object-top ring-1 ring-line" />
+                    </label>
+                  ))}
+                </div>
+              ) : null}
+              <input type="file" name="reviewShotsNew" accept="image/*" multiple className="field h-10 pt-1.5 text-sm" />
+              <p className="mt-1 text-xs text-muted-foreground">{pick(locale, "একবারে সর্বোচ্চ ১২টা ছবি, প্রতিটা ৫ MB-এর কম। হোমপেজে সব একই সাইজে স্লাইড হবে।", "Up to 12 images at a time, under 5 MB each. They slide on the homepage at one size.")}</p>
+            </div>
+          </div>
           <SubmitButton className="btn-primary mt-4 w-full">{pick(locale, "সেটিংস সেভ", "Save settings")}</SubmitButton>
         </Section>
       </ActionForm>

@@ -14,22 +14,6 @@ export function PhotoGallery({ photos, alt, aspect = "aspect-[16/10]", badge, co
   const prev = () => setI((x) => (x - 1 + n) % n)
   const next = () => setI((x) => (x + 1) % n)
 
-  useEffect(() => {
-    if (!open) return
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false)
-      if (e.key === "ArrowLeft") prev()
-      if (e.key === "ArrowRight") next()
-    }
-    window.addEventListener("keydown", onKey)
-    document.body.style.overflow = "hidden"
-    return () => {
-      window.removeEventListener("keydown", onKey)
-      document.body.style.overflow = ""
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, n])
-
   if (!n) return null
   const src = photos[Math.min(i, n - 1)]
 
@@ -61,32 +45,56 @@ export function PhotoGallery({ photos, alt, aspect = "aspect-[16/10]", badge, co
         </div>
       ) : null}
 
-      {open ? (
-        <div className="fixed inset-0 z-[100] flex flex-col bg-black/95" onClick={() => setOpen(false)} role="dialog" aria-modal="true">
-          <div className="flex items-center justify-between px-4 py-3 text-white">
-            <span className="text-sm font-bold">{n > 1 ? `${i + 1} / ${n}` : ""}</span>
-            <button type="button" onClick={() => setOpen(false)} aria-label="Close" className="rounded-full bg-white/10 p-2 hover:bg-white/20"><X className="size-5" /></button>
-          </div>
-          <div className="relative flex min-h-0 flex-1 items-center justify-center px-2 pb-4" onClick={(e) => e.stopPropagation()}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={src} alt={alt} className="max-h-full max-w-full rounded-xl object-contain" />
-            {n > 1 ? (
-              <>
-                <button type="button" onClick={prev} aria-label="Previous" className="absolute top-1/2 left-3 -translate-y-1/2 rounded-full bg-white/15 p-2 text-white hover:bg-white/30"><ChevronLeft className="size-6" /></button>
-                <button type="button" onClick={next} aria-label="Next" className="absolute top-1/2 right-3 -translate-y-1/2 rounded-full bg-white/15 p-2 text-white hover:bg-white/30"><ChevronRight className="size-6" /></button>
-              </>
-            ) : null}
-          </div>
-          {n > 1 ? (
-            <div className="flex gap-2 overflow-x-auto px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]" onClick={(e) => e.stopPropagation()}>
-              {photos.map((p, k) => (
-                <button key={p + k} type="button" onClick={() => setI(k)} className={`shrink-0 overflow-hidden rounded-lg ring-2 ${k === i ? "ring-white" : "ring-transparent opacity-60"}`} aria-label={`Photo ${k + 1}`}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={p} alt="" className="aspect-[4/3] w-16 object-cover" loading="lazy" />
-                </button>
-              ))}
-            </div>
-          ) : null}
+      {open ? <PhotoLightbox photos={photos} start={i} alt={alt} onClose={(at) => { setI(at); setOpen(false) }} /> : null}
+    </div>
+  )
+}
+
+/** Full-screen viewer: dark backdrop, previous/next, thumbnails, Esc closes. */
+export function PhotoLightbox({ photos, start = 0, alt, onClose }: { photos: string[]; start?: number; alt: string; onClose: (at: number) => void }) {
+  const [i, setI] = useState(start)
+  const n = photos.length
+  const prev = () => setI((x) => (x - 1 + n) % n)
+  const next = () => setI((x) => (x + 1) % n)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose(i)
+      if (e.key === "ArrowLeft") prev()
+      if (e.key === "ArrowRight") next()
+    }
+    window.addEventListener("keydown", onKey)
+    document.body.style.overflow = "hidden"
+    return () => {
+      window.removeEventListener("keydown", onKey)
+      document.body.style.overflow = ""
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [i, n])
+  const src = photos[Math.min(i, n - 1)]
+  return (
+    <div className="fixed inset-0 z-[100] flex flex-col bg-black/95" onClick={() => onClose(i)} role="dialog" aria-modal="true">
+      <div className="flex items-center justify-between px-4 py-3 text-white">
+        <span className="text-sm font-bold">{n > 1 ? `${i + 1} / ${n}` : ""}</span>
+        <button type="button" onClick={() => onClose(i)} aria-label="Close" className="rounded-full bg-white/10 p-2 hover:bg-white/20"><X className="size-5" /></button>
+      </div>
+      <div className="relative flex min-h-0 flex-1 items-center justify-center px-2 pb-4" onClick={(e) => e.stopPropagation()}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={src} alt={alt} className="max-h-full max-w-full rounded-xl object-contain" />
+        {n > 1 ? (
+          <>
+            <button type="button" onClick={prev} aria-label="Previous" className="absolute top-1/2 left-3 -translate-y-1/2 rounded-full bg-white/15 p-2 text-white hover:bg-white/30"><ChevronLeft className="size-6" /></button>
+            <button type="button" onClick={next} aria-label="Next" className="absolute top-1/2 right-3 -translate-y-1/2 rounded-full bg-white/15 p-2 text-white hover:bg-white/30"><ChevronRight className="size-6" /></button>
+          </>
+        ) : null}
+      </div>
+      {n > 1 ? (
+        <div className="flex gap-2 overflow-x-auto px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]" onClick={(e) => e.stopPropagation()}>
+          {photos.map((p, k) => (
+            <button key={p + k} type="button" onClick={() => setI(k)} className={`shrink-0 overflow-hidden rounded-lg ring-2 ${k === i ? "ring-white" : "ring-transparent opacity-60"}`} aria-label={`Photo ${k + 1}`}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={p} alt="" className="aspect-[4/3] w-16 object-cover" loading="lazy" />
+            </button>
+          ))}
         </div>
       ) : null}
     </div>

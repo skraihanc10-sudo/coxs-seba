@@ -363,7 +363,14 @@ export async function saveSettingsAction(_prev: ActionState, form: FormData): Pr
     const entries: Record<string, string> = {}
     for (const key of SETTING_KEYS) {
       if (key.startsWith("pay")) entries[key] = form.get(key) ? "1" : "0"
-      else if (form.has(key)) entries[key] = String(form.get(key)).trim().slice(0, 500)
+      else if (key === "reviewShots") continue
+      else if (form.has(key)) entries[key] = String(form.get(key)).trim().slice(0, key === "reviewVideos" ? 4000 : 500)
+    }
+    // Review screenshots: keep the ticked ones, add the new uploads.
+    if (form.has("shotsForm")) {
+      const keep = form.getAll("keepShot").map(String).filter((f) => /^[\w.-]+$/.test(f))
+      const added = await saveImages(form.getAll("reviewShotsNew"), 12)
+      entries.reviewShots = [...keep, ...added].slice(0, 24).join(",")
     }
     if (entries.workerShare !== undefined) {
       const share = Number(entries.workerShare)

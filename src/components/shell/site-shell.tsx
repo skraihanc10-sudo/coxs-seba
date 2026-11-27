@@ -59,7 +59,6 @@ export async function SiteShell({ children }: { children: React.ReactNode }) {
               items={[
                 { href: "/services", label: t.services },
                 { href: "/how-it-works", label: pick(locale, "কীভাবে কাজ করে", "How it works") },
-                { href: "/branches", label: pick(locale, "শাখা", "Branches") },
                 { href: "/help", label: t.help },
               ]}
             />
@@ -128,7 +127,7 @@ export async function SiteShell({ children }: { children: React.ReactNode }) {
         <div className="border-t border-white/10">
           <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-4 text-xs text-white/60 md:flex-row md:items-center md:justify-between md:px-6">
             <p>© {new Date().getFullYear()} {brand.name} · {shops.map((s) => (bn ? s.cityBn : s.city)).join(" · ")}</p>
-            <p className="inline-flex items-center gap-1.5"><ShieldCheck className="size-3.5" aria-hidden /> {pick(locale, "যাচাই করা টিম ও পার্টনার · পার্টনার ব্যবসা থেকে HANDYO মাত্র ১০% রাখে", "Verified team & partners · HANDYO keeps only 10% of every partner business")}</p>
+            <p className="inline-flex items-center gap-1.5"><ShieldCheck className="size-3.5" aria-hidden /> {pick(locale, "যাচাই করা টিম ও পার্টনার · দাম আগেই · সারা বাংলাদেশে", "Verified team & partners · prices up front · Bangladesh-wide")}</p>
           </div>
         </div>
         <div className="h-20 md:hidden" aria-hidden />
