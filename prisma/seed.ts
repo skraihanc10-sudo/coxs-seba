@@ -63,7 +63,7 @@ async function catalogFor(shopId: string, areas: typeof AREAS, categories: typeo
     const current = await db.serviceCategory.findUnique({ where: { shopId_slug: { shopId, slug: c.slug } }, select: { image: true, codePrefix: true } })
     const refreshImage = current && (!current.image || current.image.startsWith("/services/") || current.image.startsWith("/demo/")) && current.image !== cat.image
     // A booking prefix shared with another category (old seeds gave pickles and AC repair both "AC") moves to the catalog's current one.
-    const refreshPrefix = current && current.codePrefix !== cat.codePrefix && categories.some((o) => o.slug !== c.slug && o.codePrefix === current.codePrefix)
+    const refreshPrefix = current && current.codePrefix !== cat.codePrefix && (!current.codePrefix || categories.some((o) => o.slug !== c.slug && o.codePrefix === current.codePrefix))
     // Car & bike rental is the lead category: pinned first on every seed.
     const pin = c.slug === "saint-martin-ship" ? { sort: -5 } : c.slug === "rent-a-car" ? { sort: -4 } : c.slug === "resort-booking" ? { sort: -3 } : c.slug === "shutki" ? { sort: -2 } : c.slug === "achar" ? { sort: -1 } : {}
     const row = await db.serviceCategory.upsert({ where: { shopId_slug: { shopId, slug: c.slug } }, update: { ...(refreshImage ? { image: cat.image } : {}), ...(refreshPrefix ? { codePrefix: cat.codePrefix } : {}), ...pin }, create: { ...cat, shopId, sort: i, ...pin } })
@@ -283,6 +283,8 @@ async function demo(coxs: { id: string }) {
     demos.push({ code: `CS-${20001 + i}`, who: who[i % who.length], cat, slug, area, status: "COMPLETED", worker, qty, day, slot: "11:00–14:00", pay: i % 3 === 0 ? "BKASH" : "CASH", review: i % 2 ? { rating: 4 + (i % 2), comment: "ভালো কাজ, ধন্যবাদ।" } : undefined })
   })
 
+  // Demo bookings and the demo ticket are created once; a database that already has them (any live shop) keeps its own data.
+  if ((await db.serviceBooking.findFirst({ where: { code: { endsWith: "-10001" } }, select: { id: true } })) || (await db.ticket.findUnique({ where: { code: "TK-10001" }, select: { id: true } }))) return
   for (const d of demos) {
     const o = offer(d.cat, d.slug)
     const area = areas[d.area]
