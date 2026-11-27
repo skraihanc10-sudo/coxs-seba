@@ -96,7 +96,7 @@
   }
   /* Nikosh for Bangla headings; it needs a touch more size and leading. */
   html[lang="bn"] .display {
-    font-family: var(--font-nikosh), var(--font-bengali), sans-serif;
+    font-family: var(--font-sans), var(--font-nikosh), var(--font-bengali), sans-serif;
     line-height: 1.25;
     letter-spacing: 0;
   }
@@ -253,6 +253,9 @@
   .side-link[data-on="true"] {
     @apply bg-[linear-gradient(135deg,var(--brand),var(--cyan-deep))] text-white shadow-[0_6px_16px_rgba(29,78,216,0.35)];
   }
+  input[type="file"]::file-selector-button {
+    @apply mr-3 cursor-pointer rounded-lg border-0 bg-brand-soft px-3 py-1.5 text-xs font-bold text-brand;
+  }
   .table {
     @apply w-full text-left text-sm;
   }
@@ -283,5 +286,15 @@
   * {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+/* Phone hero showcase: feather all four edges so the photo melts into the navy hero. */
+@media (max-width: 1023px) {
+  .showcase-fade {
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 10%, #000 90%, transparent), linear-gradient(to bottom, transparent, #000 10%, #000 90%, transparent);
+    mask-image: linear-gradient(to right, transparent, #000 10%, #000 90%, transparent), linear-gradient(to bottom, transparent, #000 10%, #000 90%, transparent);
+    -webkit-mask-composite: source-in;
+    mask-composite: intersect;
   }
 }

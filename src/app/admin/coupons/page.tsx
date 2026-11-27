@@ -69,7 +69,7 @@ function CouponCard({ c, locale, categories }: { c: Coupon; locale: Locale; cate
       </dl>
       {c.note ? <p className="text-xs text-muted-foreground">{c.note}</p> : null}
       <details className="rounded-xl bg-canvas p-3">
-        <summary className="cursor-pointer list-none text-sm font-bold text-ink">{pick(locale, "সম্পাদনা", "Edit")}</summary>
+        <summary className="btn-soft inline-flex h-9 cursor-pointer list-none px-4 text-sm">{pick(locale, "সম্পাদনা", "Edit")}</summary>
         <ActionForm action={saveCouponAction} resetOnSuccess={false} className="mt-3 grid gap-3 sm:grid-cols-2">
           <input type="hidden" name="id" value={c.id} />
           <CouponFields locale={locale} categories={categories} c={c} />

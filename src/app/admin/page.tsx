@@ -56,9 +56,9 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
         <h2 className="display mb-3 text-lg font-extrabold text-ink">{pick(locale, "বুকিংয়ের অবস্থা", "Booking status")} · {periodLabel[period]}</h2>
         <div className="grid grid-cols-2 gap-2 md:grid-cols-4 xl:grid-cols-7">
           {["REQUESTED", "ASSIGNED", "ON_THE_WAY", "IN_PROGRESS", "AT_LAUNDRY", "COMPLETED", "CANCELLED"].map((s) => (
-            <Link key={s} href={`/admin/bookings?status=${s}`} className="card flex items-center gap-3 p-3 transition hover:ring-brand/40">
+            <Link key={s} href={`/admin/bookings?status=${s}`} className="card flex flex-wrap items-center justify-between gap-2 p-3 transition hover:ring-brand/40">
               <StatusPill status={s} locale={locale} />
-              <span className="ml-auto text-xl font-extrabold text-ink">{d.byStatus[s] ?? 0}</span>
+              <span className="shrink-0 text-xl font-extrabold text-ink">{d.byStatus[s] ?? 0}</span>
             </Link>
           ))}
         </div>

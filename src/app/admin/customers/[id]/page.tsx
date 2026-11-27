@@ -20,7 +20,7 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
     include: {
       addresses: { where: { area: { shopId: shop.id } }, include: { area: true } },
       bookings: { where: { shopId: shop.id }, orderBy: { createdAt: "desc" }, include: { customer: { select: { name: true } }, category: true, offering: true, area: true, worker: { include: { user: { select: { name: true } } } } } },
-      tickets: { where: { shopId: shop.id }, orderBy: { updatedAt: "desc" } },
+      tickets: { where: { shopId: shop.id }, orderBy: { updatedAt: "desc" }, take: 30 },
       careThreads: { where: { shopId: shop.id }, select: { id: true, updatedAt: true } },
     },
   })
@@ -29,7 +29,7 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
   return (
     <div className="space-y-6">
       <PageHeader back="/admin/customers" title={c.name} sub={`${c.phone ?? ""} ${c.email ?? ""} · ${pick(locale, "যোগ দিয়েছেন", "joined")} ${formatWhen(c.createdAt, locale)} · ${pick(locale, shop.nameBn, shop.name)}`} action={<Avatar name={c.name} size={48} />} />
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-3 md:items-start">
         <Section title={pick(locale, "ঠিকানা", "Addresses")}>
           {c.addresses.length ? c.addresses.map((a) => <p key={a.id} className="text-sm"><span className="font-bold">{a.label}</span> · {named(locale, a.area)} · {a.line}{a.landmark ? `, ${a.landmark}` : ""} · {a.phone}</p>) : <p className="text-sm text-muted-foreground">—</p>}
         </Section>

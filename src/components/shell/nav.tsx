@@ -110,7 +110,7 @@ export function PanelShell({
           <Logo light bn={locale === "bn"} />
           <p className="mt-3 text-[11px] font-bold tracking-wider text-white/40 uppercase">{title}</p>
         </div>
-        <nav className="flex-1 space-y-1 overflow-y-auto px-3">
+        <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto px-3">
           {items.map((item) => {
             const Icon = ICONS[item.icon]
             return (

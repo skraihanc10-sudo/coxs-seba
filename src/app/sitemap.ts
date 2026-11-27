@@ -14,7 +14,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const entries: MetadataRoute.Sitemap = [
     { url: absoluteUrl("/"), lastModified: now, changeFrequency: "daily", priority: 1 },
     { url: absoluteUrl("/services"), lastModified: now, changeFrequency: "daily", priority: 0.9 },
-    { url: absoluteUrl("/branches"), lastModified: now, changeFrequency: "weekly", priority: 0.7 },
+    { url: absoluteUrl("/shop"), lastModified: now, changeFrequency: "daily", priority: 0.8 },
+    { url: absoluteUrl("/services/cleaning"), lastModified: now, changeFrequency: "weekly", priority: 0.7 },
     { url: absoluteUrl("/how-it-works"), lastModified: now, changeFrequency: "monthly", priority: 0.6 },
     { url: absoluteUrl("/help"), lastModified: now, changeFrequency: "monthly", priority: 0.5 },
     { url: absoluteUrl("/partner"), lastModified: now, changeFrequency: "monthly", priority: 0.6 },
@@ -22,9 +23,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   try {
     const shops = await db.shop.findMany({ where: { active: true }, orderBy: [{ sort: "asc" }, { createdAt: "asc" }], select: { id: true, slug: true } })
-    for (const shop of shops) {
-      entries.push({ url: absoluteUrl(`/branches/${shop.slug}`), lastModified: now, changeFrequency: "weekly", priority: 0.7 })
-    }
     const first = shops[0]
     if (first) {
       const categories = await db.serviceCategory.findMany({

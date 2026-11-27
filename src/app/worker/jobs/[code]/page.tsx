@@ -165,7 +165,7 @@ export default async function WorkerJobPage({ params }: { params: Promise<{ code
 
       <Section title={pick(locale, "চ্যাট", "Chat")}>
         <MessageList messages={thread.messages} me={user.id} locale={locale} empty={pick(locale, "কাস্টমার বা অফিসকে কিছু জানাতে এখানে লিখুন।", "Message the customer or the office here.")} />
-        <Composer action={sendBookingMessageAction} fields={{ code: b.code }} placeholder={pick(locale, "বার্তা লিখুন…", "Write a message…")} />
+        <Composer sticky={false} action={sendBookingMessageAction} fields={{ code: b.code }} placeholder={pick(locale, "বার্তা লিখুন…", "Write a message…")} />
       </Section>
     </div>
   )

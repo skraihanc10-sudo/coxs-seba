@@ -53,7 +53,7 @@ export function OfficeBooking({
   const vehiclePhoto = vehicle ? vehicle.photos.split(",").map((p) => p.trim()).filter(Boolean)[0] : undefined
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[1fr_380px]">
+    <div className="grid gap-4 lg:grid-cols-[1fr_380px] [&>*]:min-w-0">
       <div className="space-y-4">
         <div className="card flex items-center gap-3 p-4">
           <Avatar name={b.contactName || b.customer.name} size={48} />
@@ -62,7 +62,7 @@ export function OfficeBooking({
             <p className="text-xs text-muted-foreground">{b.phone} · {named(locale, b.area)} · {formatDay(b.visitDate, locale)} {b.visitSlot}</p>
             <p className="mt-0.5 text-[11px] font-bold text-brand">{pick(locale, "শপ:", "Shop:")} {named(locale, b.shop)}</p>
           </div>
-          <Link href={`/admin/customers/${b.customerId}`} className="text-xs font-bold text-brand">{pick(locale, "প্রোফাইল", "Profile")}</Link>
+          {isAdmin ? <Link href={`/admin/customers/${b.customerId}`} className="text-xs font-bold text-brand">{pick(locale, "প্রোফাইল", "Profile")}</Link> : null}
         </div>
 
         {store ? (
@@ -139,7 +139,7 @@ export function OfficeBooking({
                 <select name="workerId" className="field flex-1" defaultValue={b.workerId ?? (ownerId && eligible.some((w) => w.id === ownerId) ? ownerId : eligible[0]?.id)}>
                   {eligible.map((w) => (
                     <option key={w.id} value={w.id}>
-                      {w.name} · ★{w.rating ? w.rating.toFixed(1) : "—"} · {w.busy} {pick(locale, "চলমান", "active")}{w.inArea ? ` · ${pick(locale, "এই এলাকায়", "in area")}` : ""}
+                      {w.name} · ★{w.rating ? w.rating.toFixed(1) : pick(locale, "নতুন", "new")} · {w.busy} {pick(locale, "চলমান", "active")}{w.inArea ? ` · ${pick(locale, "এই এলাকায়", "in area")}` : ""}
                     </option>
                   ))}
                 </select>
@@ -259,7 +259,7 @@ export function OfficeBooking({
 
         <Section title={pick(locale, "চ্যাট", "Chat")} action={<Link href={`/support/tickets?booking=${b.code}`} className="inline-flex items-center gap-1 text-xs font-bold text-brand"><TicketCheck className="size-3.5" /> {pick(locale, "টিকেট", "Tickets")}</Link>}>
           <MessageList messages={messages} me={me} locale={locale} empty={pick(locale, "এখনো কোনো মেসেজ নেই।", "No messages yet.")} />
-          <Composer action={sendBookingMessageAction} fields={{ code: b.code }} placeholder={pick(locale, "কাস্টমার ও কর্মীকে লিখুন…", "Write to the customer and worker…")} templates={templates} />
+          <Composer action={sendBookingMessageAction} fields={{ code: b.code }} placeholder={pick(locale, "কাস্টমার ও কর্মীকে লিখুন…", "Write to the customer and worker…")} templates={templates} sticky={false} />
         </Section>
       </div>
 

@@ -65,13 +65,13 @@ export function CategoryBoard({ items, base, locale, compact = false, current = 
     )
   }
   return (
-    <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
       {items.map((c) => (
         <Link key={c.id} href={`${base}?category=${c.id}`} className="card group flex flex-col gap-3 p-4 transition hover:-translate-y-0.5 hover:ring-brand/40">
           <div className="flex items-center gap-3">
             <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-brand-soft text-brand transition group-hover:bg-brand group-hover:text-white"><CategoryIcon name={c.icon} className="size-5" /></span>
             <span className="min-w-0 flex-1">
-              <span className="block truncate font-extrabold text-ink">{named(locale, c)}</span>
+              <span className="line-clamp-2 block leading-tight font-extrabold text-ink">{named(locale, c)}</span>
               <span className="block text-[11px] font-bold text-muted-foreground">{c.prefix}-xxxxx · {c.total} {pick(locale, "অর্ডার", "orders")}</span>
             </span>
             <ChevronRight className="size-4 text-muted-foreground" />

@@ -48,9 +48,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   ]
   const shopName = pick(locale, shop.nameBn, shop.name)
   return (
-    <PanelShell title={`${pick(locale, "অ্যাডমিন", "Admin")} · HANDYO ${shopName}`} items={items} user={{ name: user.name, role: user.role }} locale={locale}>
+    <PanelShell title={`${pick(locale, "অ্যাডমিন", "Admin")} · ${shopName}`} items={items} user={{ name: user.name, role: user.role }} locale={locale}>
       <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl bg-canvas px-3 py-2 text-sm ring-1 ring-line">
-        <p className="min-w-0 flex-1 truncate">
+        <p className="min-w-0 flex-1 leading-snug">
           <span className="text-muted-foreground">{pick(locale, "এখন যে শপে কাজ করছেন:", "Working in:")}</span> <span className="font-extrabold text-ink">{shopName}</span>
           <span className="ml-1 text-xs text-muted-foreground">· {pick(locale, shop.cityBn, shop.city)}</span>
           {!shop.active ? <span className="pill ml-2 bg-rose-100 text-rose-700">{pick(locale, "বন্ধ", "Off")}</span> : null}

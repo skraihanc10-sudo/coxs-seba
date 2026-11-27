@@ -1,7 +1,7 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { requireUser, getLocale } from "@/lib/auth"
-import { OFFICE } from "@/lib/roles"
+import { isAdmin, OFFICE } from "@/lib/roles"
 import { officeShop } from "@/lib/shops"
 import { AppError } from "@/lib/errors"
 import { ticketFor, TICKET_CATEGORIES, TICKET_PRIORITIES, TICKET_STATUSES } from "@/lib/support"
@@ -24,7 +24,7 @@ export default async function OfficeTicketPage({ params }: { params: Promise<{ c
     throw error
   }
   return (
-    <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
+    <div className="grid gap-4 lg:grid-cols-[1fr_320px] [&>*]:min-w-0">
       <div>
         <PageHeader back="/support/tickets" title={ticket.subject} sub={`${ticket.code} · ${ticket.user.name} · ${TICKET_CATEGORIES[ticket.category as keyof typeof TICKET_CATEGORIES]?.[locale]}`} />
         <div className="card p-4">
@@ -55,7 +55,7 @@ export default async function OfficeTicketPage({ params }: { params: Promise<{ c
           <p className="font-bold text-ink">{ticket.user.name}</p>
           <p className="text-sm text-muted-foreground">{ticket.user.phone} {ticket.user.email}</p>
           {ticket.booking ? <Link href={`/support/bookings/${ticket.booking.code}`} className="mt-2 inline-block text-sm font-bold text-brand">{pick(locale, "বুকিং", "Booking")} {ticket.booking.code} →</Link> : null}
-          <Link href={`/admin/customers/${ticket.userId}`} className="mt-1 block text-sm font-bold text-brand">{pick(locale, "প্রোফাইল ও ইতিহাস", "Profile & history")} →</Link>
+          {isAdmin(user.role) ? <Link href={`/admin/customers/${ticket.userId}`} className="mt-1 block text-sm font-bold text-brand">{pick(locale, "প্রোফাইল ও ইতিহাস", "Profile & history")} →</Link> : null}
         </Section>
       </div>
     </div>

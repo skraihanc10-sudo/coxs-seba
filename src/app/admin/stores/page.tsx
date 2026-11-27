@@ -30,7 +30,7 @@ export default async function StoresPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title={pick(locale, "দোকান ও পার্টনার (শুঁটকি / আচার)", "Stores & partners (dried fish / pickles)")}
+        title={pick(locale, "দোকান ও পার্টনার (শুঁটকি, আচার, লন্ড্রি)", "Stores & partners (dried fish, pickles, laundry)")}
         sub={pick(locale, `${shop.nameBn} · ${live.length}টি চালু · ${pending.length}টি অনুমোদনের অপেক্ষায়`, `${shop.name} · ${live.length} live · ${pending.length} waiting`)}
         action={<Link href="/admin/stores/new" className="btn-primary h-10 px-4 text-sm"><Plus className="size-4" /> {pick(locale, "নতুন দোকান", "Add store")}</Link>}
       />

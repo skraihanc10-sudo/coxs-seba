@@ -12,7 +12,7 @@ export default async function NewStorePage() {
   const workers = await db.workerProfile.findMany({ where: { shopId: shop.id }, include: { user: true }, orderBy: [{ kind: "desc" }, { user: { name: "asc" } }] })
   return (
     <div>
-      <PageHeader back="/admin/stores" title={pick(locale, "নতুন দোকান", "Add a store")} sub={pick(locale, "সাথে সাথে সাইটে দেখাবে; পণ্য Admin → প্রোডাক্ট থেকে।", "Live at once; add products under Admin → Products.")} />
+      <PageHeader back="/admin/stores" title={pick(locale, "নতুন দোকান", "Add a store")} sub={pick(locale, "সাথে সাথে সাইটে দেখাবে; পণ্য অ্যাডমিন → প্রোডাক্ট থেকে।", "Live at once; add products under Admin → Products.")} />
       <AdminStoreForm locale={locale} store={null} workers={workers} />
     </div>
   )

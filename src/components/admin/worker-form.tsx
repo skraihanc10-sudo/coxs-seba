@@ -37,7 +37,7 @@ export function WorkerForm({
         <div><label className="label">{pick(locale, "মোবাইল (লগইন)", "Mobile (login)")}</label><input name="phone" defaultValue={worker?.user.phone ?? ""} className="field" required /></div>
         <div><label className="label">{pick(locale, "ইমেইল (ঐচ্ছিক)", "Email (optional)")}</label><input name="email" type="email" defaultValue={worker?.user.email ?? ""} className="field" /></div>
         <div><label className="label">{worker ? pick(locale, "নতুন পাসওয়ার্ড (ফাঁকা = আগেরটা)", "New password (blank keeps old)") : pick(locale, "পাসওয়ার্ড", "Password")}</label><input name="password" type="password" className="field" autoComplete="new-password" required={!worker} minLength={6} /></div>
-        <div><label className="label">{pick(locale, "NID নম্বর", "NID number")}</label><input name="nid" defaultValue={worker?.nid} className="field" inputMode="numeric" placeholder="10 / 13 / 17 digits" /></div>
+        <div><label className="label">{pick(locale, "NID নম্বর", "NID number")}</label><input name="nid" defaultValue={worker?.nid} className="field" inputMode="numeric" placeholder={pick(locale, "১০ / ১৩ / ১৭ সংখ্যা", "10 / 13 / 17 digits")} /></div>
         <label className="flex items-center gap-2 text-sm font-bold text-ink"><input type="checkbox" name="isRider" defaultChecked={worker?.isRider} className="size-4 accent-[var(--brand)]" /> {pick(locale, "লন্ড্রি রাইডার (পিকআপ-ডেলিভারি করেন)", "Laundry rider (does pickup & delivery)")}</label>
         {worker?.kind === "PARTNER" ? (
           <label className="flex items-start gap-2 rounded-xl bg-brand-soft px-3 py-2 text-sm font-bold text-ink">

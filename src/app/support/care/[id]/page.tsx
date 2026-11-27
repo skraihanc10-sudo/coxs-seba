@@ -1,7 +1,7 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { requireUser, getLocale } from "@/lib/auth"
-import { OFFICE } from "@/lib/roles"
+import { isAdmin, OFFICE } from "@/lib/roles"
 import { officeShop } from "@/lib/shops"
 import { AppError } from "@/lib/errors"
 import { careThreadFor } from "@/lib/support"
@@ -33,7 +33,7 @@ export default async function CareThreadPage({ params }: { params: Promise<{ id:
           <div className="flex gap-2">
             {thread.assigneeId !== user.id ? <ActionButton action={careThreadAction} fields={{ threadId: thread.id, assignToMe: "1" }} className="btn-soft h-10 px-3 text-sm">{pick(locale, "আমি নিচ্ছি", "Take it")}</ActionButton> : null}
             {thread.status === "OPEN" ? <ActionButton action={careThreadAction} fields={{ threadId: thread.id, close: "1" }} className="btn-ghost h-10 px-3 text-sm">{pick(locale, "বন্ধ", "Close")}</ActionButton> : null}
-            <Link href={`/admin/customers/${thread.customerId}`} className="btn-ghost h-10 px-3 text-sm">{pick(locale, "প্রোফাইল", "Profile")}</Link>
+            {isAdmin(user.role) ? <Link href={`/admin/customers/${thread.customerId}`} className="btn-ghost h-10 px-3 text-sm">{pick(locale, "প্রোফাইল", "Profile")}</Link> : null}
           </div>
         }
       />

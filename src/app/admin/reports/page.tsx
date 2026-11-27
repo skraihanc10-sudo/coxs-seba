@@ -51,7 +51,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
         ))}
       </div>
       <div className="card overflow-x-auto">
-        <table className="table">
+        <table className="table min-w-[640px]">
           <thead><tr><th>{GROUPS.find(([k]) => k === group)?.[locale === "bn" ? 1 : 2]}</th><th className="text-right">{pick(locale, "কাজ", "Jobs")}</th><th className="text-right">{pick(locale, "আয়", "Revenue")}</th><th className="text-right">{pick(locale, "কর্মীর পাওনা", "Worker pay")}</th><th className="text-right">{pick(locale, "মার্জিন", "Margin")}</th><th className="text-right">{pick(locale, "ক্যাশ", "Cash")}</th><th className="text-right">{pick(locale, "মোবাইল", "Mobile")}</th></tr></thead>
           <tbody>
             {r.rows.map((row) => (

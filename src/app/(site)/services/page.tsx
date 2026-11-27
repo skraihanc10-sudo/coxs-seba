@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { ChevronRight } from "lucide-react"
 import { getLocale } from "@/lib/auth"
-import { activeCategories, categoryPriceLine } from "@/lib/catalog"
+import { activeCategories, categoryPriceLine, CLEANING_SLUGS } from "@/lib/catalog"
 import { currentShop } from "@/lib/shops"
 import { named, pick, words } from "@/lib/i18n"
 import { taka } from "@/lib/format"
@@ -37,6 +37,31 @@ const MARKET: Record<string, { bn: string; en: string }> = {
   SHOP: { bn: "পার্টনার দোকানের পণ্য – কার্টে নিয়ে সারা দেশে ডেলিভারি", en: "Partner stores' products: add to cart, delivered nationwide" },
 }
 
+/** The services list shows one door per group, like the home page: every SHOP-flow category is one shop, and home + resort cleaning is one cleaning door. */
+type Cat = Awaited<ReturnType<typeof activeCategories>>[number]
+type Door = Cat & { href?: string; priceOverride?: { bn: string; en: string }; pills?: boolean }
+function mergeDoors(categories: Cat[]): Door[] {
+  const out: Door[] = []
+  let shopDone = false
+  let cleaningDone = false
+  for (const c of categories) {
+    if (c.flow === "SHOP") {
+      if (shopDone) continue
+      shopDone = true
+      out.push({ ...c, slug: "shop", icon: "store", name: "Shop: dried fish, pickles and more", nameBn: "দোকান: শুঁটকি, আচার ও আরও", blurb: "Every partner store in one place: dried fish, pickles, chutney and more. Pick a store to see what it sells; courier nationwide.", blurbBn: "সব পার্টনার দোকান এক জায়গায়: শুঁটকি, আচার, চাটনি ও আরও। দোকান বেছে দেখুন কে কী বিক্রি করে; সারা দেশে কুরিয়ার।", href: "/shop" })
+      continue
+    }
+    if (CLEANING_SLUGS.includes(c.slug)) {
+      if (cleaningDone) continue
+      cleaningDone = true
+      out.push({ ...c, slug: "cleaning", name: "Cleaning: home and resort/hotel", nameBn: "ক্লিনিং: বাসা ও রিসোর্ট-হোটেল", blurb: "Home deep cleans, kitchen and bathroom; full crews for resorts and hotels. We look at the job and agree the price with you.", blurbBn: "বাসার ডিপ ক্লিন, কিচেন-বাথরুম; রিসোর্ট-হোটেলের জন্য পুরো টিম। কাজ দেখে কথা বলে দাম ঠিক হয়।", href: "/services/cleaning", priceOverride: { bn: "কথা বলে দাম ঠিক হয়", en: "Price agreed after a look" }, pills: false })
+      continue
+    }
+    out.push(c)
+  }
+  return out
+}
+
 export default async function ServicesPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const [{ q = "" }, locale, shop] = await Promise.all([searchParams, getLocale(), currentShop()])
   const categories = await activeCategories(shop.id)
@@ -45,7 +70,7 @@ export default async function ServicesPage({ searchParams }: { searchParams: Pro
   const needle = q.trim()
   const hits = needle ? await search(shop.id, needle, 40) : []
   const soft = needle && !hits.length ? await suggestions(shop.id, 8) : []
-  const list = needle ? [] : categories
+  const list = needle ? [] : mergeDoors(categories)
   return (
     <div>
       <JsonLd data={breadcrumbs([{ name: "HANDYO", path: "/" }, { name: pick(locale, "সব সেবা", "All services"), path: "/services" }])} />
@@ -74,7 +99,9 @@ export default async function ServicesPage({ searchParams }: { searchParams: Pro
         <div className="space-y-3">
           {list.map((c) => {
             const market = MARKET[c.flow]
-            const priceLine = categoryPriceLine(c, locale, taka, unitLabel)
+            const priceLine = c.priceOverride ? (bn ? c.priceOverride.bn : c.priceOverride.en) : categoryPriceLine(c, locale, taka, unitLabel)
+            const href = c.href ?? `/services/${c.slug}`
+            const pills = c.pills === false ? [] : c.offerings.filter((o) => o.slug !== "by-item")
             return (
               <article key={c.id} className="card card-lift group relative flex gap-3 overflow-hidden p-3 md:gap-5 md:p-4" aria-labelledby={`cat-${c.slug}`}>
                 <span className="relative block w-32 shrink-0 self-start overflow-hidden rounded-xl bg-brand-soft sm:w-44 md:w-56">
@@ -99,21 +126,28 @@ export default async function ServicesPage({ searchParams }: { searchParams: Pro
                   <p className="mt-2 text-sm font-extrabold text-brand">{priceLine}</p>
                   {market ? (
                     <p className="mt-1 text-xs text-muted-foreground">{bn ? market.bn : market.en}</p>
-                  ) : (
+                  ) : pills.length ? (
                     <ul className="relative z-20 mt-2 flex flex-wrap gap-1.5">
-                      {c.offerings.filter((o) => o.slug !== "by-item").map((o) => (
-                        <li key={o.id}>
-                          <Link href={`/book/${c.slug}/${o.slug}`} className="inline-flex items-center gap-1 rounded-full bg-canvas px-2.5 py-1 text-xs font-bold text-ink ring-1 ring-transparent transition hover:ring-brand/40">
-                            {named(locale, o)}
-                            <span className="font-semibold text-muted-foreground">{o.pricing === "QUOTE" ? pick(locale, "· দেখে দাম", "· quote") : `· ${taka(o.price, locale)}/${unitLabel(o.pricing, locale)}`}</span>
+                      {pills.slice(0, 3).map((o) => (
+                        <li key={o.id} className="max-w-full">
+                          <Link href={`/book/${c.slug}/${o.slug}`} className="inline-flex max-w-full flex-wrap items-center gap-x-1 rounded-full bg-canvas px-2.5 py-1 text-xs font-bold text-ink ring-1 ring-transparent transition hover:ring-brand/40">
+                            <span>{named(locale, o)}</span>
+                            <span className="font-semibold whitespace-nowrap text-muted-foreground">{o.pricing === "QUOTE" ? pick(locale, "· দেখে দাম", "· quote") : `· ${taka(o.price, locale)}/${unitLabel(o.pricing, locale)}`}</span>
                           </Link>
                         </li>
                       ))}
+                      {pills.length > 3 ? (
+                        <li>
+                          <Link href={href} className="inline-flex items-center rounded-full bg-brand-soft px-2.5 py-1 text-xs font-bold text-brand">
+                            {pick(locale, `+ আরও ${pills.length - 3}টা · সব দেখুন`, `+ ${pills.length - 3} more · see all`)}
+                          </Link>
+                        </li>
+                      ) : null}
                     </ul>
-                  )}
+                  ) : null}
                 </div>
                 {/* Last in the DOM and above everything but the offering chips: the whole card opens the category. */}
-                <Link href={`/services/${c.slug}`} className="absolute inset-0 z-10 rounded-[inherit]" aria-label={named(locale, c)} />
+                <Link href={href} className="absolute inset-0 z-10 rounded-[inherit]" aria-label={named(locale, c)} />
               </article>
             )
           })}

@@ -25,7 +25,7 @@ export default async function ProductsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title={pick(locale, "প্রোডাক্ট (শুঁটকি ও আচার)", "Products (dried fish & pickles)")}
+        title={pick(locale, "প্রোডাক্ট (দোকান ও লন্ড্রি)", "Products (stores & laundry)")}
         sub={pick(locale, `${shop.nameBn} · ${live}টি সাইটে · ${products.length - live}টি লুকানো · ডেলিভারি চার্জ ও ন্যূনতম অর্ডার সেটিংসে · দোকান আলাদা পেজে`, `${shop.name} · ${live} live · ${products.length - live} hidden · delivery and minimum order under Settings · stores on their own page`)}
         action={<Link href="/admin/products/new" className="btn-primary h-10 px-4 text-sm"><Plus className="size-4" /> {pick(locale, "নতুন প্রোডাক্ট", "Add product")}</Link>}
       />

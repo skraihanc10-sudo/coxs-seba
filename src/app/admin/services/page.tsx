@@ -11,7 +11,7 @@ import { ActionForm, SubmitButton } from "@/components/forms"
 import { PageHeader, Section } from "@/components/bits"
 import { CategoryIcon, ICON_NAMES } from "@/components/category-icon"
 
-const FLOWS = { STANDARD: ["সাধারণ ভিজিট", "Standard visit"], LAUNDRY: ["লন্ড্রি (পিকআপ-ডেলিভারি)", "Laundry (pickup & delivery)"], TEAM: ["টিম (রুম × দিন)", "Team (rooms × days)"], CUSTOM: ["কাস্টম (কাজ লিখুন)", "Custom (describe the job)"], RENTAL: ["রেন্টাল (গাড়ি/বাইক, দিন হিসাবে)", "Rental (car/bike, per day)"] }
+const FLOWS = { STANDARD: ["সাধারণ ভিজিট", "Standard visit"], LAUNDRY: ["লন্ড্রি (পিকআপ-ডেলিভারি)", "Laundry (pickup & delivery)"], TEAM: ["টিম (রুম × দিন)", "Team (rooms × days)"], CUSTOM: ["কাস্টম (কাজ লিখুন)", "Custom (describe the job)"], RENTAL: ["রেন্টাল (গাড়ি/বাইক, দিন হিসাবে)", "Rental (car/bike, per day)"], STAY: ["রিসোর্ট বুকিং (রুম × রাত)", "Stay (rooms × nights)"], SHOP: ["দোকান (পণ্য ও কার্ট)", "Shop (products & cart)"] }
 
 export default async function ServicesAdminPage() {
   const [user, locale] = await Promise.all([requireUser(ADMINS, "/admin/services"), getLocale()])

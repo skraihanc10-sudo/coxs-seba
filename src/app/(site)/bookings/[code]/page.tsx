@@ -140,7 +140,7 @@ export default async function BookingPage({ params, searchParams }: { params: Pr
         <Section title={pick(locale, "চ্যাট", "Chat")} action={<MessageCircle className="size-4 text-muted-foreground" />}>
           <p className="mb-3 text-xs text-muted-foreground">{b.category.flow === "RENTAL" ? pick(locale, "গাড়ির মালিক/ড্রাইভার আর কাস্টমার কেয়ার দুজনেই এই চ্যাট দেখেন।", "The vehicle owner/driver and customer care both see this chat.") : pick(locale, "কর্মী আর কাস্টমার কেয়ার দুজনেই এই চ্যাট দেখেন।", "Both your worker and customer care see this chat.")}</p>
           <MessageList messages={thread.messages} me={user.id} locale={locale} empty={pick(locale, "কোনো প্রশ্ন থাকলে এখানে লিখুন।", "Ask anything about this booking here.")} />
-          <Composer action={sendBookingMessageAction} fields={{ code: b.code }} placeholder={pick(locale, "বার্তা লিখুন…", "Write a message…")} />
+          <Composer sticky={false} action={sendBookingMessageAction} fields={{ code: b.code }} placeholder={pick(locale, "বার্তা লিখুন…", "Write a message…")} />
         </Section>
       </div>
     </div>

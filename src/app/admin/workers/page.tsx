@@ -32,7 +32,7 @@ export default async function WorkersPage() {
               <Avatar name={w.user.name} src={w.photo || undefined} size={48} />
               <div className="min-w-0 flex-1">
                 <Link href={`/admin/workers/${w.id}`} className="block truncate font-extrabold text-ink hover:text-brand">{w.user.name}</Link>
-                <p className="text-xs text-muted-foreground">{w.user.phone} · ★ {w.rating ? w.rating.toFixed(1) : "—"} ({w.ratingCount}) · {w._count.bookings} {pick(locale, "শেষ", "done")}</p>
+                <p className="text-xs text-muted-foreground">{w.user.phone} · ★ {w.rating ? w.rating.toFixed(1) : pick(locale, "নতুন", "new")} ({w.ratingCount}) · {w._count.bookings} {pick(locale, "শেষ", "done")}</p>
               </div>
               <span className={`pill ${w.bookings.length ? "bg-emerald-100 text-emerald-800" : "bg-canvas text-muted-foreground"}`}>{w.bookings.length ? `${w.bookings.length} ${pick(locale, "জব", "jobs")}` : pick(locale, "ফ্রি", "free")}</span>
             </div>

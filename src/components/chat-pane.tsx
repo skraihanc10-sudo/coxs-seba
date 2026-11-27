@@ -44,17 +44,20 @@ export function Composer({
   fields,
   placeholder,
   templates,
+  sticky = true,
 }: {
   action: (prev: ActionState, form: FormData) => Promise<ActionState>
   fields: Record<string, string>
   placeholder: string
   templates?: Array<{ id: string; title: string; body: string }>
+  /** Thread pages keep the box pinned above the bottom nav; a chat card inside a booking page does not. */
+  sticky?: boolean
 }) {
   const box = useRef<HTMLTextAreaElement>(null)
   return (
     <ActionForm
       action={action}
-      className="sticky bottom-[calc(3.9rem+env(safe-area-inset-bottom))] mt-4 rounded-2xl bg-paper p-2 ring-1 ring-line md:bottom-4"
+      className={`mt-4 rounded-2xl bg-paper p-2 ring-1 ring-line ${sticky ? "sticky bottom-[calc(3.9rem+env(safe-area-inset-bottom))] md:bottom-4" : ""}`}
       successToast={false}
     >
       {Object.entries(fields).map(([k, v]) => (

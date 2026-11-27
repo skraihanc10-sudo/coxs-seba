@@ -42,6 +42,9 @@ export async function activeFaqs() {
  * The one-line price hint on a category card. Marketplace flows have no
  * price on the category itself (rooms, vehicles and products carry their own).
  */
+/** Home and resort cleaning share one door on the site; the price is agreed after a look. */
+export const CLEANING_SLUGS = ["home-cleaning", "resort-cleaning"]
+
 export function categoryPriceLine(c: { flow: string; offerings: Array<{ price: number; pricing: string }> }, locale: "bn" | "en", taka: (n: number, l: "bn" | "en") => string, unit: (p: string, l: "bn" | "en") => string) {
   const bn = locale === "bn"
   if (c.flow === "STAY") return bn ? "রাতপ্রতি দাম, রুম অনুযায়ী" : "Per night, by room"

@@ -55,7 +55,7 @@ export function HeroShowcase({ items, locale }: { items: ShowcaseItem[]; locale:
       aria-roledescription="carousel"
       aria-label={bn ? "ফিচার্ড সেবা" : "Featured services"}
     >
-      <div className="relative aspect-[5/3] overflow-hidden rounded-2xl bg-white/10 shadow-2xl ring-1 ring-white/20">
+      <div className="showcase-fade relative aspect-[5/3] overflow-hidden rounded-2xl bg-white/10 shadow-none ring-0 lg:shadow-2xl lg:ring-1 lg:ring-white/20">
         <div className="flex h-full transition-transform duration-700 ease-[cubic-bezier(.22,.61,.36,1)] motion-reduce:transition-none" style={{ transform: `translateX(-${index * 100}%)` }}>
           {items.map((c, i) => (
             <Link

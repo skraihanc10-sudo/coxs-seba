@@ -3,7 +3,7 @@ import Link from "next/link"
 import { ArrowRight, MessageCircle, Phone } from "lucide-react"
 import { getLocale } from "@/lib/auth"
 import { currentShop } from "@/lib/shops"
-import { activeCategories } from "@/lib/catalog"
+import { activeCategories, CLEANING_SLUGS } from "@/lib/catalog"
 import { getSettings } from "@/lib/settings"
 import { named, pick } from "@/lib/i18n"
 import { telHref, whatsappHref } from "@/lib/format"
@@ -12,7 +12,6 @@ import { PageHeader, TrustStrip } from "@/components/bits"
 import { CategoryIcon } from "@/components/category-icon"
 import { breadcrumbs, JsonLd } from "@/components/seo/json-ld"
 
-export const CLEANING_SLUGS = ["home-cleaning", "resort-cleaning"]
 
 export async function generateMetadata(): Promise<Metadata> {
   const [locale, shop] = await Promise.all([getLocale(), currentShop()])
@@ -59,7 +58,7 @@ export default async function CleaningPage() {
         <a href={telHref(settings.helpline)} className="btn-primary h-11 px-5 text-sm"><Phone className="size-4" aria-hidden /> {pick(locale, "কল করে দাম জানুন", "Call for a price")}</a>
         <a href={whatsappHref(settings.whatsapp, pick(locale, "ক্লিনিং সার্ভিসের দাম জানতে চাই", "I want a cleaning price"))} className="btn-soft h-11 px-5 text-sm"><MessageCircle className="size-4" aria-hidden /> WhatsApp</a>
       </div>
-      <TrustStrip locale={locale} />
+      <div className="mt-6"><TrustStrip locale={locale} /></div>
     </div>
   )
 }

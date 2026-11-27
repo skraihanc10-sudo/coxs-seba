@@ -27,7 +27,7 @@ export default async function CustomersPage({ searchParams }: { searchParams: Pr
         <button className="btn-primary h-10 px-4 text-sm">{pick(locale, "খুঁজুন", "Search")}</button>
       </form>
       <div className="card overflow-x-auto">
-        <table className="table">
+        <table className="table min-w-[720px]">
           <thead><tr><th>{pick(locale, "নাম", "Name")}</th><th>{pick(locale, "ফোন / ইমেইল", "Phone / email")}</th><th>{pick(locale, "বুকিং", "Bookings")}</th><th className="text-right">{pick(locale, "মোট খরচ", "Spent")}</th><th>{pick(locale, "শেষ বুকিং", "Last booking")}</th><th>{pick(locale, "যোগ দিয়েছেন", "Joined")}</th></tr></thead>
           <tbody>
             {customers.map((c) => {

@@ -60,11 +60,13 @@ async function catalogFor(shopId: string, areas: typeof AREAS, categories: typeo
   for (const [i, c] of categories.entries()) {
     const { offerings, ...cat } = c
     // Existing rows keep their own edits; only a missing/bundled illustration is refreshed to the current bundled one.
-    const current = await db.serviceCategory.findUnique({ where: { shopId_slug: { shopId, slug: c.slug } }, select: { image: true } })
+    const current = await db.serviceCategory.findUnique({ where: { shopId_slug: { shopId, slug: c.slug } }, select: { image: true, codePrefix: true } })
     const refreshImage = current && (!current.image || current.image.startsWith("/services/") || current.image.startsWith("/demo/")) && current.image !== cat.image
+    // A booking prefix shared with another category (old seeds gave pickles and AC repair both "AC") moves to the catalog's current one.
+    const refreshPrefix = current && current.codePrefix !== cat.codePrefix && categories.some((o) => o.slug !== c.slug && o.codePrefix === current.codePrefix)
     // Car & bike rental is the lead category: pinned first on every seed.
     const pin = c.slug === "saint-martin-ship" ? { sort: -5 } : c.slug === "rent-a-car" ? { sort: -4 } : c.slug === "resort-booking" ? { sort: -3 } : c.slug === "shutki" ? { sort: -2 } : c.slug === "achar" ? { sort: -1 } : {}
-    const row = await db.serviceCategory.upsert({ where: { shopId_slug: { shopId, slug: c.slug } }, update: { ...(refreshImage ? { image: cat.image } : {}), ...pin }, create: { ...cat, shopId, sort: i, ...pin } })
+    const row = await db.serviceCategory.upsert({ where: { shopId_slug: { shopId, slug: c.slug } }, update: { ...(refreshImage ? { image: cat.image } : {}), ...(refreshPrefix ? { codePrefix: cat.codePrefix } : {}), ...pin }, create: { ...cat, shopId, sort: i, ...pin } })
     for (const [j, o] of offerings.entries()) {
       // Every offering ships with an AI illustration under public/services/offerings; rows keep an admin-uploaded photo.
       const image = bundled(`/services/offerings/${c.slug}/${o.slug}.jpg`)

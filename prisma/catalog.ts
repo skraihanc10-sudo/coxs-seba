@@ -141,7 +141,7 @@ export const CATEGORIES: Array<{
   },
   {
     slug: "achar",
-    codePrefix: "AC",
+    codePrefix: "PK",
     nameBn: "আচার ও চাটনি",
     name: "Pickles & chutney",
     blurbBn: "শুঁটকি আচার, পাহাড়ি হোমমেড আচার, বার্মিজ আচার, চাটনি আর ড্রাই ফুড – কক্সবাজারের পার্টনার দোকান থেকে সারা দেশে।",

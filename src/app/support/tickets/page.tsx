@@ -21,7 +21,7 @@ export default async function TicketsPage({ searchParams }: { searchParams: Prom
     <div>
       <PageHeader title={pick(locale, "টিকেট", "Tickets")} />
       <div className="mb-4 flex flex-wrap gap-2">
-        <Link href="/support/tickets" className="chip" data-on={!status}>{pick(locale, "খোলা", "Open")}</Link>
+        <Link href="/support/tickets" className="chip" data-on={!status}>{pick(locale, "সক্রিয় (খোলা + অপেক্ষায়)", "Active (open + pending)")}</Link>
         {Object.entries(TICKET_STATUSES).map(([k, v]) => <Link key={k} href={`/support/tickets?status=${k}`} className="chip" data-on={status === k}>{v[locale]}</Link>)}
       </div>
       {!tickets.length ? <p className="card px-4 py-10 text-center text-sm text-muted-foreground">{pick(locale, "কোনো টিকেট নেই", "No tickets")}</p> : (

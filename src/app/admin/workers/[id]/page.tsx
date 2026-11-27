@@ -34,7 +34,7 @@ export default async function WorkerPage({ params }: { params: Promise<{ id: str
   const earned = done.reduce((s, b) => s + workerShare(b.finalPrice ?? b.estimatedPrice, b.visitCharge, share), 0)
   return (
     <div className="space-y-6">
-      <PageHeader back="/admin/workers" title={worker.user.name} sub={`★ ${worker.rating ? worker.rating.toFixed(1) : "—"} (${worker.ratingCount}) · ${done.length} ${pick(locale, "কাজ শেষ", "jobs done")} · ${pick(locale, "আয়", "earned")} ${taka(earned, locale)}`} />
+      <PageHeader back="/admin/workers" title={worker.user.name} sub={`★ ${worker.rating ? worker.rating.toFixed(1) : pick(locale, "নতুন", "new")} (${worker.ratingCount}) · ${done.length} ${pick(locale, "কাজ শেষ", "jobs done")} · ${pick(locale, "আয়", "earned")} ${taka(earned, locale)}`} />
       <WorkerForm locale={locale} worker={worker} categories={categories} areas={areas} shop={shop} />
       <Section title={pick(locale, "কাজের ইতিহাস ও পারফরম্যান্স", "Job history & performance")}>
         <ul className="divide-y divide-line">
